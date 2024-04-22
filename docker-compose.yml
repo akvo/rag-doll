@@ -2,7 +2,7 @@ services:
   chromadb:
     image: chromadb/chroma
     ports:
-      - 8000:8000
+      - ${CHROMADB_PORT}:${CHROMADB_PORT}
     environment:
       IS_PERSISTENT: True
       ANONYMIZED_TELEMETRY: False
@@ -14,7 +14,7 @@ services:
     build: librarian  
     environment:
       CHROMADB_HOST: chromadb
-      CHROMADB_PORT: 8000
+      CHROMADB_PORT: ${CHROMADB_PORT}
       CHROMADB_COLLECTION: AKVO-agriconnect-knowledgebase
     depends_on:
       - chromadb

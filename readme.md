@@ -1,8 +1,23 @@
-# RAG Demo
+# RAG Doll
+Rag Doll is a chat-with-your-documents style Retrieval Augmented Generation
+(RAG). Rag Doll is broken up into several containers, each with a single
+responsibility (or as close to that as I could get).
 
-The repository is a demo of a mostly-Python Retrieval Augmented Generation (RAG)
-system, organised into several containers. By containerizing, we can more easily
-upgrade and improve individual componetns.
+There are many RAG implementations out there and I don't proclaim this to be
+better than any of the others. What sets Rag Doll apart is the fact that it
+makes all previous chats available to the user. This feature does come with the
+downside that the chat is added to the knowledge base as fact. It will not have
+been curated or reviewed before it comes available to use in future searches.
+Rag Doll assumes good faith and good factual knowledge by all participants in
+the chat.
+
+The implementation is mostly Python, although the heavy lifting is done by
+pre-trained machine learning models. You'll want to run this on something with a
+decent GPU, or you will find this all to be very slow.
+
+This repository is an implementation of a mostly-Python Retrieval Augmented
+Generation (RAG) system, organised into several containers. By containerizing,
+we can more easily upgrade and improve individual componetns.
 
 This demo is purely for text data, we do not demo multi-modal at this time.
 Maybe later, feel free to suggest a pull request. :-)

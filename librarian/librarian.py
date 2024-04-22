@@ -40,7 +40,10 @@ while chromadb_client == None:
     try:
         print(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}...")
         chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
-        chromadb_client.delete_collection(CHROMADB_COLLECTION)
+        collections = chromadb_client.list_collections()
+        for coll in collections:
+            if CHROMADB_COLLECTION == coll.name:
+                chromadb_client.delete_collection(CHROMADB_COLLECTION)
         knowledgebase = chromadb_client.create_collection(name=CHROMADB_COLLECTION)
     except Exception as e:
         print(f"unable to connect to http://{CHROMADB_HOST}:{CHROMADB_PORT}, retrying...: {e}")
@@ -50,9 +53,8 @@ while chromadb_client == None:
 def add_chunk_to_chroma(chunk, country):
     global knowledgebase_id
 
-    print(f"=== {country} = {len(chunk)} ==================")
-    print('.'.join(chunk))
-    print(country)
+    print(f"=== country: {country}, length: {len(chunk)}, id: {knowledgebase_id} ==================")
+    # print('.'.join(chunk))
     knowledgebase.add(
         documents=['.'.join(chunk)],
         metadatas=[{COL_COUNTRY: country}],

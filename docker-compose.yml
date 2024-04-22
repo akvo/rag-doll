@@ -1,0 +1,33 @@
+services:
+  chromadb:
+    image: chromadb/chroma
+    ports:
+      - 8000:8000
+    environment:
+      IS_PERSISTENT: True
+      ANONYMIZED_TELEMETRY: False
+    volumes:
+      - ./chromadb-data:/chroma/chroma
+    restart: unless-stopped
+
+  librarian:
+    build: librarian  
+    environment:
+      CHROMADB_HOST: chromadb
+      CHROMADB_PORT: 8000
+      CHROMADB_COLLECTION: AKVO-agriconnect-knowledgebase
+    depends_on:
+      - chromadb
+    volumes:
+      - /Users/kjkoster/workspace/blink-topic-analysis/notebooks/2024-04-04-akvo-market-research/data-sets/akvo/agri-connect/focusgroups-2023.2024-04-08.parquet.gz:/data-sets/corpus.parquet.gz:ro
+    restart: on-failure
+
+  slackbot:
+    build: slackbot
+    environment:
+      SLACKBOT_TOKEN: ${SLACKBOT_TOKEN}
+      SLACKBOT_SIGNING_SECRET: ${SLACKBOT_SIGNING_SECRET}
+    depends_on:
+      - chromadb
+    restart: unless-stopped
+

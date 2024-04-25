@@ -21,5 +21,6 @@ response = slack_client.chat_postMessage(channel='#rag-doll', text='hello world'
 if not response['ok']:
     print(f"unable to send message: {response}")
 
-app.run()
+print(f"running on http://{os.getenv('SLACKBOT_HOST')}:{int(os.getenv('SLACKBOT_PORT'))}...")
+app.run(host=os.getenv('SLACKBOT_HOST'), port=int(os.getenv('SLACKBOT_PORT')))
 

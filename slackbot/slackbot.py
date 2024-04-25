@@ -1,8 +1,7 @@
 import os
 import hmac
 import slack
-import request
-from flask import Flask
+from flask import Flask, request
 from slackeventsapi import SlackEventAdapter
 
 app = Flask(__name__)

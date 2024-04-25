@@ -41,6 +41,11 @@ The archivist, like the librarian, adds data to the vector database. It reads
 the live chat data and pushes that into the vector database as additional
 reference.
 
+The archivist listens on Mosquitto for chat messages. 
+
+## Mosquitto MQTT
+In order to separate the Slack and WhatsApp bots, we use an MQTT message broker
+
 ## Vector Database
 The vector database takes care of embedding and semantic search on the knowledge
 base library.
@@ -61,3 +66,5 @@ See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#
 - figure out how to do id's on ChromaDB
 - Figure out how to gracefully await Chroma starting instead of sleeping for a few seconds
 - Need some way to retain and add to the collection, instead of recreating every time
+- Need to figure out how to collect likes/dislikes and then attach these to the records in the vector database. By collecting these, useful answers should make it into the knowledge base and we can suppress bad answers.
+- switch to RabbitMQ

@@ -1,4 +1,25 @@
 services:
+  librarian:
+    build: librarian  
+    environment:
+      CHROMADB_HOST: ${CHROMADB_HOST}
+      CHROMADB_PORT: ${CHROMADB_PORT}
+      CHROMADB_COLLECTION: ${LIBRARIAN_COLLECTION}
+    depends_on:
+      - chromadb
+    volumes:
+      - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
+    restart: on-failure
+
+  slackbot:
+    build: slackbot
+    environment:
+      SLACKBOT_TOKEN: ${SLACKBOT_TOKEN}
+      SLACKBOT_SIGNING_SECRET: ${SLACKBOT_SIGNING_SECRET}
+    depends_on:
+      - chromadb
+    restart: unless-stopped
+
   chromadb:
     image: chromadb/chroma
     ports:
@@ -10,24 +31,13 @@ services:
       - ./chromadb-data:/chroma/chroma
     restart: unless-stopped
 
-  librarian:
-    build: librarian  
-    environment:
-      CHROMADB_HOST: chromadb
-      CHROMADB_PORT: ${CHROMADB_PORT}
-      CHROMADB_COLLECTION: AKVO-agriconnect-knowledgebase
-    depends_on:
-      - chromadb
+  mosquitto:
+    image: eclipse-mosquitto
+    ports:
+      - ${MQTT_PORT}:${MQTT_PORT}
     volumes:
-      - /Users/kjkoster/workspace/blink-topic-analysis/notebooks/2024-04-04-akvo-market-research/data-sets/akvo/agri-connect/focusgroups-2023.2024-04-08.parquet.gz:/data-sets/corpus.parquet.gz:ro
-    restart: on-failure
-
-  slackbot:
-    build: slackbot
-    environment:
-      SLACKBOT_TOKEN: ${SLACKBOT_TOKEN}
-      SLACKBOT_SIGNING_SECRET: ${SLACKBOT_SIGNING_SECRET}
-    depends_on:
-      - chromadb
+      - ./mosquitto:/mosquitto/config:ro
+      - ./mosquitto-data:/mosquitto/data:rw
+    # user: "1000:1000"
     restart: unless-stopped
 

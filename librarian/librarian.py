@@ -38,7 +38,7 @@ knowledgebase_id = 0
 
 while chromadb_client == None:
     try:
-        print(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}...")
+        print(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}/{CHROMADB_COLLECTION}...")
         chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
         collections = chromadb_client.list_collections()
         for coll in collections:

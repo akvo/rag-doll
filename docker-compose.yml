@@ -55,3 +55,8 @@ services:
     # user: "1000:1000"
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ./ollama-data:/root/.ollama
+

@@ -1,7 +1,7 @@
 # RAG Doll
 Rag Doll is a chat-with-your-documents style Retrieval Augmented Generation
-(RAG). Rag Doll is broken up into several containers, each with a single
-responsibility (or as close to that as I could get).
+(RAG), which is a specialised use of a Large Language Model (LLM) where items
+from the knowledge base get added to the prompt for better answers.
 
 There are many RAG implementations out there and I don't proclaim this to be
 better than any of the others. What sets Rag Doll apart is the fact that it
@@ -13,16 +13,27 @@ the chat.
 
 The implementation is mostly Python, although the heavy lifting is done by
 pre-trained machine learning models. You'll want to run this on something with a
-decent GPU, or you will find this all to be very slow.
-
-This repository is an implementation of a mostly-Python Retrieval Augmented
-Generation (RAG) system, organised into several containers. By containerizing,
-we can more easily upgrade and improve individual componetns.
+decent GPU, or you will find this all to be very slow. Rag Doll is broken up
+into several containers, each with a single responsibility (or as close to that
+as I could get). By containerizing, we can more easily upgrade and improve
+individual componetns.
 
 This demo is purely for text data, we do not demo multi-modal at this time.
 Maybe later, feel free to suggest a pull request. :-)
 
 ## Prerequisites
+
+### Allocate GPU Instance on Google Cloud
+Allocating a GPU instance on the Google Cloud is hard, because everyone us vying
+for the same resources. Most of the time your start request will be denied for
+lack of resources. So here is what I do: open the Google Cloud Shell and
+programmatically try to start the instance. If it fails, wait for a bit and
+try again. It can take well over an hour for you to be able to start it, so
+leave this running and do something else in the mean time.
+
+`until gcloud compute instances start rag-doll-t4 --zone europe-central2-b; do date; echo "waiting..."; sleep 2; done`
+
+### Docker Logger Crash Prevention
 It is well know that Docker eats disk space relentlessly. One particular problem
 is that the default logger format for Docker, `json-file`, does not support log
 rotation. Instead, switch Docker over to using the `local` logging driver. That
@@ -40,6 +51,22 @@ local
 ```
 
 
+### Attach Google Cloud Storage as Disk
+Ollama will download models and these can be huge too, so you need ample disk
+space for the cached models. Here is a reminder how to attach storage as disk to
+your virtual machine instance.
+
+```sh
+$ ls -l /dev/disk/by-id/google-*
+$ sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/sdb
+$ sudo mkdir /tank
+$ sudo blkid /dev/sdb
+/dev/sdb: UUID="85acf249-c912-4f80-83da-bc6931119519" BLOCK_SIZE="4096"
+TYPE="ext4" PARTUUID="593b3b75-108f-bd41-823d-b7e87d2a04d1"
+UUID=UUID_VALUE /mnt/disks/MOUNT_DIR ext4 discard,defaults,MOUNT_OPTION 0 2
+$ sudo vi /etc/fstab
+```
+
 ## Slack Bot
 The Slack bot is the first interface that can be used to chat with the rag doll.
 Slack is a little more convenient to use than WhatsApp and it does mostly the
@@ -47,6 +74,11 @@ same. Good enough for a demo.
 
 Most of the Slack interface code was taken from
 [Getting started with Bolt for Python](https://seratch.github.io/bolt-python/tutorial/getting-started).
+
+
+## Assistant
+The assistant handles queries to the RAG for us. It awaits messages from the
+user chat queue, queries the knowledge base and builds a prompt for the LLM.
 
 
 ## Librarian
@@ -118,3 +150,4 @@ a single responsibility.
 - Need to figure out how to collect likes/dislikes and then attach these to the records in the vector database. By collecting these, useful answers should make it into the knowledge base and we can suppress bad answers.
 - Devise a way to stream the response from the LLM, as it is slow. Perhaps chat.update? Does Bolt have that in an easy way?
 - Add error handling, such that if there is a problem, Slackbot sends a message to an admin
+

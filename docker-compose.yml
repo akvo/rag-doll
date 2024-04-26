@@ -9,13 +9,27 @@ services:
       RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
       RABBITMQ_HOST: ${RABBITMQ_HOST}
       RABBITMQ_PORT: ${RABBITMQ_PORT}
-      OLLAMA_HOST: ${OLLAMA_HOST}
-      OLLAMA_PORT: ${OLLAMA_PORT}
       SLACK_BOT_PORT: ${SLACK_BOT_PORT}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
     depends_on:
       - ollama
+      - rabbitmq
+    restart: unless-stopped
+
+  assistant:
+    build: assistant
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      OLLAMA_HOST: ${OLLAMA_HOST}
+      OLLAMA_PORT: ${OLLAMA_PORT}
+    depends_on:
+      - ollama
+      - rabbitmq
     restart: unless-stopped
 
   librarian:

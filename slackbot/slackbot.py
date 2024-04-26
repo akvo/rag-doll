@@ -1,56 +1,98 @@
 import os
-import hmac
-import slack
-from flask import Flask, request
-from slackeventsapi import SlackEventAdapter
 
-app = Flask(__name__)
+import logging
+import re
+from typing import Callable
 
-SLACKBOT_SIGNING_SECRET = os.getenv('SLACKBOT_SIGNING_SECRET')
+from slack_bolt import App, Say, BoltContext
+from slack_sdk import WebClient
 
-# https://stackoverflow.com/questions/64341222/how-to-validate-slack-api-request
-@app.route('/slack-validation', methods=['GET', 'POST']) 
-def slack_validation():
-    headers = request.headers
-    timestamp = request.headers['X-Slack-Request-Timestamp'] 
+logging.basicConfig(level=logging.DEBUG)
 
-    slack_payload = request.form
-    dict_slack = slack_payload.to_dict()
+app = App(token=os.environ.get("SLACK_BOT_TOKEN"),
+          signing_secret=os.environ.get("SLACK_SIGNING_SECRET"))
 
-### This is the key that solved the issue for me, where urllib.parse.quote(val, safe='')] ###
-    payload= "&".join(['='.join([key, urllib.parse.quote(val, safe='')]) for key, val in dict_slack.items()])  
-
-    ### compose the message:
-    sig_basestring = 'v0:' + timestamp + ':' + payload
-
-    sig_basestring = sig_basestring.encode('utf-8')
-
-    ### secret
-    signing_secret = SLACKBOT_SIGNING_SECRET.encode('utf-8') # I had an env variable declared with slack_signing_secret
-    
-    my_signature = 'v0=' + hmac.new(signing_secret, sig_basestring, hashlib.sha256).hexdigest()
-    print('my signature: ')
-    print(my_signature)
-    
-    return '', 200
+@app.middleware
+def log_request(logger: logging.Logger, body: dict, next: Callable):
+    logger.debug(body)
+    return next()
 
 
-slack_client = slack.WebClient(token=os.getenv('SLACKBOT_TOKEN'))
-slack_events = SlackEventAdapter(SLACKBOT_SIGNING_SECRET ,'/slack/events', app)
+@app.message("test")
+def reply_to_test(say):
+    say("Yes, tests are important!")
 
-@slack_events.on('message')
-def on_message(payload):
-    event = payload.get('event')
-    channel = event.get('channel')
-    user = event.get('user')
-    text = event.get('text')
 
-    print(f"{user}{channel}: {text}")
+@app.message(re.compile("bug"))
+def mention_bug(say):
+    say("Do you mind filing a ticket?")
 
-response = slack_client.chat_postMessage(channel='#rag-doll', text='hello world')
-if not response['ok']:
-    print(f"unable to send message: {response}")
 
-print(f"running on http://{os.getenv('SLACKBOT_HOST')}:{int(os.getenv('SLACKBOT_PORT'))}...")
-app.run(host=os.getenv('SLACKBOT_HOST'), port=int(os.getenv('SLACKBOT_PORT')))
+# middleware function
+def extract_subtype(body: dict, context: BoltContext, next: Callable):
+    context["subtype"] = body.get("event", {}).get("subtype", None)
+    next()
+
+
+# https://api.slack.com/events/message
+# Newly posted messages only
+# or @app.event("message")
+@app.event({"type": "message", "subtype": None})
+def reply_in_thread(body: dict, say: Say):
+    event = body["event"]
+    thread_ts = event.get("thread_ts", None) or event["ts"]
+    say(text="Hey, what's up?", thread_ts=thread_ts)
+
+
+@app.event(
+    event={"type": "message", "subtype": "message_deleted"},
+    matchers=[
+        # Skip the deletion of messages by this listener
+        lambda body: "You've deleted a message: "
+        not in body["event"]["previous_message"]["text"]
+    ],
+)
+def detect_deletion(say: Say, body: dict):
+    text = body["event"]["previous_message"]["text"]
+    say(f"You've deleted a message: {text}")
+
+
+# https://api.slack.com/events/message/file_share
+# https://api.slack.com/events/message/bot_message
+@app.event(
+    event={"type": "message", "subtype": re.compile("(me_message)|(file_share)")},
+    middleware=[extract_subtype],
+)
+def add_reaction(body: dict, client: WebClient, context: BoltContext, logger: logging.Logger):
+    subtype = context["subtype"]  # by extract_subtype
+    logger.info(f"subtype: {subtype}")
+    message_ts = body["event"]["ts"]
+    api_response = client.reactions_add(
+        channel=context.channel_id,
+        timestamp=message_ts,
+        name="eyes",
+    )
+    logger.info(f"api_response: {api_response}")
+
+
+# This listener handles all uncaught message events
+# (The position in source code matters)
+@app.event({"type": "message"}, middleware=[extract_subtype])
+def just_ack(logger, context):
+    subtype = context["subtype"]  # by extract_subtype
+    logger.info(f"{subtype} is ignored")
+
+
+# XXX
+# @slack_events.on('message')
+# def on_message(payload):
+#     event = payload.get('event')
+#
+#     channel = event.get('channel')
+#     user = event.get('user')
+#     text = event.get('text')
+#
+#     print(f"{user}{channel}: {text}")
+
+app.start(port=int(os.getenv('SLACK_BOT_PORT')))
 

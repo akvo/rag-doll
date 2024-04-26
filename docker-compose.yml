@@ -14,12 +14,11 @@ services:
   slackbot:
     build: slackbot
     ports:
-      - ${SLACKBOT_PORT}:${SLACKBOT_PORT}
+      - ${SLACK_BOT_PORT}:${SLACK_BOT_PORT}
     environment:
-      SLACKBOT_HOST: ${SLACKBOT_HOST}
-      SLACKBOT_PORT: ${SLACKBOT_PORT}
-      SLACKBOT_TOKEN: ${SLACKBOT_TOKEN}
-      SLACKBOT_SIGNING_SECRET: ${SLACKBOT_SIGNING_SECRET}
+      SLACK_BOT_PORT: ${SLACK_BOT_PORT}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+      SLACK_BOT_SIGNING_SECRET: ${SLACK_BOT_SIGNING_SECRET}
     depends_on:
       - chromadb
     restart: unless-stopped

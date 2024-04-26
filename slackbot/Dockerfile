@@ -1,6 +1,6 @@
 FROM python:slim
 
-RUN pip install slackclient slackeventsapi flask
+RUN pip install slack_bolt
 
 COPY slackbot.py /app/
 

@@ -22,19 +22,38 @@ we can more easily upgrade and improve individual componetns.
 This demo is purely for text data, we do not demo multi-modal at this time.
 Maybe later, feel free to suggest a pull request. :-)
 
+## Prerequisites
+It is well know that Docker eats disk space relentlessly. One particular problem
+is that the default logger format for Docker, `json-file`, does not support log
+rotation. Instead, switch Docker over to using the `local` logging driver. That
+does support log rotation. See
+[Configure logging drivers](https://docs.docker.com/config/containers/logging/configure/)
+for instructions.
+
+```sh
+$ docker info --format '{{.LoggingDriver}}'
+json-file
+$ sudo vi /etc/docker/daemon.json
+$ sudo systemctl restart docker
+$ docker info --format '{{.LoggingDriver}}'
+local
+```
+
+
 ## Slack Bot
 The Slack bot is the first interface that can be used to chat with the rag doll.
 Slack is a little more convenient to use than WhatsApp and it does mostly the
 same. Good enough for a demo.
 
 Most of the Slack interface code was taken from
-[Python Slack Bot](https://www.youtube.com/playlist?list=PLzMcBGfZo4-kqyzTzJWCV6lyK-ZMYECDc)
-by [Tech with Tim](https://www.youtube.com/@TechWithTim).
+[Getting started with Bolt for Python](https://seratch.github.io/bolt-python/tutorial/getting-started).
+
 
 ## Librarian
 The librarian is responsible for getting the knowledge base data into the vector
 database. It runs at startup, recreating the data set that is to be used for the
 retrieval part of the system.
+
 
 ## Archivist
 The archivist, like the librarian, adds data to the vector database. It reads
@@ -43,10 +62,33 @@ reference.
 
 The archivist listens on Mosquitto for chat messages. 
 
-## Mosquitto MQTT
-In order to separate the Slack and WhatsApp bots, we use an MQTT message broker
 
-## Vector Database
+## Ollama LLM Runtime
+We use [Ollama](https://ollama.com/) as the model run-time. Ollama makes it easy
+to manage multiple models, without having to handle large model files. It also
+solves the need for registration on all kinds of sites. Ollama will just pull
+the model in and cache it locally.
+
+In order for Ollama to be able to use the system's GPU (only works on Linux),
+install
+[NVidea's Container Toolkit](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image)
+first. This must run on the Docker host and not inside a container, hence the
+need to do a separate installation.
+
+If you get the error `Error response from daemon: could not select device driver "nvidia" with capabilities: [[gpu]]`, you may have forgotten to run the [configuration step of the NVIDIA Container Toolkit installation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration).
+
+Unfortunately, this ends an with error that I have so far failed to resolve:
+`Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error running hook #0: error running hook: exit status 1, stdout: , stderr: Auto-detected mode as 'legacy'
+nvidia-container-cli: initialization error: load library failed: libnvidia-ml.so.1: cannot open shared object file: no such file or directory: unknown`
+
+Maybe try: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html ?
+
+See also:
+- [Turn on GPU access with Docker Compose](https://docs.docker.com/compose/gpu-support/)
+- [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+
+
+## ChromaDB Vector Database
 The vector database takes care of embedding and semantic search on the knowledge
 base library.
 
@@ -54,6 +96,11 @@ Rag doll uses [Chroma DB](https://www.trychroma.com/), being lightweigth and
 easy to interface with.
 
 See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#docker).
+
+
+## Mosquitto MQTT
+In order to separate the Slack and WhatsApp bots, we use an MQTT message broker
+
 
 ## TODO
 

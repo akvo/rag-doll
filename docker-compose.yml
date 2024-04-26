@@ -1,4 +1,16 @@
 services:
+  slackbot:
+    build: slackbot
+    ports:
+      - ${SLACK_BOT_PORT}:${SLACK_BOT_PORT}
+    environment:
+      SLACK_BOT_PORT: ${SLACK_BOT_PORT}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
+    depends_on:
+      - chromadb
+    restart: unless-stopped
+
   librarian:
     build: librarian  
     environment:
@@ -22,17 +34,12 @@ services:
       - mosquitto
     restart: unless-stopped
 
-  slackbot:
-    build: slackbot
+  ollama:
+    image: ollama/ollama
     ports:
-      - ${SLACK_BOT_PORT}:${SLACK_BOT_PORT}
-    environment:
-      SLACK_BOT_PORT: ${SLACK_BOT_PORT}
-      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
-      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
-    depends_on:
-      - chromadb
-    restart: unless-stopped
+      - ${OLLAMA_PORT}:${OLLAMA_PORT}
+    volumes:
+      - ./ollama-data:/root/.ollama
 
   chromadb:
     image: chromadb/chroma
@@ -54,9 +61,4 @@ services:
       - ./mosquitto-data:/mosquitto/data:rw
     # user: "1000:1000"
     restart: unless-stopped
-
-  ollama:
-    image: ollama/ollama
-    volumes:
-      - ./ollama-data:/root/.ollama
 

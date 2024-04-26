@@ -4,6 +4,8 @@ services:
     ports:
       - ${SLACK_BOT_PORT}:${SLACK_BOT_PORT}
     environment:
+      OLLAMA_HOST: ${OLLAMA_HOST}
+      OLLAMA_PORT: ${OLLAMA_PORT}
       SLACK_BOT_PORT: ${SLACK_BOT_PORT}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}

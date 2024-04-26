@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 class LLM:
     def __init__(self, chat_model, image_model):
-        llm_client = Client(host=f"http://{os.getenv("OLLAMA_HOST")}:{os.getenv{OLLAMA_PORT}")
+        llm_client = Client(host=f"http://{os.getenv("OLLAMA_HOST")}:{os.getenv("OLLAMA_PORT")}")
         self.chat_model = chat_model
         pull_response = llm_client.pull(self.chat_model)
         if pull_response[MSG_STATUS] != MSG_SUCCESS:

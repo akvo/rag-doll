@@ -11,6 +11,17 @@ services:
       - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
     restart: on-failure
 
+  archivist:
+    build: archivist  
+    environment:
+      CHROMADB_HOST: ${CHROMADB_HOST}
+      CHROMADB_PORT: ${CHROMADB_PORT}
+      CHROMADB_COLLECTION: ${ARCHIVIST_COLLECTION}
+    depends_on:
+      - chromadb
+      - mosquitto
+    restart: unless-stopped
+
   slackbot:
     build: slackbot
     ports:
@@ -18,7 +29,7 @@ services:
     environment:
       SLACK_BOT_PORT: ${SLACK_BOT_PORT}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
-      SLACK_BOT_SIGNING_SECRET: ${SLACK_BOT_SIGNING_SECRET}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
     depends_on:
       - chromadb
     restart: unless-stopped

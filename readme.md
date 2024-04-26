@@ -60,7 +60,7 @@ The archivist, like the librarian, adds data to the vector database. It reads
 the live chat data and pushes that into the vector database as additional
 reference.
 
-The archivist listens on Mosquitto for chat messages. 
+The archivist listens on the message queue for chat messages. 
 
 
 ## Ollama LLM Runtime
@@ -98,8 +98,10 @@ easy to interface with.
 See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#docker).
 
 
-## Mosquitto MQTT
-In order to separate the Slack and WhatsApp bots, we use an MQTT message broker
+## RabbitMQ Message Queueing
+In order to separate the Slack and WhatsApp bots, we use message queues. This
+allows us to organise and scale workloads, while having each component have only
+a single responsibility.
 
 
 ## TODO
@@ -114,5 +116,5 @@ In order to separate the Slack and WhatsApp bots, we use an MQTT message broker
 - Figure out how to gracefully await Chroma starting instead of sleeping for a few seconds
 - Need some way to retain and add to the collection, instead of recreating every time
 - Need to figure out how to collect likes/dislikes and then attach these to the records in the vector database. By collecting these, useful answers should make it into the knowledge base and we can suppress bad answers.
-- switch to RabbitMQ
 - Devise a way to stream the response from the LLM, as it is slow. Perhaps chat.update? Does Bolt have that in an easy way?
+- Add error handling, such that if there is a problem, Slackbot sends a message to an admin

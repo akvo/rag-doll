@@ -4,6 +4,11 @@ services:
     ports:
       - ${SLACK_BOT_PORT}:${SLACK_BOT_PORT}
     environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
       OLLAMA_HOST: ${OLLAMA_HOST}
       OLLAMA_PORT: ${OLLAMA_PORT}
       SLACK_BOT_PORT: ${SLACK_BOT_PORT}
@@ -33,7 +38,7 @@ services:
       CHROMADB_COLLECTION: ${ARCHIVIST_COLLECTION}
     depends_on:
       - chromadb
-      - mosquitto
+      - rabbitmq
     restart: unless-stopped
 
   ollama:
@@ -54,13 +59,15 @@ services:
       - ./chromadb-data:/chroma/chroma
     restart: unless-stopped
 
-  mosquitto:
-    image: eclipse-mosquitto
+  rabbitmq:
+    image: rabbitmq:management
     ports:
-      - ${MQTT_PORT}:${MQTT_PORT}
+      - ${RABBITMQ_PORT}:${RABBITMQ_PORT}
+      - ${RABBITMQ_MANAGEMENT_PORT}:${RABBITMQ_MANAGEMENT_PORT}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
-      - ./mosquitto:/mosquitto/config:ro
-      - ./mosquitto-data:/mosquitto/data:rw
-    # user: "1000:1000"
+      - "./rabbitmq-data:/var/lib/rabbitmq/mnesia/"
     restart: unless-stopped
 

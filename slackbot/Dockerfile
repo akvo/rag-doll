@@ -1,6 +1,6 @@
 FROM python:slim
 
-RUN pip install slack_bolt
+RUN pip install slack_bolt ollama
 
 COPY slackbot.py /app/
 

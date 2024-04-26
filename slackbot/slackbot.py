@@ -1,11 +1,9 @@
 import os
-
-import logging
 import re
+import logging
 from typing import Callable
-
-from slack_bolt import App, Say, BoltContext
 from slack_sdk import WebClient
+from slack_bolt import App, Say, BoltContext
 
 logging.basicConfig(level=logging.DEBUG)
 

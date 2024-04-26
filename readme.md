@@ -68,3 +68,4 @@ See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#
 - Need some way to retain and add to the collection, instead of recreating every time
 - Need to figure out how to collect likes/dislikes and then attach these to the records in the vector database. By collecting these, useful answers should make it into the knowledge base and we can suppress bad answers.
 - switch to RabbitMQ
+- Devise a way to stream the response from the LLM, as it is slow. Perhaps chat.update? Does Bolt have that in an easy way?

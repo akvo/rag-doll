@@ -2,6 +2,7 @@ import os
 import re
 import json
 import logging
+from time import sleep
 from typing import Callable
 from datetime import datetime, timezone
 
@@ -57,29 +58,30 @@ def extract_subtype(body: dict, context: BoltContext, next: Callable):
     next()
 
 
+# Here we try to publish the message on the queue, reconnecting if necessary. We
+# also inform the user of any issues we see. Not the ideal solution, but good
+# enough for now.
+def publish_reliably(queue_message: str, say: Say) -> None:
+    while True:
+        try:
+            user_chat_queue.basic_publish(exchange='', routing_key=queue_name, body=queue_message)
+            return
+        except Exception as e:
+            say(f":pleading_face: that dit not work, let me try again.\n    `{e}`")
+            sleep(1)
+
+
 # https://api.slack.com/events/message
 # Newly posted messages only
 # or @app.event("message")
 @app.event({"type": "message", "subtype": None})
 def reply_in_thread(body: dict, say: Say):
     event = body["event"]
-    user_chat_queue.basic_publish(exchange='', routing_key=queue_name, body=slack_event_to_queue_message(event))
+    queue_message = slack_event_to_queue_message(event)
 
+    publish_reliably(queue_message, say)
     thread_ts = event.get("thread_ts", None) or event["ts"]
-    say(text="working on it...", thread_ts=thread_ts) # XXX So how do we get answers back?
-
-
-@app.event(
-    event={"type": "message", "subtype": "message_deleted"},
-    matchers=[
-        # Skip the deletion of messages by this listener
-        lambda body: "You've deleted a message: "
-        not in body["event"]["previous_message"]["text"]
-    ],
-)
-def detect_deletion(say: Say, body: dict):
-    text = body["event"]["previous_message"]["text"]
-    say(f"You've deleted a message: {text}")
+    say("working on it...")
 
 
 # https://api.slack.com/events/message/file_share
@@ -107,17 +109,6 @@ def just_ack(logger, context):
     subtype = context["subtype"]  # by extract_subtype
     logger.info(f"{subtype} is ignored")
 
-
-# XXX
-# @slack_events.on('message')
-# def on_message(payload):
-#     event = payload.get('event')
-#
-#     channel = event.get('channel')
-#     user = event.get('user')
-#     text = event.get('text')
-#
-#     print(f"{user}{channel}: {text}")
 
 app.start(port=int(os.getenv('SLACK_BOT_PORT')))
 

@@ -17,10 +17,10 @@ pika_parameters = pika.ConnectionParameters(os.getenv("RABBITMQ_HOST"),
                                             int(os.getenv("RABBITMQ_PORT")),
                                             '/', pika_credentials)
 pika_connection = pika.BlockingConnection(pika_parameters)
-pika_channel = pika_connection.channel()
+user_chat_queue = pika_connection.channel()
 
 queue_name = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-message_queue.queue_declare(queue=queue_name)
+user_chat_queue.queue_declare(queue=queue_name)
 
 # --- Slack section
 
@@ -49,9 +49,7 @@ def reply_in_thread(body: dict, say: Say):
 
     text = body["event"]["text"]
 
-    message_queue.basic_publish(exchange='',
-                                routing_key=queue_name,
-                                body=text)
+    user_chat_queue.basic_publish(exchange='', routing_key=queue_name, body=text)
 
     thread_ts = event.get("thread_ts", None) or event["ts"]
     say(text="working on it...", thread_ts=thread_ts) # XXX So how do we get answers back?

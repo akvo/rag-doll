@@ -135,6 +135,19 @@ In order to separate the Slack and WhatsApp bots, we use message queues. This
 allows us to organise and scale workloads, while having each component have only
 a single responsibility.
 
+### Queue Message Format
+
+user message:
+|---|---|---|
+|field|data type|description|
+|`id`       | string           | Message identification number as the originating platform knows it. |
+|`timestamp`| ISO8601 UTC/Zulu | Message timestamp as the originating platform knows it. |
+|`platform` | enum: `SLACK`/`WHATSAPP`/`SMS`/`VOICE` | Originating platform. Intended to be able to parse the platform-specific fields. |
+|`from`     | platform-specific address        | Enough information for the originating platform to be able to route a reply to this message to where the user expects it. |
+|`text`     | UTF-8 string     | The text as provided by the user. |
+|---|---|---|
+
+from field (where `platform` equals `SLACK`):
 
 ## TODO
 

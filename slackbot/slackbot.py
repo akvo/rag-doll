@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import logging
 from typing import Callable
 
@@ -27,6 +28,19 @@ user_chat_queue.queue_declare(queue=queue_name)
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"),
           signing_secret=os.environ.get("SLACK_SIGNING_SECRET"))
 
+def slack_event_to_queue_message(slack_event: dict) -> str:
+    queue_message = {
+      'id': slack_event['client_msg_id'],
+      'timestamp': event.get("thread_ts", None) or event["ts"], # XXX to ISO8601
+      'platform': 'SLACK',
+      'from': {
+                'user': slack_event['user'],
+                'channel': slack_event['channel']
+              }, # XXX test in all forms
+      'text': slack_event['text']
+    }
+    return json.dumps(queue_message)
+
 @app.middleware
 def log_request(logger: logging.Logger, body: dict, next: Callable):
     logger.debug(body)
@@ -45,11 +59,7 @@ def extract_subtype(body: dict, context: BoltContext, next: Callable):
 @app.event({"type": "message", "subtype": None})
 def reply_in_thread(body: dict, say: Say):
     event = body["event"]
-    logger.info(event)
-
-    text = body["event"]["text"]
-
-    user_chat_queue.basic_publish(exchange='', routing_key=queue_name, body=text)
+    user_chat_queue.basic_publish(exchange='', routing_key=queue_name, body=slack_event_to_queue_message(event))
 
     thread_ts = event.get("thread_ts", None) or event["ts"]
     say(text="working on it...", thread_ts=thread_ts) # XXX So how do we get answers back?

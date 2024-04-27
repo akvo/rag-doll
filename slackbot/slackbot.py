@@ -31,7 +31,7 @@ app = App(token=os.environ.get("SLACK_BOT_TOKEN"),
 def slack_event_to_queue_message(slack_event: dict) -> str:
     queue_message = {
       'id': slack_event['client_msg_id'],
-      'timestamp': event.get("thread_ts", None) or event["ts"], # XXX to ISO8601
+      'timestamp': slack_event.get("thread_ts", None) or slack_event["ts"], # XXX to ISO8601
       'platform': 'SLACK',
       'from': {
                 'user': slack_event['user'],

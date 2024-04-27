@@ -1,3 +1,4 @@
+# XXX Review for unwanted code...
 import os
 import re
 import json
@@ -12,7 +13,7 @@ from slack_bolt import App, Say, BoltContext
 import pika
 from pika.exceptions import StreamLostError
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # --- RabbitMQ Section
 
@@ -32,6 +33,28 @@ user_chat_queue.queue_declare(queue=RABBITMQ_QUEUE_USER_CHATS)
 
 user_chat_reply_queue = connect_and_create_queue()
 user_chat_reply_queue.queue_declare(queue=RABBITMQ_QUEUE_USER_CHAT_REPLIES)
+
+# Here we try to publish the message on the queue, reconnecting if necessary. We
+# also inform the user of any issues we see. Not the ideal solution, but good
+# enough for now.
+def publish_reliably(queue_message: str, say: Say) -> None:
+    global user_chat_queue
+
+    retries = 5
+    while retries > 0:
+        retries = retries - 1
+
+        try:
+            user_chat_queue.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_USER_CHATS, body=queue_message)
+            return
+        except StreamLostError:
+            say(":pleading_face: oops, looks like I should reconnect first...")
+        except Exception as e:
+            say(f":pleading_face: that dit not work, let me try again.\n    `{type(e)}: {e}`")
+
+        sleep(5)
+        user_chat_queue = connect_and_create_queue()
+
 
 # --- Slack section
 
@@ -56,7 +79,7 @@ def slack_event_to_queue_message(slack_event: dict) -> str:
 
 @app.middleware
 def log_request(logger: logging.Logger, body: dict, next: Callable):
-    logger.debug(body)
+    logger.warning(f"Skipped unknown message: [{body}]")
     return next()
 
 
@@ -64,28 +87,6 @@ def log_request(logger: logging.Logger, body: dict, next: Callable):
 def extract_subtype(body: dict, context: BoltContext, next: Callable):
     context["subtype"] = body.get("event", {}).get("subtype", None)
     next()
-
-
-# Here we try to publish the message on the queue, reconnecting if necessary. We
-# also inform the user of any issues we see. Not the ideal solution, but good
-# enough for now.
-def publish_reliably(queue_message: str, say: Say) -> None:
-    global user_chat_queue
-
-    retries = 5
-    while retries > 0:
-        retries = retries - 1
-
-        try:
-            user_chat_queue.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_USER_CHATS, body=queue_message)
-            return
-        except StreamLostError:
-            say(":pleading_face: oops, looks like I should reconnect first...")
-        except Exception as e:
-            say(f":pleading_face: that dit not work, let me try again.\n    `{type(e)}: {e}`")
-
-        sleep(5)
-        user_chat_queue = connect_and_create_queue()
 
 
 # https://api.slack.com/events/message
@@ -97,7 +98,6 @@ def reply_in_thread(body: dict, say: Say):
     queue_message = slack_event_to_queue_message(event)
 
     publish_reliably(queue_message, say)
-    thread_ts = event.get("thread_ts", None) or event["ts"]
     say("working on it...")
 
 

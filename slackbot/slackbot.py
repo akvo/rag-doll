@@ -3,6 +3,7 @@ import re
 import json
 import logging
 from typing import Callable
+from datetime import datetime
 
 from slack_sdk import WebClient
 from slack_bolt import App, Say, BoltContext
@@ -29,9 +30,12 @@ app = App(token=os.environ.get("SLACK_BOT_TOKEN"),
           signing_secret=os.environ.get("SLACK_SIGNING_SECRET"))
 
 def slack_event_to_queue_message(slack_event: dict) -> str:
+    timestamp = float(slack_event.get("thread_ts", None) or slack_event["ts"])
+    iso_timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
+
     queue_message = {
       'id': slack_event['client_msg_id'],
-      'timestamp': slack_event.get("thread_ts", None) or slack_event["ts"], # XXX to ISO8601
+      'timestamp': iso_timestamp,
       'platform': 'SLACK',
       'from': {
                 'user': slack_event['user'],

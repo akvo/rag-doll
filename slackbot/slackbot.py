@@ -10,6 +10,7 @@ from slack_sdk import WebClient
 from slack_bolt import App, Say, BoltContext
 
 import pika
+from pika.exceptions import StreamLostError
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -66,8 +67,11 @@ def publish_reliably(queue_message: str, say: Say) -> None:
         try:
             user_chat_queue.basic_publish(exchange='', routing_key=queue_name, body=queue_message)
             return
+        except StreamLostError:
+            say(":pleading_face: oops, looks like I should reconnect first...")
+            user_chat_queue = pika_connection.channel()
         except Exception as e:
-            say(f":pleading_face: that dit not work, let me try again.\n    `{e}`")
+            say(f":pleading_face: that dit not work, let me try again.\n    `{type(e)}: {e}`")
             sleep(1)
 
 

@@ -16,15 +16,22 @@ logging.basicConfig(level=logging.DEBUG)
 
 # --- RabbitMQ Section
 
-pika_credentials = pika.PlainCredentials(os.getenv("RABBITMQ_DEFAULT_USER"), os.getenv("RABBITMQ_DEFAULT_PASS"))
-pika_parameters = pika.ConnectionParameters(os.getenv("RABBITMQ_HOST"),
-                                            int(os.getenv("RABBITMQ_PORT")),
-                                            '/', pika_credentials)
-pika_connection = pika.BlockingConnection(pika_parameters)
-user_chat_queue = pika_connection.channel()
+RABBITMQ_QUEUE_USER_CHATS=os.getenv("RABBITMQ_QUEUE_USER_CHATS")
+RABBITMQ_QUEUE_USER_CHAT_REPLIES=os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
 
-queue_name = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-user_chat_queue.queue_declare(queue=queue_name)
+def connect_and_create_queue():
+    pika_credentials = pika.PlainCredentials(os.getenv("RABBITMQ_DEFAULT_USER"), os.getenv("RABBITMQ_DEFAULT_PASS"))
+    pika_parameters = pika.ConnectionParameters(os.getenv("RABBITMQ_HOST"),
+                                                int(os.getenv("RABBITMQ_PORT")),
+                                                '/', pika_credentials)
+    pika_connection = pika.BlockingConnection(pika_parameters)
+    return pika_connection.channel()
+
+user_chat_queue = connect_and_create_queue()
+user_chat_queue.queue_declare(queue=RABBITMQ_QUEUE_USER_CHATS)
+
+user_chat_reply_queue = connect_and_create_queue()
+user_chat_reply_queue.queue_declare(queue=RABBITMQ_QUEUE_USER_CHAT_REPLIES)
 
 # --- Slack section
 
@@ -63,16 +70,22 @@ def extract_subtype(body: dict, context: BoltContext, next: Callable):
 # also inform the user of any issues we see. Not the ideal solution, but good
 # enough for now.
 def publish_reliably(queue_message: str, say: Say) -> None:
-    while True:
+    global user_chat_queue
+
+    retries = 5
+    while retries > 0:
+        retries = retries - 1
+
         try:
-            user_chat_queue.basic_publish(exchange='', routing_key=queue_name, body=queue_message)
+            user_chat_queue.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_USER_CHATS, body=queue_message)
             return
         except StreamLostError:
             say(":pleading_face: oops, looks like I should reconnect first...")
-            user_chat_queue = pika_connection.channel()
         except Exception as e:
             say(f":pleading_face: that dit not work, let me try again.\n    `{type(e)}: {e}`")
-            sleep(1)
+
+        sleep(5)
+        user_chat_queue = connect_and_create_queue()
 
 
 # https://api.slack.com/events/message

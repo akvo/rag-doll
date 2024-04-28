@@ -21,6 +21,18 @@ individual componetns.
 This demo is purely for text data, we do not demo multi-modal at this time.
 Maybe later, feel free to suggest a pull request. :-)
 
+## Deployment
+Ideally, this would be running as a single Docker compose cluster. That would be
+the simplest by far. Unfortunately, I've not had the time to dig into running
+Ollama on GPUs inside a Docker container on the Google Cloud. This is not
+trivial, so until I sorted that out I chose to split Ollama out onto its own
+machine. I thought about running it on baremetal alongside the Docker compose
+containers, but then I'd have to wade into Docker's networking weeds. A separate
+machine is just as easy.
+
+So while most of the system can be constructed using a simple `docker compose up`,
+for Ollama there is a separate installation instruction.
+
 ## Prerequisites
 
 ### Allocate GPU Instance on Google Cloud
@@ -169,3 +181,5 @@ from field (where `platform` equals `SLACK`):
 - Find a way to have chat sessions per user (based on `from`?) Now it is all one=, giant chat.
 - Make MQ messages persistent.
 - Make MQ queues durable.
+- Pika is not thread-safe, use something else.
+- Get GPU working.

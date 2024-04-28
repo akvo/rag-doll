@@ -4,6 +4,9 @@ import chromadb
 import pandas as pd
 ROW=1
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 CORPUS_PARQUET_GZ="/data-sets/corpus.parquet.gz"
 
 COL_FILENAME = 'file name'
@@ -38,7 +41,7 @@ knowledgebase_id = 0
 
 while chromadb_client == None:
     try:
-        print(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}/{CHROMADB_COLLECTION}...")
+        logging.info(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}/{CHROMADB_COLLECTION}...")
         chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
         collections = chromadb_client.list_collections()
         for coll in collections:
@@ -46,15 +49,15 @@ while chromadb_client == None:
                 chromadb_client.delete_collection(CHROMADB_COLLECTION)
         knowledgebase = chromadb_client.create_collection(name=CHROMADB_COLLECTION)
     except Exception as e:
-        print(f"unable to connect to http://{CHROMADB_HOST}:{CHROMADB_PORT}, retrying...: {e}")
+        logging.warn(f"unable to connect to http://{CHROMADB_HOST}:{CHROMADB_PORT}, retrying...: {e}")
         chromadb_client = None
         time.sleep(1)
 
 def add_chunk_to_chroma(chunk, country):
     global knowledgebase_id
 
-    print(f"=== country: {country}, length: {len(chunk)}, id: {knowledgebase_id} ==================")
-    # print('.'.join(chunk))
+    logging.info(f"=== country: {country}, length: {len(chunk)}, id: {knowledgebase_id} ==================")
+    # logging.info('.'.join(chunk))
     knowledgebase.add(
         documents=['.'.join(chunk)],
         metadatas=[{COL_COUNTRY: country}],
@@ -89,7 +92,7 @@ def build_chunks_from_sentences(row):
 
 
 corpus = pd.read_parquet(CORPUS_PARQUET_GZ)
-print(corpus.info())
+logging.info(corpus.info())
 
 corpus.apply(build_chunks_from_sentences, axis=ROW)
 

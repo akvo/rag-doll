@@ -167,4 +167,5 @@ from field (where `platform` equals `SLACK`):
 - Devise a way to stream the response from the LLM, as it is slow. Perhaps chat.update? Does Bolt have that in an easy way?
 - Add error handling, such that if there is a problem, Slackbot sends a message to an admin
 - Find a way to have chat sessions per user (based on `from`?) Now it is all one=, giant chat.
-
+- Make MQ messages persistent.
+- Make MQ queues durable.

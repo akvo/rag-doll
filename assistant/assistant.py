@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from time import sleep
 
 import pika
 
@@ -39,7 +40,7 @@ class LLM:
 
     def append_message(self, role, content):
         self.messages.append({MSG_ROLE: role, MSG_CONTENT: content})
-        # print(f"------- {self.messages}")
+        # logging.debug(f"------- {self.messages}")
 
 llm = LLM('mistral')
 
@@ -55,9 +56,6 @@ def connect_and_create_queue():
                                                 '/', pika_credentials)
     pika_connection = pika.BlockingConnection(pika_parameters)
     return pika_connection.channel()
-
-user_chat_queue = connect_and_create_queue()
-user_chat_queue.queue_declare(queue=RABBITMQ_QUEUE_USER_CHATS)
 
 user_chat_reply_queue = connect_and_create_queue()
 user_chat_reply_queue.queue_declare(queue=RABBITMQ_QUEUE_USER_CHAT_REPLIES)
@@ -84,25 +82,33 @@ def publish_reliably(queue_message: str) -> None:
             user_chat_reply_queue.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES, body=queue_message)
             return
         except Exception as e:
-            logger.warning(f"{type(e)}: {e}")
+            logging.warning(f"{type(e)}: {e}")
 
         sleep(5)
         user_chat_reply_queue = connect_and_create_queue()
 
 
 def ask_llm_and_reply(ch, method, properties, body):
-    logging.debug(f"Message received: ch: {ch}, method: {method}, properties: {properties}, body: {body}")
+    logging.info(f"Message received: ch: {ch}, method: {method}, properties: {properties}, body: {body}")
     queue_message = json.loads(body.decode('utf8'))
 
     llm_response = llm.chat(queue_message['text'])
-    logging.debug(f"LLM replied: {llm_response}")
+    logging.info(f"LLM replied: {llm_response}")
 
     publish_reliably(queue_message_and_llm_response_to_reply(queue_message, llm_response))
 
 
-user_chat_queue.basic_consume(queue=os.getenv("RABBITMQ_QUEUE_USER_CHATS"),
-                                 auto_ack=True,
-                                 on_message_callback=ask_llm_and_reply)
+while True:
+    try:
+        user_chat_queue = connect_and_create_queue()
+        user_chat_queue.queue_declare(queue=RABBITMQ_QUEUE_USER_CHATS)
 
-user_chat_queue.start_consuming()
+        user_chat_queue.basic_consume(queue=os.getenv("RABBITMQ_QUEUE_USER_CHATS"),
+                                      auto_ack=True,
+                                      on_message_callback=ask_llm_and_reply)
+
+        user_chat_queue.start_consuming()
+    except Exception as e:
+        logging.warning(f"{type(e)}: {e}")
+        sleep(5)
 

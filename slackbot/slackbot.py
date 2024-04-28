@@ -84,7 +84,6 @@ def slack_receive_runner() -> None:
         queue_message = slack_event_to_queue_message(event)
 
         publish_reliably(queue_message, say)
-        say("working on it...")
 
     slack_app.start(port=int(os.getenv('SLACK_BOT_PORT')))
 

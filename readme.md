@@ -45,6 +45,17 @@ for Ollama there is a separate installation instruction.
 
 On the GPU instance, follow the instructions here: [Running Llama 3 models locally on CPU machines](https://yang3kc.substack.com/p/running-llama-3-models-locally-on). Yes, that reads "CPU" and not "GPU", not sure what that is about.
 
+341  find . -name ollama.service
+  342  sudo vi ./system/ollama.service
+  343  systemctl daemon-reload
+  344  sudo systemctl daemon-reload
+  345  sudo systemctl restart ollama
+  346  history
+
+https://github.com/ollama/ollama/blob/main/docs/faq.md
+
+Also: `nvtop` is awesome!
+
 ### Allocate GPU Instance on Google Cloud
 Allocating a GPU instance on the Google Cloud is hard, because everyone us vying
 for the same resources. Most of the time your start request will be denied for
@@ -193,3 +204,4 @@ from field (where `platform` equals `SLACK`):
 - Make MQ queues durable.
 - Pika is not thread-safe, use something else.
 - Get GPU working.
+- Stop using root logger and only log my own items in Python

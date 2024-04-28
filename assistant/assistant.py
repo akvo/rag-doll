@@ -42,7 +42,7 @@ class LLM:
         self.messages.append({MSG_ROLE: role, MSG_CONTENT: content})
         # logging.debug(f"------- {self.messages}")
 
-llm = LLM('mistral')
+llm = LLM(os.getenv("LLM_CHAT_MODEL")
 
 # --- RabbitMQ Section
 

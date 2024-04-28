@@ -28,8 +28,8 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       OLLAMA_HOST: ${OLLAMA_HOST}
       OLLAMA_PORT: ${OLLAMA_PORT}
+      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL}
     depends_on:
-      - ollama
       - rabbitmq
     restart: unless-stopped
 
@@ -55,13 +55,6 @@ services:
       - chromadb
       - rabbitmq
     restart: unless-stopped
-
-  ollama:
-    image: ollama/ollama
-    ports:
-      - ${OLLAMA_PORT}:${OLLAMA_PORT}
-    volumes:
-      - ./ollama-data:/root/.ollama
 
   chromadb:
     image: chromadb/chroma

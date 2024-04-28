@@ -21,7 +21,17 @@ individual componetns.
 This demo is purely for text data, we do not demo multi-modal at this time.
 Maybe later, feel free to suggest a pull request. :-)
 
-## Deployment
+## Prerequisites
+This chapter gives a list of items that you should consider as you deploy the
+code from this repository.
+
+### Firewall Policies
+
+For the most reliable operation, reserve as static address the internal IP
+address of your GPU instance. That way you won't have to edit `.env` every time
+something rebooted.
+
+### Google Cloud GPU Instance for Ollama
 Ideally, this would be running as a single Docker compose cluster. That would be
 the simplest by far. Unfortunately, I've not had the time to dig into running
 Ollama on GPUs inside a Docker container on the Google Cloud. This is not
@@ -33,7 +43,7 @@ machine is just as easy.
 So while most of the system can be constructed using a simple `docker compose up`,
 for Ollama there is a separate installation instruction.
 
-## Prerequisites
+On the GPU instance, follow the instructions here: [Running Llama 3 models locally on CPU machines](https://yang3kc.substack.com/p/running-llama-3-models-locally-on). Yes, that reads "CPU" and not "GPU", not sure what that is about.
 
 ### Allocate GPU Instance on Google Cloud
 Allocating a GPU instance on the Google Cloud is hard, because everyone us vying

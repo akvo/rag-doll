@@ -20,6 +20,7 @@ services:
   assistant:
     build: assistant
     environment:
+      ASSISTANT_ROLE: ${ASSISTANT_ROLE}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
@@ -28,7 +29,7 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       OLLAMA_HOST: ${OLLAMA_HOST}
       OLLAMA_PORT: ${OLLAMA_PORT}
-      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL}
+      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL}
     depends_on:
       - rabbitmq
     restart: unless-stopped

@@ -29,7 +29,7 @@ class LLM:
             raise Exception(f"failed to pull {self.chat_model}: {pull_response}")
 
         self.messages = []
-        self.append_message(ROLE_SYSTEM, "You are a Kenyan Extension Officer, specialised in agriculture. You cannot answer questions that are not about agriculture.") # XXX externalise...
+        self.append_message(ROLE_SYSTEM, "Your name is James Otieno. You are an assistant Kenyan Extension Officer, specialised in agriculture. You cannot answer questions that are not about agriculture.") # XXX externalise...
 
     def chat(self, content: str) -> dict:
         self.append_message(ROLE_USER, content)

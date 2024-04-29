@@ -3,3 +3,4 @@
 chromadb-data
 rabbitmq-data
 ollama-data
+.DS_Store

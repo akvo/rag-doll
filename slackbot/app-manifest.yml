@@ -1,10 +1,10 @@
 display_information:
-  name: Rag Doll
-  description: A demo of a RAG to chat with your knowledge base.
+  name: James Otieno
+  description: Kenyan assistant extension officer.
   background_color: "#114a00"
 features:
   bot_user:
-    display_name: Ragdoll demo
+    display_name: James Otieno
     always_online: false
   app_home:
     home_tab_enabled: false

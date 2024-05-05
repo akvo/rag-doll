@@ -224,7 +224,28 @@ On the GPU instance, follow the instructions here: [Running Llama 3 models local
 
 https://github.com/ollama/ollama/blob/main/docs/faq.md
 
-Also: `nvtop` is awesome!
+https://colab.research.google.com/drive/1vuFjTsMA5-r_-JANgBxWyTtsOP9rlwcA?usp=sharing#scrollTo=LjQqcjdhgZQR
+
+Installation
+https://www.how2shout.com/linux/how-to-install-nvidia-drivers-on-debian-12-bookworm-linux/ but I had to fix some paths
+```sh
+$ sudo sed -i '/^deb .*main$/ s/$/ non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources
+$ sudo vi /etc/apt/sources.list.d/debian.sources
+... "Components: main" -> "Components: main contrib non-free non-free-firmware"
+$ sudo apt update && sudo apt upgrade -y
+$ sudo apt install linux-headers-$(uname -r) build-essential dkms nvtop nvidia-detect nvidia-driver python3-venv screen git python3 python3-pip
+$ sudo reboot
+$ python3 -m venv venv
+$ . venv/bin/activate
+$ pip install transformers sentencepiece protobuf torch scipy accelerate bitsandbytes
+$ python3 ulizallama.py
+```
+
+XXX Need 64GB GPU... and 32GB disk space on root Cores and RAM matter little, it seems.
+XXX It always wants to load checkpoint shards, can these be casched??
+
+XXX **Also, nvtop is awaesome!**
+
 
 ### Allocate GPU Instance on Google Cloud
 Allocating a GPU instance on the Google Cloud is hard, because everyone us vying

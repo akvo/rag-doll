@@ -1,37 +1,70 @@
 # RAG Doll
+
 Rag Doll is a chat-with-your-documents style Retrieval Augmented Generation
 (RAG), which is a specialised use of a Large Language Model (LLM) where items
-from the knowledge base get added to the prompt for better answers.
+from a knowledge base get added to the prompt for better answers.
 
-There are many RAG implementations out there and I don't proclaim this to be
-better than any of the others. What sets Rag Doll apart is the fact that it
-makes all previous chats available to the user. This feature does come with the
-downside that the chat is added to the knowledge base as fact. It will not have
-been curated or reviewed before it comes available to use in future searches.
-Rag Doll assumes good faith and good factual knowledge by all participants in
-the chat.
+There are many RAG implementations out there and I don't proclaim this one to be
+better than any of the others. Rag Doll does not support multi-modal chat at
+this time. Maybe later, feel free to suggest a pull request. :-)
 
 The implementation is mostly Python, although the heavy lifting is done by
 pre-trained machine learning models. You'll want to run this on something with a
 decent GPU, or you will find this all to be very slow. Rag Doll is broken up
 into several containers, each with a single responsibility (or as close to that
-as I could get). By containerizing, we can more easily upgrade and improve
+as I could get). Containerising makes it easier to upgrade and improve
 individual componetns.
 
-This demo is purely for text data, we do not demo multi-modal at this time.
-Maybe later, feel free to suggest a pull request. :-)
 
-## Prerequisites
+## Google Cloud Deployment
+
 This chapter gives a list of items that you should consider as you deploy the
-code from this repository.
+code from this repository. The description assumes you will be deploying to
+Google Cloud, so if you deploy on a different cloud provider you may see things
+that are different.
 
-### Firewall Policies
+I deployed Rag Doll on two virtual machines, mostly because I like to keep
+machines as boring and generic as possible. I could not get Ollama to run inside
+a Docker container, so that means I have to install it outside Docker (for now).
+On top of that, I would have had to dig into Docker networking. By default you
+cannot connect to the host from inside a Docker container. There are ways, of
+course, but I chose the quicker route. That's why I ended up with one Docker
+Compose host and one Ollama host. You can combine the two if you prefer.
 
-For the most reliable operation, reserve as static address the internal IP
-address of your GPU instance. That way you won't have to edit `.env` every time
-something rebooted.
+### Disk Space
 
-### Google Cloud GPU Instance for Ollama
+There are two things that consume a lot of disk space: cached large language
+model files and cached Docker files. The stock 10GB disks won't be large enough
+for even moderate use of Rag Doll, so you probably want to allocate 100GB
+instead. Depending on how you like to organise disks you can get extra attached
+storage or just start with larger root disks.
+
+### Reserved IP Addresses
+
+For the most reliable operation, reserve two static IP addresses for Rag Doll;
+an internal IP address for Ollama and an external IP address for the Slack API
+integration. There are other solutions, of course, but this is simple and you
+don't need to edit `.env` every time something rebooted.
+
+if you choose to run everything on the same machine, you don't need to reserve
+an internal IP address for Ollama, but you still need the external IP address
+for the Slack API integration.
+
+### Firewall Rules
+
+Slack needs to be able to connect to the `slackbot` container, on port
+`SLACK_BOT_PORT`. Set up a firewall rule with the name `allow-slackbot` that
+allows traffic to that port to connect and set the associated tag on the network
+configuration of your vistual machine that hosts the `slackbot` Docker container.
+
+### Rag Doll on a Virtual Machine
+
+
+
+### Ollama on a GPU Instance
+
+Installing Ollama on a clean GPU instance...
+
 Ideally, this would be running as a single Docker compose cluster. That would be
 the simplest by far. Unfortunately, I've not had the time to dig into running
 Ollama on GPUs inside a Docker container on the Google Cloud. This is not
@@ -185,23 +218,3 @@ user message:
 
 from field (where `platform` equals `SLACK`):
 
-## TODO
-
-- https://medium.com/@ingridwickstevens/chat-with-your-audio-locally-a-guide-to-rag-with-whisper-ollama-and-faiss-6656b0b40a68
-- image embeddings
-- https://www.youtube.com/watch?v=u_N1t0CBuqA
-- fine-tune chunking rules
-- test lemmatised text vs text as written (but then I cannot chunk on period).
-- add filename as column to parquet corpus
-- figure out how to do id's on ChromaDB
-- Figure out how to gracefully await Chroma starting instead of sleeping for a few seconds
-- Need some way to retain and add to the collection, instead of recreating every time
-- Need to figure out how to collect likes/dislikes and then attach these to the records in the vector database. By collecting these, useful answers should make it into the knowledge base and we can suppress bad answers.
-- Devise a way to stream the response from the LLM, as it is slow. Perhaps chat.update? Does Bolt have that in an easy way?
-- Add error handling, such that if there is a problem, Slackbot sends a message to an admin
-- Find a way to have chat sessions per user (based on `from`?) Now it is all one=, giant chat.
-- Make MQ messages persistent.
-- Make MQ queues durable.
-- Pika is not thread-safe, use something else.
-- Get GPU working.
-- Stop using root logger and only log my own items in Python

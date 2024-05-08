@@ -1,10 +1,10 @@
 display_information:
-  name: James Otieno
-  description: Kenyan assistant extension officer.
-  background_color: "#114a00"
+  name: CHANGEME
+  description: CHANGEME
+  background_color: "#CHANGEME"
 features:
   bot_user:
-    display_name: James Otieno
+    display_name: CHANGEME
     always_online: false
   app_home:
     home_tab_enabled: false
@@ -20,7 +20,7 @@ oauth_config:
       - mpim:history
 settings:
   event_subscriptions:
-    request_url: http://34.116.185.197:3000/slack/events
+    request_url: http://CHANGEME/slack/events
     bot_events:
       - message.channels
       - message.groups

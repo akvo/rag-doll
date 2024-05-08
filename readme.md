@@ -29,8 +29,20 @@ Most of the Slack interface code was taken from
 | `.env` | default | description |
 |---|---|---|
 | `SLACK_BOT_PORT` | 3000 | The external port used by the Bolt framework. This is where Slack's servers connect to, so open it on the firewall. |
-| `SLACK_BOT_TOKEN | _CHANGEME_ | The token for your Slack bot. |
+| `SLACK_BOT_TOKEN` | _CHANGEME_ | The token for your Slack bot. |
 | `SLACK_SIGNING_SECRET` | _CHANGEME_ | The signing secret for your Slack bot. |
+
+When installing the Slack Bot, you can use `slackbot/app-manifest.yml` as a
+template. Before using it, change the following values:
+
+| `slackbot/app-manifest.yml` | default | description |
+|---|---|---|
+| `description` | _CHANGEME_ | A brief description of the purpose of the bot. |
+| `background_color` | _CHANGEME_ | The 6-digit hex colour code for the Slack bot background. |
+| `display_name` | _CHANGEME_ | The display name of the Slack bot. This is wat people in your workspace will see. |
+| `request_url` | `http://`_CHANGEME_`/slack/events` | The external URL that Slack's servers will use to call the Slack bot component. Replace _CHANGEME_ with the external IP address you reserved for your Google Cloud VM running the components. |
+
+You will also want to upload a nice avatar image to go with your bot.
 
 
 ## Assistant
@@ -39,7 +51,7 @@ user chat queue, queries the knowledge base and builds a prompt for the LLM.
 
 | `.env` | default | description |
 |---|---|---|
-| `ASSISTANT_ROLE | _CHANGEME_ | The system prompt to the LLM. |
+| `ASSISTANT_ROLE` | _CHANGEME_ | The system prompt to the LLM. Describe the assistant's role here. |
 
 
 ## Librarian
@@ -47,6 +59,10 @@ The librarian is responsible for getting the knowledge base data into the vector
 database. It runs at startup, recreating the data set that is to be used for the
 retrieval part of the system.
 
+| `.env` | default | description |
+|---|---|---|
+| `LIBRARIAN_CORPUS` | _CHANGEME_ | The full path to a gzipped Apache Parquet file with corpus data. |
+| `LIBRARIAN_COLLECTION` | knowledge-base | The name of the ChromaDB collection where the corpus will be stored. |
 
 
 ## Ollama LLM Runtime

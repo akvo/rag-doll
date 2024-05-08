@@ -48,14 +48,6 @@ database. It runs at startup, recreating the data set that is to be used for the
 retrieval part of the system.
 
 
-## Archivist
-The archivist, like the librarian, adds data to the vector database. It reads
-the live chat data and pushes that into the vector database as additional
-reference.
-
-The archivist listens on the message queue for chat messages. 
-
-
 
 ## Ollama LLM Runtime
 We use [Ollama](https://ollama.com/) as the model run-time. Ollama makes it easy

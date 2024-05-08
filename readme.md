@@ -1,8 +1,9 @@
 # RAG Doll
 
-Rag Doll is a chat-with-your-documents style Retrieval Augmented Generation
-(RAG), which is a specialised use of a Large Language Model (LLM) where items
-from a knowledge base get added to the prompt for better answers.
+Rag Doll is a chat-with-your-documents style
+[Retrieval Augmented Generation (RAG)](https://www.youtube.com/watch?v=u47GtXwePms),
+which is a specialised use of a Large Language Model (LLM) where items from a
+knowledge base get added to the prompt for better answers.
 
 There are many RAG implementations out there and I don't proclaim this one to be
 better than any of the others. Rag Doll does not support multi-modal chat at
@@ -16,6 +17,101 @@ as I could get). Containerising makes it easier to upgrade and improve
 individual componetns.
 
 
+## Slack Bot
+
+The Slack bot is the first interface that can be used to chat with the rag doll.
+Slack is a little more convenient to use than WhatsApp and it does mostly the
+same. Good enough for a demo.
+
+Most of the Slack interface code was taken from
+[Getting started with Bolt for Python](https://seratch.github.io/bolt-python/tutorial/getting-started).
+
+| `.env` | default | description |
+|---|---|---|
+| `SLACK_BOT_PORT` | 3000 | The external port used by the Bolt framework. This is where Slack's servers connect to, so open it on the firewall. |
+| `SLACK_BOT_TOKEN | _CHANGEME_ | The token for your Slack bot. |
+| `SLACK_SIGNING_SECRET` | _CHANGEME_ | The signing secret for your Slack bot. |
+
+
+## Assistant
+The assistant handles queries to the RAG for us. It awaits messages from the
+user chat queue, queries the knowledge base and builds a prompt for the LLM.
+
+| `.env` | default | description |
+|---|---|---|
+| `ASSISTANT_ROLE | _CHANGEME_ | The system prompt to the LLM. |
+
+
+## Librarian
+The librarian is responsible for getting the knowledge base data into the vector
+database. It runs at startup, recreating the data set that is to be used for the
+retrieval part of the system.
+
+
+## Archivist
+The archivist, like the librarian, adds data to the vector database. It reads
+the live chat data and pushes that into the vector database as additional
+reference.
+
+The archivist listens on the message queue for chat messages. 
+
+
+
+## Ollama LLM Runtime
+We use [Ollama](https://ollama.com/) as the model run-time. Ollama makes it easy
+to manage multiple models, without having to handle large model files. It also
+solves the need for registration on all kinds of sites. Ollama will just pull
+the model in and cache it locally.
+
+In order for Ollama to be able to use the system's GPU (only works on Linux),
+install
+[NVidea's Container Toolkit](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image)
+first. This must run on the Docker host and not inside a container, hence the
+need to do a separate installation.
+
+If you get the error `Error response from daemon: could not select device driver "nvidia" with capabilities: [[gpu]]`, you may have forgotten to run the [configuration step of the NVIDIA Container Toolkit installation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration).
+
+Unfortunately, this ends an with error that I have so far failed to resolve:
+`Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error running hook #0: error running hook: exit status 1, stdout: , stderr: Auto-detected mode as 'legacy'
+nvidia-container-cli: initialization error: load library failed: libnvidia-ml.so.1: cannot open shared object file: no such file or directory: unknown`
+
+Maybe try: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html ?
+
+See also:
+- [Turn on GPU access with Docker Compose](https://docs.docker.com/compose/gpu-support/)
+- [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+
+
+## ChromaDB Vector Database
+The vector database takes care of embedding and semantic search on the knowledge
+base library.
+
+Rag doll uses [Chroma DB](https://www.trychroma.com/), being lightweigth and
+easy to interface with.
+
+See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#docker).
+
+
+## RabbitMQ Message Queueing
+In order to separate the Slack and WhatsApp bots, we use message queues. This
+allows us to organise and scale workloads, while having each component have only
+a single responsibility.
+
+### Queue Message Format
+
+user message:
+|---|---|---|
+|field|data type|description|
+|`id`       | string                                 | Message identification number as the originating platform knows it. |
+|`timestamp`| ISO8601 UTC                            | Message timestamp as the originating platform knows it. |
+|`platform` | enum: `SLACK`/`WHATSAPP`/`SMS`/`VOICE` | Originating platform. Intended to be able to parse the platform-specific fields. |
+|`from`     | platform-specific address              | Enough information for the originating platform to be able to route a reply to this message to where the user expects it. |
+|`text`     | UTF-8 string                           | The text as provided by the user. |
+|---|---|---|
+
+from field (where `platform` equals `SLACK`):
+
+
 ## Google Cloud Deployment
 
 This chapter gives a list of items that you should consider as you deploy the
@@ -25,11 +121,12 @@ that are different.
 
 I deployed Rag Doll on two virtual machines, mostly because I like to keep
 machines as boring and generic as possible. I could not get Ollama to run inside
-a Docker container, so that means I have to install it outside Docker (for now).
-On top of that, I would have had to dig into Docker networking. By default you
-cannot connect to the host from inside a Docker container. There are ways, of
-course, but I chose the quicker route. That's why I ended up with one Docker
-Compose host and one Ollama host. You can combine the two if you prefer.
+a Docker container due to the intricacies of GPU support for Docker containers,
+so that means I have to install it outside Docker (for now). On top of that, I
+would have had to dig into Docker networking. By default you cannot connect to
+the host from inside a Docker container. There are ways, of course, but I chose
+the quicker route. That's why I ended up with one Docker Compose host and one
+Ollama host. You can combine the two if you prefer.
 
 ### Disk Space
 
@@ -44,7 +141,7 @@ storage or just start with larger root disks.
 For the most reliable operation, reserve two static IP addresses for Rag Doll;
 an internal IP address for Ollama and an external IP address for the Slack API
 integration. There are other solutions, of course, but this is simple and you
-don't need to edit `.env` every time something rebooted.
+don't need to edit `.env` each time something has rebooted.
 
 if you choose to run everything on the same machine, you don't need to reserve
 an internal IP address for Ollama, but you still need the external IP address
@@ -59,6 +156,11 @@ configuration of your vistual machine that hosts the `slackbot` Docker container
 
 ### Rag Doll on a Virtual Machine
 
+All but one component of Rag Doll can be started with the following command:
+
+```sh
+$ docker compose up
+```
 
 
 ### Ollama on a GPU Instance

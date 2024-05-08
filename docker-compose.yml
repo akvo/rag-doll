@@ -46,17 +46,6 @@ services:
       - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
     restart: on-failure
 
-  archivist:
-    build: archivist  
-    environment:
-      CHROMADB_HOST: ${CHROMADB_HOST}
-      CHROMADB_PORT: ${CHROMADB_PORT}
-      CHROMADB_COLLECTION: ${ARCHIVIST_COLLECTION}
-    depends_on:
-      - chromadb
-      - rabbitmq
-    restart: unless-stopped
-
   chromadb:
     image: chromadb/chroma
     ports:

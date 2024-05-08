@@ -74,23 +74,11 @@ to manage multiple models, without having to handle large model files. It also
 solves the need for registration on all kinds of sites. Ollama will just pull
 the model in and cache it locally.
 
-In order for Ollama to be able to use the system's GPU (only works on Linux),
-install
-[NVidea's Container Toolkit](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image)
-first. This must run on the Docker host and not inside a container, hence the
-need to do a separate installation.
-
-If you get the error `Error response from daemon: could not select device driver "nvidia" with capabilities: [[gpu]]`, you may have forgotten to run the [configuration step of the NVIDIA Container Toolkit installation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration).
-
-Unfortunately, this ends an with error that I have so far failed to resolve:
-`Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error running hook #0: error running hook: exit status 1, stdout: , stderr: Auto-detected mode as 'legacy'
-nvidia-container-cli: initialization error: load library failed: libnvidia-ml.so.1: cannot open shared object file: no such file or directory: unknown`
-
-Maybe try: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html ?
-
-See also:
-- [Turn on GPU access with Docker Compose](https://docs.docker.com/compose/gpu-support/)
-- [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+| `.env` | default | description |
+|---|---|---|
+| `OLLAMA_HOST` | _CHANGEME_ | The IP address or DNS name of the host that runs Ollama. |
+| `OLLAMA_PORT` | 11434 | The port number on the host that runs Ollama. |
+| `OLLAMA_CHAT_MODEL` | mistral | The LLM model that is used to handle chat messages. |
 
 
 ## ChromaDB Vector Database
@@ -103,7 +91,7 @@ See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#
 
 | `.env` | default | description |
 |---|---|---|
-| `CHROMADB_HOST` | `chromadb` | The hostname of the vector database container. |
+| `CHROMADB_HOST` | chromadb | The hostname of the vector database container. |
 | `CHROMADB_HOST` | 8000 | The port that the vector database container listens on. |
 
 
@@ -127,6 +115,15 @@ user message:
 
 from field (where `platform` equals `SLACK`):
 
+| `.env` | default | description |
+|---|---|---|
+| `RABBITMQ_DEFAULT_USER` | rabbit | The user name for RabbitMQ. |
+| `RABBITMQ_DEFAULT_PASS` | _CHANGEME_ | The default password for accessing queues. Use a generated string. |
+| `RABBITMQ_QUEUE_USER_CHATS` | user-chats | The queue for chat messages that the user typed. |
+| `RABBITMQ_QUEUE_USER_CHAT_REPLIES` | user-chat-replies | The queue for chat messages that the assisant got from the LLM. |
+| `RABBITMQ_HOST` | rabbitmq | The host that RabbitMQ runs on. |
+| `RABBITMQ_PORT` | 5672 | The AMQP port of RabbitMQ. |
+| `RABBITMQ_MANAGEMENT_PORT` | 15672 | The HTTP port for the management web UI of RabbitMQ. |
 
 ## Google Cloud Deployment
 
@@ -197,8 +194,10 @@ following command:
 $ docker compose up
 ```
 
-
 ### Ollama on a GPU Instance
+
+Even though there is now an official Docker image of Ollama, I still could not
+get it running. so for now we host Ollama on its own virtual machine.
 
 Installing Ollama on a clean GPU instance...
 

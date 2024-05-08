@@ -46,6 +46,7 @@ You will also want to upload a nice avatar image to go with your bot.
 
 
 ## Assistant
+
 The assistant handles queries to the RAG for us. It awaits messages from the
 user chat queue, queries the knowledge base and builds a prompt for the LLM.
 
@@ -55,6 +56,7 @@ user chat queue, queries the knowledge base and builds a prompt for the LLM.
 
 
 ## Librarian
+
 The librarian is responsible for getting the knowledge base data into the vector
 database. It runs at startup, recreating the data set that is to be used for the
 retrieval part of the system.
@@ -66,6 +68,7 @@ retrieval part of the system.
 
 
 ## Ollama LLM Runtime
+
 We use [Ollama](https://ollama.com/) as the model run-time. Ollama makes it easy
 to manage multiple models, without having to handle large model files. It also
 solves the need for registration on all kinds of sites. Ollama will just pull
@@ -91,16 +94,21 @@ See also:
 
 
 ## ChromaDB Vector Database
-The vector database takes care of embedding and semantic search on the knowledge
-base library.
 
-Rag doll uses [Chroma DB](https://www.trychroma.com/), being lightweigth and
-easy to interface with.
+The vector database takes care of embedding and semantic search on the knowledge
+base library. Rag doll uses [Chroma DB](https://www.trychroma.com/), being
+lightweigth and easy to interface with.
 
 See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#docker).
 
+| `.env` | default | description |
+|---|---|---|
+| `CHROMADB_HOST` | `chromadb` | The hostname of the vector database container. |
+| `CHROMADB_HOST` | 8000 | The port that the vector database container listens on. |
+
 
 ## RabbitMQ Message Queueing
+
 In order to separate the Slack and WhatsApp bots, we use message queues. This
 allows us to organise and scale workloads, while having each component have only
 a single responsibility.
@@ -108,14 +116,14 @@ a single responsibility.
 ### Queue Message Format
 
 user message:
-|---|---|---|
+
 |field|data type|description|
+|---|---|---|
 |`id`       | string                                 | Message identification number as the originating platform knows it. |
 |`timestamp`| ISO8601 UTC                            | Message timestamp as the originating platform knows it. |
 |`platform` | enum: `SLACK`/`WHATSAPP`/`SMS`/`VOICE` | Originating platform. Intended to be able to parse the platform-specific fields. |
 |`from`     | platform-specific address              | Enough information for the originating platform to be able to route a reply to this message to where the user expects it. |
 |`text`     | UTF-8 string                           | The text as provided by the user. |
-|---|---|---|
 
 from field (where `platform` equals `SLACK`):
 
@@ -158,13 +166,32 @@ for the Slack API integration.
 ### Firewall Rules
 
 Slack needs to be able to connect to the `slackbot` container, on port
-`SLACK_BOT_PORT`. Set up a firewall rule with the name `allow-slackbot` that
-allows traffic to that port to connect and set the associated tag on the network
-configuration of your vistual machine that hosts the `slackbot` Docker container.
+`SLACK_BOT_PORT` (typically 3000). Set up a firewall rule with the name and
+network tag `allow-slack-bolt` that allows traffic to that port to connect and
+set the associated tag on the network configuration of your vistual machine that
+hosts the `slackbot` Docker container.
 
-### Rag Doll on a Virtual Machine
+### Rag Doll using Docker Compose on a Virtual Machine
 
-All but one component of Rag Doll can be started with the following command:
+Getting Rag Doll running is a two-step process: first set up your `.env` file.
+The repository contains a template that you can use. It has reasonably sane
+defaults for most variables. All that you have to do is add keys and passwords
+and you should be good to go.
+
+Copy the template to a file named `.env` and edit that file with your favourite
+editor. In the template, search for `CHANGEME` and replace that placeholder with
+your own key or generated password. Please do not reuse passwords from other
+places, but us a password generator. You won't have to type them, so making them
+strong is just as much and as little work as making them weak.
+
+```sh
+$ cp env.template .env
+$ vi .env
+```
+
+All variables are documented in the component documentation sections above. With
+`.env` set up, all but one component of Rag Doll can be started with the
+following command:
 
 ```sh
 $ docker compose up
@@ -228,103 +255,4 @@ $ sudo systemctl restart docker
 $ docker info --format '{{.LoggingDriver}}'
 local
 ```
-
-
-### Attach Google Cloud Storage as Disk
-Ollama will download models and these can be huge too, so you need ample disk
-space for the cached models. Here is a reminder how to attach storage as disk to
-your virtual machine instance.
-
-```sh
-$ ls -l /dev/disk/by-id/google-*
-$ sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/sdb
-$ sudo mkdir /tank
-$ sudo blkid /dev/sdb
-/dev/sdb: UUID="85acf249-c912-4f80-83da-bc6931119519" BLOCK_SIZE="4096"
-TYPE="ext4" PARTUUID="593b3b75-108f-bd41-823d-b7e87d2a04d1"
-UUID=UUID_VALUE /mnt/disks/MOUNT_DIR ext4 discard,defaults,MOUNT_OPTION 0 2
-$ sudo vi /etc/fstab
-```
-
-## Slack Bot
-The Slack bot is the first interface that can be used to chat with the rag doll.
-Slack is a little more convenient to use than WhatsApp and it does mostly the
-same. Good enough for a demo.
-
-Most of the Slack interface code was taken from
-[Getting started with Bolt for Python](https://seratch.github.io/bolt-python/tutorial/getting-started).
-
-
-## Assistant
-The assistant handles queries to the RAG for us. It awaits messages from the
-user chat queue, queries the knowledge base and builds a prompt for the LLM.
-
-
-## Librarian
-The librarian is responsible for getting the knowledge base data into the vector
-database. It runs at startup, recreating the data set that is to be used for the
-retrieval part of the system.
-
-
-## Archivist
-The archivist, like the librarian, adds data to the vector database. It reads
-the live chat data and pushes that into the vector database as additional
-reference.
-
-The archivist listens on the message queue for chat messages. 
-
-
-## Ollama LLM Runtime
-We use [Ollama](https://ollama.com/) as the model run-time. Ollama makes it easy
-to manage multiple models, without having to handle large model files. It also
-solves the need for registration on all kinds of sites. Ollama will just pull
-the model in and cache it locally.
-
-In order for Ollama to be able to use the system's GPU (only works on Linux),
-install
-[NVidea's Container Toolkit](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image)
-first. This must run on the Docker host and not inside a container, hence the
-need to do a separate installation.
-
-If you get the error `Error response from daemon: could not select device driver "nvidia" with capabilities: [[gpu]]`, you may have forgotten to run the [configuration step of the NVIDIA Container Toolkit installation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration).
-
-Unfortunately, this ends an with error that I have so far failed to resolve:
-`Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error running hook #0: error running hook: exit status 1, stdout: , stderr: Auto-detected mode as 'legacy'
-nvidia-container-cli: initialization error: load library failed: libnvidia-ml.so.1: cannot open shared object file: no such file or directory: unknown`
-
-Maybe try: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html ?
-
-See also:
-- [Turn on GPU access with Docker Compose](https://docs.docker.com/compose/gpu-support/)
-- [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-
-
-## ChromaDB Vector Database
-The vector database takes care of embedding and semantic search on the knowledge
-base library.
-
-Rag doll uses [Chroma DB](https://www.trychroma.com/), being lightweigth and
-easy to interface with.
-
-See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#docker).
-
-
-## RabbitMQ Message Queueing
-In order to separate the Slack and WhatsApp bots, we use message queues. This
-allows us to organise and scale workloads, while having each component have only
-a single responsibility.
-
-### Queue Message Format
-
-user message:
-|---|---|---|
-|field|data type|description|
-|`id`       | string                                 | Message identification number as the originating platform knows it. |
-|`timestamp`| ISO8601 UTC                            | Message timestamp as the originating platform knows it. |
-|`platform` | enum: `SLACK`/`WHATSAPP`/`SMS`/`VOICE` | Originating platform. Intended to be able to parse the platform-specific fields. |
-|`from`     | platform-specific address              | Enough information for the originating platform to be able to route a reply to this message to where the user expects it. |
-|`text`     | UTF-8 string                           | The text as provided by the user. |
-|---|---|---|
-
-from field (where `platform` equals `SLACK`):
 

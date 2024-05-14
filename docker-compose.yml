@@ -1,4 +1,22 @@
 services:
+  twiliobot:
+    build: twiliobot
+    ports:
+      - ${TWILIO_BOT_PORT}:${TWILIO_BOT_PORT}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
+      RABBITMQ_QUEUE_USER_CHAT_REPLIES: ${RABBITMQ_QUEUE_USER_CHAT_REPLIES}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_BOT_PORT: ${TWILIO_BOT_PORT}
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+
   slackbot:
     build: slackbot
     ports:

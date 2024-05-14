@@ -139,7 +139,11 @@ user message:
 |`from`     | platform-specific address              | Enough information for the originating platform to be able to route a reply to this message to where the user expects it. |
 |`text`     | UTF-8 string                           | The text as provided by the user. |
 
-from field (where `platform` equals `SLACK`):
+from field (where `platform` equals `SLACK` or `WHATSAPP`):
+
+platform Slack format...
+
+platform WhatsApp format... E.164 numbers
 
 | `.env` | default | description |
 |---|---|---|
@@ -246,12 +250,13 @@ for Ollama there is a separate installation instruction.
 
 On the GPU instance, follow the instructions here: [Running Llama 3 models locally on CPU machines](https://yang3kc.substack.com/p/running-llama-3-models-locally-on). Yes, that reads "CPU" and not "GPU", not sure what that is about.
 
-341  find . -name ollama.service
-  342  sudo vi ./system/ollama.service
-  343  systemctl daemon-reload
-  344  sudo systemctl daemon-reload
-  345  sudo systemctl restart ollama
-  346  history
+```sh
+$ find . -name ollama.service
+$ sudo vi ./system/ollama.service
+$ systemctl daemon-reload
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart ollama
+```
 
 https://github.com/ollama/ollama/blob/main/docs/faq.md
 

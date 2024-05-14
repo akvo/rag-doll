@@ -10,6 +10,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 from twilio.rest import Client
+from twilio.twiml.messaging_response import MessagingResponse
+
 from flask import Flask, request
 
 import pika
@@ -43,18 +45,18 @@ def twilio_send_runner() -> None:
             queue_message = json.loads(body.decode('utf8'))
 
             text = queue_message['text']
-            channel = queue_message['to']['channel']
-            logging.info(f"sending '{text}' to Slack channel {channel}")
+            phone = queue_message['to']['phone']
+            logging.info(f"sending '{text}' to WhatsApp number {phone}")
             response = twilio_client.messages.create(
                 from_='whatsapp:+14155238886', # XXX externalise
-                body=text,
-                to='whatsapp:+31651838192'     # XXX take from queue message
+                body=text[:1500],              # XXX chunk on paragraphs instead of [:1600]
+                to=f"whatsapp:{phone}"
             )
-            print('XXXX ' + str(response))
+            logging.warning('XXXX ' + str(response))
             if response['error']:
                 logging.error(f"Failed to send message to Slack channel {channel}: {response['error']}")
         except Exception as e:
-            logging.error(f"{type(e)} while sending message to Slack: {e}")
+            logging.error(f"{type(e)} while sending message to Twilio: {e}")
 
 
     while True:
@@ -86,34 +88,42 @@ def publish_reliably(queue_message: str) -> None:
             user_chat_queue.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_USER_CHATS, body=queue_message)
             return
         except Exception as e:
-            print(f"error publishing message: {type(e)}: {e}")
+            logging.warning(f"error publishing message: {type(e)}: {e}")
 
         sleep(5)
         user_chat_queue = connect_and_create_queue(RABBITMQ_QUEUE_USER_CHATS)
 
 
-twilio_app = Flask(__name__)
+def twilio_POST_to_queue_message(values: dict) -> str:
+    iso_timestamp = datetime.now().isoformat()
 
-GOOD_BOY_URL = (
-    "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?ixlib=rb-1.2.1"
-    "&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80"
-)
+    queue_message = {
+      'id': values['MessageSid'],
+      'timestamp': iso_timestamp,
+      'platform': 'WHATSAPP',
+      'from': {
+          'phone': values['From'].split(':')[1],
+      },
+      'text': values['Body']
+    }
+    return json.dumps(queue_message)
+
+
+twilio_app = Flask(__name__)
 
 @twilio_app.route("/whatsapp", methods=["GET", "POST"])
 def on_whatsapp_message():
     try:
-        num_media = int(request.values.get("NumMedia"))
-    except (ValueError, TypeError):
-        return "Invalid request: invalid or missing NumMedia parameter", 400
-    response = MessagingResponse()
-    if not num_media:
-        msg = response.message("Send us an image!")
-    else:
-        msg = response.message("Thanks for the image. Here's one for you!")
-        msg.media(GOOD_BOY_URL)
-    return str(response)
+        publish_reliably(twilio_POST_to_queue_message(request.values))
 
-    # XXX publish_reliably(queue_message, say)
+        logging.warning(str(request.values))
+        num_media = int(request.values.get("NumMedia"))
+    except Exception as e:
+        return f"internal error {type(e)}: {e}", 500
+    # XXX can I not respond?
+    response = MessagingResponse()
+    msg = response.message("I'll look into it...")
+    return str(response)
 
 
 # --- threads management and main program

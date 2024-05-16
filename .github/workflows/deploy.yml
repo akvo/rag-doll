@@ -20,7 +20,7 @@ jobs:
           repository: akvo/composite-actions
           token: ${{ secrets.GH_PAT }}
           path: composite-actions
-          ref: 0.0.2
+          ref: 0.0.3
 
       - name: Docker compose rebuild
         uses: ./composite-actions/.github/actions/ssh-docker-compose

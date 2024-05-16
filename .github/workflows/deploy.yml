@@ -1,0 +1,31 @@
+name: Deploy to test environment
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Checkout Akvo composite actions
+        uses: actions/checkout@v4
+        with:
+          repository: akvo/composite-actions
+          token: ${{ secrets.GH_PAT }}
+          path: composite-actions
+          ref: 0.0.2
+
+      - name: Docker compose rebuild
+        uses: ./composite-actions/.github/actions/ssh-docker-compose
+        with:
+          server-ip:  ${{ secrets.SERVER_IP }}
+          server-ssh-port:  ${{ secrets.SERVER_SSH_PORT }}
+          server-ssh-secret-key:  ${{ secrets.SERVER_SSH_SECRET_KEY }}
+          server-ssh-user:  ${{ secrets.SERVER_SSH_USER }}

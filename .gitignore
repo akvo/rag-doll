@@ -1,4 +1,6 @@
 *.swp
+*__pycache__
+*.pip
 .env
 chromadb-data
 rabbitmq-data

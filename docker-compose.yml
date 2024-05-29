@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
 
   librarian:
-    build: librarian  
+    build: librarian
     environment:
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
@@ -69,3 +69,44 @@ services:
       - "./rabbitmq-data:/var/lib/rabbitmq/mnesia/"
     restart: unless-stopped
 
+  postgres:
+    image: postgres:12-alpine
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./postgres/script:/script:ro
+      - pg-data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:8.6
+    ports:
+      - 5050:5050
+    environment:
+      - PGADMIN_LISTEN_PORT=5050
+      - PGADMIN_DEFAULT_EMAIL=dev@akvo.org
+      - PGADMIN_DEFAULT_PASSWORD=password
+    volumes:
+      - ./postgres/pgadmin4/servers.json:/pgadmin4/servers.json
+      - pg-admin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+
+  backend:
+    image: python:3.12.3
+    working_dir: /app
+    ports:
+      - 5000:8000
+    environment:
+      - DATABASE_URL=postgresql://akvo:password@postgres:5432/dev
+    command: ["./dev.sh"]
+    volumes:
+      - ./backend:/app:delegated
+    depends_on:
+      - postgres
+
+volumes:
+  pg-data:
+  pg-admin-data:

@@ -97,8 +97,6 @@ services:
   backend:
     image: python:3.12.3
     working_dir: /app
-    ports:
-      - 5000:8000
     environment:
       - DATABASE_URL=postgresql://akvo:password@postgres:5432/dev
     command: ["./dev.sh"]
@@ -106,6 +104,17 @@ services:
       - ./backend:/app:delegated
     depends_on:
       - postgres
+
+  frontend:
+    image: akvo/akvo-node-18-alpine:20230831.105309.b9593b7
+    working_dir: /app
+    ports:
+      - 3001:3000
+    command: ["./dev.sh"]
+    volumes:
+      - ./frontend:/app:delegated
+    depends_on:
+      - backend
 
 volumes:
   pg-data:

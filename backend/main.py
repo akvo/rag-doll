@@ -2,7 +2,16 @@ from typing import Union
 
 from fastapi import FastAPI
 
-app = FastAPI()
+app = FastAPI(
+    title="Rag Doll API",
+    root_path="/api",
+    description="This is a very fancy project.",
+    contact={
+        "name": "Akvo",
+        "url": "https://akvo.org",
+        "email": "dev@akvo.org",
+    },
+)
 
 
 @app.get("/")

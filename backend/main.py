@@ -14,7 +14,7 @@ app = FastAPI(
 )
 
 
-@app.get("/")
+@app.get("/health-check")
 def read_root():
     return {"Hello": "World"}
 

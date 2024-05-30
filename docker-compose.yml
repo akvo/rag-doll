@@ -72,9 +72,9 @@ services:
   postgres:
     image: postgres:12-alpine
     ports:
-      - 5432:5432
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
     environment:
-      - POSTGRES_PASSWORD=password
+      POSTGRES_PASSWORD: ${POSTGRES_PASS}
     volumes:
       - ./postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
       - ./postgres/script:/script:ro
@@ -83,11 +83,11 @@ services:
   pgadmin:
     image: dpage/pgadmin4:8.6
     ports:
-      - 5050:5050
+      - ${PGADMIN_PORT}:${PGADMIN_PORT}
     environment:
-      - PGADMIN_LISTEN_PORT=5050
-      - PGADMIN_DEFAULT_EMAIL=dev@akvo.org
-      - PGADMIN_DEFAULT_PASSWORD=password
+      PGADMIN_LISTEN_PORT: ${PGADMIN_PORT}
+      PGADMIN_DEFAULT_EMAIL: dev@akvo.org
+      PGADMIN_DEFAULT_PASSWORD: ${POSTGRES_PASS}
     volumes:
       - ./postgres/pgadmin4/servers.json:/pgadmin4/servers.json
       - pg-admin-data:/var/lib/pgadmin
@@ -98,7 +98,7 @@ services:
     image: python:3.12.3
     working_dir: /app
     environment:
-      - DATABASE_URL=postgresql://akvo:password@postgres:5432/dev
+      DATABASE_URL: postgresql://akvo:${POSTGRES_PASS}@postgres:${POSTGRES_PORT}/dev
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated
@@ -108,8 +108,10 @@ services:
   frontend:
     image: akvo/akvo-node-18-alpine:20230831.105309.b9593b7
     working_dir: /app
+    environment:
+      FRONTEND_PORT: ${FRONTEND_PORT}
     ports:
-      - 3001:3000
+      - ${FRONTEND_PORT}:${FRONTEND_PORT}
     command: ["./dev.sh"]
     volumes:
       - ./frontend:/app:delegated

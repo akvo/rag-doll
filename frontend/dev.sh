@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-yarn dev
+yarn dev -p "${FRONTEND_PORT}"

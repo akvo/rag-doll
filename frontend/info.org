@@ -1,0 +1,43 @@
+* Global Component
+****** context: ContextToken: null / token_string
+** Home Page
+****** context: ContextHomePage: login / register / verify
+**** Login Page
+****** context: ContextUser, ContextisLoggedIn
+******* Reduce when verified
+****** api:
+Login: POST /api/login | payload: phone_number | magic link via whatsapp (eg. agriconnect.akvo.org/<login_id>)
+**** Register Page
+****** api:
+POST /api/register
+**** Logged in / Home Page
+****** api:
+POST /api/login/verify | payload: login_id | return user_profile
+****** context: ContextUser
+******* Reduce when login: user_profile
+****** context: ContextToken
+******* Reduce when verify: token
+** User Setting Page
+****** context: ContextUser
+******* Reduce when logout
+******* Reduce when edit user api succeded
+****** api:
+Edit User: POST /api/user
+** Main Page
+****** context: ContextChatSession: null / (with) client_id, ContextToken
+**** Chat List Page
+****** context: ContextChatSession
+******* Reduce when start session
+****** api:
+GET /api/chat-list
+**** Chat Session
+****** context: ContextChatSession
+******* Reduce when click back
+***** Assistant
+***** Chat Message
+****** context: ContextChatSession
+****** api:
+GET /api/chat-sync
+****** websocket:
+CONNECT /api/chat-live/<client_id>
+**** Refference Page

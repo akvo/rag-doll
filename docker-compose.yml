@@ -18,7 +18,8 @@ services:
     restart: unless-stopped
 
   assistant:
-    build: assistant
+    image: python:3.12.3
+    working_dir: /app
     environment:
       ASSISTANT_ROLE: ${ASSISTANT_ROLE}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
@@ -32,18 +33,24 @@ services:
       OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL}
     depends_on:
       - rabbitmq
+    command: ["./run.sh"]
+    volumes:
+      - ./assistant:/app:delegated
     restart: unless-stopped
 
   librarian:
-    build: librarian
+    image: python:3.12.3
+    working_dir: /app
     environment:
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
       CHROMADB_COLLECTION: ${LIBRARIAN_COLLECTION}
     depends_on:
       - chromadb
+    command: ["./run.sh"]
     volumes:
       - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
+      - ./librarian:/app:delegated
     restart: on-failure
 
   chromadb:

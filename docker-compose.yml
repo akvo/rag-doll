@@ -61,7 +61,7 @@ services:
       IS_PERSISTENT: True
       ANONYMIZED_TELEMETRY: False
     volumes:
-      - ./chromadb-data:/chroma/chroma
+      - chromadb-data:/chroma/chroma
     restart: unless-stopped
 
   rabbitmq:
@@ -73,7 +73,7 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
-      - "./rabbitmq-data:/var/lib/rabbitmq/mnesia/"
+      - rabbitmq-data:/var/lib/rabbitmq/mnesia/
     restart: unless-stopped
 
   postgres:
@@ -130,3 +130,5 @@ services:
 volumes:
   pg-data:
   pg-admin-data:
+  rabbitmq-data:
+  chromadb-data:

@@ -106,6 +106,7 @@ services:
     working_dir: /app
     environment:
       DATABASE_URL: postgresql://akvo:${POSTGRES_PASS}@postgres:${POSTGRES_PORT}/dev
+      BACKEND_PORT: ${BACKEND_PORT}
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated
@@ -117,6 +118,7 @@ services:
     working_dir: /app
     environment:
       FRONTEND_PORT: ${FRONTEND_PORT}
+      BACKEND_PORT: ${BACKEND_PORT}
     ports:
       - ${FRONTEND_PORT}:${FRONTEND_PORT}
     command: ["./dev.sh"]

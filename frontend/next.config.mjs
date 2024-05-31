@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 /** @type {import('next').NextConfig} */
 
-dotenv.config();
+const env = dotenv.config();
+const backend_port = env.parsed.BACKEND_PORT;
 
 const nextConfig = {
   output: "export",
@@ -9,7 +10,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://backend:5000/api/:path*", // Proxy to Backend
+        destination: `http://backend:${backend_port}/api/:path*`, // Proxy to Backend
       },
     ];
   },

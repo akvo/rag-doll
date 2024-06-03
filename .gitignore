@@ -2,7 +2,4 @@
 *__pycache__
 *.pip
 .env
-chromadb-data
-rabbitmq-data
-ollama-data
 .DS_Store

@@ -132,6 +132,11 @@ from field (where `platform` equals `SLACK`):
 
 The backend of this project is built using [FastAPI](https://fastapi.tiangolo.com/), a modern and high-performance web framework for building APIs with Python 3.12.3. The backend communicates with a PostgreSQL database to manage and store application data. The PostgreSQL database is initialized with predefined scripts located in the ./postgres/docker-entrypoint-initdb.d directory, ensuring that the database schema and initial data are set up automatically. Additionally, a PgAdmin4 service is provided to offer a user-friendly interface for managing the PostgreSQL database. PgAdmin4 is configured to run on port 5050 and can be accessed using the default credentials specified in the environment variables.
 
+| `.env` | default | description |
+|---|---|---|
+| `BACKEND_PORT` | 5000 | The external port used by the Backend |
+| `JWT_SECRET` | _CHANGEME_ | JWT-based auth secret key, used in the process of signing a token |
+
 ### Frontend (Next JS)
 
 The frontend of this project is developed using [React with Next.js](https://react.dev/learn/start-a-new-react-project#nextjs-pages-router). In the development environment, the frontend and backend services are configured to facilitate efficient and streamlined development. The frontend, built with React and Next.js, communicates with the backend API using a proxy setup defined in the next.config.js file. This configuration rewrites requests matching the pattern /api/:path* to be forwarded to the backend service at http://backend:5000/api/:path*. This proxy setup simplifies the API call structure during development, allowing developers to interact with the backend as if it were part of the same application.

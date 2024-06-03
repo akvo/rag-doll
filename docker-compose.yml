@@ -15,7 +15,6 @@ services:
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
     depends_on:
       - rabbitmq
-    restart: unless-stopped
 
   assistant:
     image: python:3.12.3
@@ -36,7 +35,6 @@ services:
     command: ["./run.sh"]
     volumes:
       - ./assistant:/app:delegated
-    restart: unless-stopped
 
   librarian:
     image: python:3.12.3
@@ -51,7 +49,6 @@ services:
     volumes:
       - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
       - ./librarian:/app:delegated
-    restart: on-failure
 
   chromadb:
     image: chromadb/chroma
@@ -62,7 +59,6 @@ services:
       ANONYMIZED_TELEMETRY: False
     volumes:
       - chromadb-data:/chroma/chroma
-    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:management
@@ -74,7 +70,6 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq/mnesia/
-    restart: unless-stopped
 
   postgres:
     image: postgres:12-alpine
@@ -107,6 +102,7 @@ services:
     environment:
       DATABASE_URL: postgresql://akvo:${POSTGRES_PASS}@postgres:${POSTGRES_PORT}/dev
       BACKEND_PORT: ${BACKEND_PORT}
+      JWT_SECRET: ${JWT_SECRET}
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated

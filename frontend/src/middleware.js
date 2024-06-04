@@ -4,7 +4,7 @@ const protectedRoutes = ["/", "/settings", "/chats"];
 const authRoutes = ["/login"];
 // const publicRoutes = ["/register", "/verify"];
 
-export function middleware(request) {
+export const middleware = (request) => {
   const authToken = request.cookies.get("AUTH_TOKEN")?.value;
 
   if (
@@ -20,4 +20,4 @@ export function middleware(request) {
   if (authRoutes.includes(request.nextUrl.pathname) && authToken) {
     return NextResponse.redirect(new URL("/", request.url));
   }
-}
+};

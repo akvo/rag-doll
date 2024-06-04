@@ -6,7 +6,7 @@ const Register = () => {
       <form className="space-y-6" action="#" method="POST">
         <div>
           <label
-            for="name"
+            htmlFor="name"
             className="block text-sm font-medium leading-6 text-gray-900"
           >
             Name
@@ -16,7 +16,7 @@ const Register = () => {
               id="name"
               name="name"
               type="name"
-              autocomplete="name"
+              autoComplete="name"
               required
               className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             />
@@ -25,17 +25,17 @@ const Register = () => {
 
         <div>
           <label
-            for="phone_number"
+            htmlFor="phone"
             className="block text-sm font-medium leading-6 text-gray-900"
           >
             Phone Number
           </label>
           <div className="mt-2">
             <input
-              id="phone_number"
-              name="phone_number"
-              type="phone_number"
-              autocomplete="phone_number"
+              id="phone"
+              name="phone"
+              type="phone"
+              autoComplete="phone"
               required
               className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             />

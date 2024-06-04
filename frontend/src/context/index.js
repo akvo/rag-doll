@@ -1,1 +1,1 @@
-export { default as TokenContextProvider } from "./TokenContextProvider";
+export { default as AuthContextProvider } from "./AuthContextProvider";

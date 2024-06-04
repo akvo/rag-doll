@@ -4,6 +4,11 @@ import { createContext, useContext, useReducer } from "react";
 const AuthContext = createContext(null);
 const AuthDispatchContext = createContext(null);
 
+const initialAuthState = {
+  token: null,
+  isLogin: false,
+};
+
 const authReducer = (state, action) => {
   switch (action.type) {
     case "UPDATE":
@@ -12,16 +17,17 @@ const authReducer = (state, action) => {
         token: action.payload.token,
         isLogin: action.payload.isLogin,
       };
+    case "DELETE":
+      return initialAuthState;
     default:
-      throw Error(`Unknown action: ${action.type}`);
+      throw Error(
+        `Unknown action: ${action.type}. Remeber action type must be CAPITAL text.`
+      );
   }
 };
 
 const AuthContextProvider = ({ children }) => {
-  const [auth, dispatch] = useReducer(authReducer, {
-    token: null,
-    isLogin: false,
-  });
+  const [auth, dispatch] = useReducer(authReducer, initialAuthState);
 
   return (
     <AuthContext.Provider value={auth}>

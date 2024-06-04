@@ -8,7 +8,9 @@ const authReducer = (state, action) => {
   switch (action.type) {
     case "UPDATE":
       return {
+        ...state,
         token: action.payload.token,
+        isLogin: action.payload.isLogin,
       };
     default:
       throw Error(`Unknown action: ${action.type}`);
@@ -16,7 +18,10 @@ const authReducer = (state, action) => {
 };
 
 const AuthContextProvider = ({ children }) => {
-  const [auth, dispatch] = useReducer(authReducer, { token: null });
+  const [auth, dispatch] = useReducer(authReducer, {
+    token: null,
+    isLogin: false,
+  });
 
   return (
     <AuthContext.Provider value={auth}>

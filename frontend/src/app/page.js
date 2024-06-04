@@ -5,22 +5,22 @@ import { useAuthContext, useAuthDispatch } from "@/context/AuthContextProvider";
 
 const Home = () => {
   const auth = useAuthContext();
-  const authDispatch = useAuthDispatch();
+  // const authDispatch = useAuthDispatch();
 
-  useEffect(() => {
-    if (!auth.token) {
-      authDispatch({
-        type: "UPDATE",
-        payload: {
-          token: "JWT",
-        },
-      });
-    }
-  }, [auth.token]);
+  // useEffect(() => {
+  //   if (!auth.isLogin) {
+  //     authDispatch({
+  //       type: "UPDATE",
+  //       payload: {
+  //         token: "JWT",
+  //       },
+  //     });
+  //   }
+  // }, [auth.isLogins]);
 
   console.log(auth, "AUTH");
 
-  return <h1>Home / Login page</h1>;
+  return <h1>Home page</h1>;
 };
 
 export default Home;

@@ -9,10 +9,6 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/login",
-        destination: "/",
-      },
-      {
         source: "/api/:path*",
         destination: `http://backend:${backend_port}/api/:path*`, // Proxy to Backend
       },

@@ -1,6 +1,4 @@
-// import styles from "./page.module.css";
 "use client";
-import { useEffect } from "react";
 import { useAuthContext, useAuthDispatch } from "@/context/AuthContextProvider";
 
 const Home = () => {
@@ -20,7 +18,7 @@ const Home = () => {
 
   console.log(auth, "AUTH");
 
-  return <h1>Home page</h1>;
+  return <h1 className="text-3xl font-bold underline">Home page</h1>;
 };
 
 export default Home;

@@ -1,9 +1,7 @@
-FROM python:slim
+FROM python:3.12.3
 
-RUN apt update && apt install -y build-essential
-RUN pip install pandas pyarrow chromadb
+WORKDIR /usr/src/app
 
-COPY librarian.py /app/
+COPY . .
 
-CMD /usr/local/bin/python /app/librarian.py
-
+CMD ["sh", "run.sh"]

@@ -1,8 +1,7 @@
-FROM python:slim
+FROM python:3.12.3
 
-RUN pip install pika ollama
+WORKDIR /usr/src/app
 
-COPY assistant.py /app/
+COPY . .
 
-CMD /usr/local/bin/python /app/assistant.py
-
+CMD ["sh", "run.sh"]

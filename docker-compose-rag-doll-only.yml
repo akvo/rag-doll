@@ -15,7 +15,6 @@ services:
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
     depends_on:
       - rabbitmq
-    restart: unless-stopped
 
   assistant:
     build: assistant
@@ -32,7 +31,6 @@ services:
       OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL}
     depends_on:
       - rabbitmq
-    restart: unless-stopped
 
   librarian:
     build: librarian
@@ -44,7 +42,6 @@ services:
       - chromadb
     volumes:
       - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
-    restart: on-failure
 
   chromadb:
     image: chromadb/chroma
@@ -55,7 +52,6 @@ services:
       ANONYMIZED_TELEMETRY: False
     volumes:
       - ./chromadb-data:/chroma/chroma
-    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:management
@@ -67,4 +63,3 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
       - "./rabbitmq-data:/var/lib/rabbitmq/mnesia/"
-    restart: unless-stopped

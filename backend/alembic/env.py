@@ -1,81 +1,84 @@
-import os
-import sys
-import logging
-
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool, create_engine, text
-from models.user import SQLModel
-from psycopg2 import DatabaseError
-
 from alembic import context
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(BASE_DIR)
+from sqlalchemy import engine_from_config, pool
+from core.database import get_db_url
+from sqlmodel import SQLModel
+from models import User, Chat  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# overwrite sqlalchemy.url path with local environment
-# check docker-compose.yml
-DATABASE_URL = os.environ["DATABASE_URL"]
-DATABASE_URL = DATABASE_URL.replace("%", "%%")
-
-# sets up loggers
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
+# add your model's MetaData object here
+# for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
+# target_metadata = None
+
 target_metadata = SQLModel.metadata
-logger = logging.getLogger("alembic.env")
+
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
 
 
 def run_migrations_offline():
-    """
-    Run migrations in 'offline' mode.
-    """
-    if os.environ.get("TESTING"):
-        raise DatabaseError("Test migrations offline is not permitted.")
+    """Run migrations in 'offline' mode.
 
-    context.configure(url=str(DATABASE_URL))
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
+    url = get_db_url()
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        compare_type=True,
+    )
+
     with context.begin_transaction():
         context.run_migrations()
 
 
 def run_migrations_online():
-    """
-    Run migrations in 'online' mode
-    """
-    TESTING = os.environ.get("TESTING")
-    DB_URL = f"{DATABASE_URL}_test" if TESTING else DATABASE_URL
-    # handle testing config for migrations
-    if TESTING:
-        # connect to primary db
-        default_engine = create_engine(
-            DATABASE_URL, isolation_level="AUTOCOMMIT"
-        )
-        # drop testing db if it exists and create a fresh one
-        with default_engine.connect() as default_conn:
-            default_conn.execute(text(f"DROP DATABASE IF EXISTS {DB_URL}"))
-            default_conn.execute(text(f"CREATE DATABASE {DB_URL}"))
-    connectable = config.attributes.get("connection", None)
-    config.set_main_option("sqlalchemy.url", DB_URL)
+    """Run migrations in 'online' mode.
 
-    if connectable is None:
-        connectable = engine_from_config(
-            config.get_section(config.config_ini_section),
-            prefix="sqlalchemy.",
-            poolclass=pool.NullPool,
-        )
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = get_db_url()
+    connectable = engine_from_config(
+        configuration,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=None)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+        )
+
         with context.begin_transaction():
             context.run_migrations()
 
 
 if context.is_offline_mode():
-    logger.info("Running migrations offline")
     run_migrations_offline()
 else:
-    logger.info("Running migrations online")
     run_migrations_online()

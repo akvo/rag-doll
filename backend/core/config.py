@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from sqlmodel import Session, select
-from core.database import create_db_and_tables, engine
-from models.user import User
+
+# from sqlmodel import Session, select
+# from core.database import engine
+# from models import User
 from routes import user_routes
 
 app = FastAPI(
@@ -19,23 +20,23 @@ app = FastAPI(
     },
 )
 
-app.include_router(user_routes.router, prefix="/users", tags=["users"])
+app.include_router(user_routes.router, tags=["auth"])
 
 
 @app.on_event("startup")
 def on_startup():
-    create_db_and_tables()
-    with Session(engine) as session:
-        users = session.exec(select(User)).all()
-        if not users:
-            user = User(
-                phone_number=1234567890,
-                login_link="",
-            )
-            session.add(user)
-            session.commit()
+    pass
+    # with Session(engine) as session:
+    #     users = session.exec(select(User)).all()
+    #     if not users:
+    #         user = User(
+    #             username="admin",
+    #             phone_number=1234567890,
+    #         )
+    #         session.add(user)
+    #         session.commit()
 
 
-@app.get("/health-check")
+@app.get("/health-check", tags=["dev"])
 def read_root():
     return {"Hello": "World"}

@@ -1,13 +1,15 @@
+from os import environ
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Session, select
 from uuid import uuid4
 from datetime import timedelta
 
-from models.user import User
+from models import User
 from utils.jwt_handler import create_jwt_token
 from core.database import engine
 
 router = APIRouter()
+webdomain = environ.get("WEBDOMAIN")
 
 
 @router.post("/login")
@@ -24,7 +26,7 @@ async def send_login_link(phone_number: int):
         # TODO: Implement this function to send WhatsApp messages
         send_whatsapp_message(phone_number, user.login_link)
         # return {"message": "Login link sent via WhatsApp"}
-        return {"token": user.login_link}
+        return {"redirect": f"{webdomain}/verify/{user.login_link}"}
 
 
 @router.get("/verify")

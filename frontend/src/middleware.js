@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-const protectedRoutes = ["/", "/settings", "/chats"];
+// const protectedRoutes = ["/", "/settings", "/chats"];
+const protectedRoutes = [];
 const authRoutes = ["/login"];
 // const publicRoutes = ["/register", "/verify"];
 

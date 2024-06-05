@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from core.database import get_db_url
 from sqlmodel import SQLModel
-from models import User, Chat  # noqa
+from models import User, Client, Chat  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -40,9 +40,9 @@ def run_migrations_offline():
     script output.
 
     """
-    url = get_db_url()
+    db_url = get_db_url()
     context.configure(
-        url=url,
+        url=db_url,
         target_metadata=target_metadata,
         literal_binds=True,
         compare_type=True,

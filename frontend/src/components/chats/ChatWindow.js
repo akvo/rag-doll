@@ -9,6 +9,10 @@ const ChatWindow = () => {
 
   const textareaRef = useRef(null);
   const [message, setMessage] = useState("");
+  const [aiMessages, setAiMessages] = useState([
+    "AI suggested message...",
+    "AI suggested message...",
+  ]);
 
   const handleInput = (event) => {
     const textarea = textareaRef.current;
@@ -73,20 +77,39 @@ const ChatWindow = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-scroll">
-        <div className="flex mb-4">
-          <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-            <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-            <p>Hello! Lorem ipsum sit dolor</p>
-            <p className="text-right text-xs text-gray-400 mt-2">10:00 AM</p>
+      <div className="flex flex-col h-screen">
+        {/* User Messages */}
+        <div className="flex-1 p-4 overflow-y-scrol">
+          <div className="flex mb-4">
+            <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+              <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+              <p>Hello! Lorem ipsum sit dolor</p>
+              <p className="text-right text-xs text-gray-400 mt-2">10:00 AM</p>
+            </div>
+          </div>
+          {/* Sent message */}
+          <div className="flex mb-4 justify-end">
+            <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+              <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+              <p>Hello! How are you?</p>
+              <p className="text-right text-xs text-gray-200 mt-2">10:01 AM</p>
+            </div>
           </div>
         </div>
-        {/* Sent message */}
-        <div className="flex mb-4 justify-end">
-          <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-            <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-            <p>Hello! How are you?</p>
-            <p className="text-right text-xs text-gray-200 mt-2">10:01 AM</p>
+
+        {/* AI Messages */}
+        <div className="flex-1 p-4 overflow-y-scroll">
+          <div className="bg-gray-400 p-4 h-full rounded">
+            {aiMessages.map((aiMessage, index) => (
+              <div key={index} className="flex mb-4">
+                <div className="relative bg-blue-500 text-white p-4 rounded-lg shadow-lg w-full">
+                  <p>{aiMessage}</p>
+                  <p className="text-right text-xs text-gray-200 mt-2">
+                    AI - {new Date().toLocaleTimeString()}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

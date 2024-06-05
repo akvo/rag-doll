@@ -1,12 +1,8 @@
 import enum
 from datetime import datetime
 from sqlalchemy import Column, DateTime
-from sqlmodel import Field, SQLModel, Relationship
-from typing import Optional, TYPE_CHECKING
-
-
-if TYPE_CHECKING:
-    from .user import User  # Import for type checking only
+from sqlmodel import Field, SQLModel
+from typing import Optional
 
 
 class MessageStatus(str, enum.Enum):
@@ -23,5 +19,3 @@ class Chat(SQLModel, table=True):
     created_at: datetime = Field(
         sa_column=Column(DateTime, default=datetime.utcnow)
     )
-    user: "User" = Relationship(back_populates="chats")
-    client: Optional["User"] = Relationship(back_populates="client_chats")

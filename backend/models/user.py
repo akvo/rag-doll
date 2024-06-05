@@ -1,7 +1,6 @@
 import enum
 from sqlalchemy import Column, String, BigInteger
-from sqlmodel import Field, SQLModel, Relationship
-from .chat import Chat
+from sqlmodel import Field, SQLModel
 
 
 class UserRoles(enum.Enum):
@@ -23,5 +22,3 @@ class User(SQLModel, table=True):
     role: UserRoles = UserRoles.USER
     login_link: str | None = None
     device_token: str | None = None
-    chats: list[Chat] = Relationship(back_populates="user")
-    client_chats: list[Chat] = Relationship(back_populates="client")

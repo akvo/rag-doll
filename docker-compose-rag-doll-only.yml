@@ -17,8 +17,7 @@ services:
       - rabbitmq
 
   assistant:
-    image: python:3.12.3
-    working_dir: /app
+    build: assistant
     environment:
       ASSISTANT_ROLE: ${ASSISTANT_ROLE}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
@@ -32,23 +31,17 @@ services:
       OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL}
     depends_on:
       - rabbitmq
-    command: ["./run.sh"]
-    volumes:
-      - ./assistant:/app:delegated
 
   librarian:
-    image: python:3.12.3
-    working_dir: /app
+    build: librarian
     environment:
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
       CHROMADB_COLLECTION: ${LIBRARIAN_COLLECTION}
     depends_on:
       - chromadb
-    command: ["./run.sh"]
     volumes:
       - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
-      - ./librarian:/app:delegated
 
   chromadb:
     image: chromadb/chroma
@@ -58,7 +51,7 @@ services:
       IS_PERSISTENT: True
       ANONYMIZED_TELEMETRY: False
     volumes:
-      - chromadb-data:/chroma/chroma
+      - ./chromadb-data:/chroma/chroma
 
   rabbitmq:
     image: rabbitmq:management
@@ -69,63 +62,4 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
-      - rabbitmq-data:/var/lib/rabbitmq/mnesia/
-
-  postgres:
-    image: postgres:12-alpine
-    ports:
-      - ${POSTGRES_PORT}:${POSTGRES_PORT}
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASS}
-    volumes:
-      - ./postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-      - ./postgres/script:/script:ro
-      - pg-data:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4:8.6
-    ports:
-      - ${PGADMIN_PORT}:${PGADMIN_PORT}
-    environment:
-      PGADMIN_LISTEN_PORT: ${PGADMIN_PORT}
-      PGADMIN_DEFAULT_EMAIL: dev@akvo.org
-      PGADMIN_DEFAULT_PASSWORD: ${POSTGRES_PASS}
-    volumes:
-      - ./postgres/pgadmin4/servers.json:/pgadmin4/servers.json
-      - pg-admin-data:/var/lib/pgadmin
-    depends_on:
-      - postgres
-
-  backend:
-    image: python:3.12.3
-    working_dir: /app
-    environment:
-      DATABASE_URL: postgresql://akvo:${POSTGRES_PASS}@postgres:${POSTGRES_PORT}/dev
-      BACKEND_PORT: ${BACKEND_PORT}
-      JWT_SECRET: ${JWT_SECRET}
-      WEBDOMAIN: "http://localhost:${FRONTEND_PORT}"
-    command: ["./dev.sh"]
-    volumes:
-      - ./backend:/app:delegated
-    depends_on:
-      - postgres
-
-  frontend:
-    image: akvo/akvo-node-18-alpine:20230831.105309.b9593b7
-    working_dir: /app
-    environment:
-      FRONTEND_PORT: ${FRONTEND_PORT}
-      BACKEND_PORT: ${BACKEND_PORT}
-    ports:
-      - ${FRONTEND_PORT}:${FRONTEND_PORT}
-    command: ["./dev.sh"]
-    volumes:
-      - ./frontend:/app:delegated
-    depends_on:
-      - backend
-
-volumes:
-  pg-data:
-  pg-admin-data:
-  rabbitmq-data:
-  chromadb-data:
+      - "./rabbitmq-data:/var/lib/rabbitmq/mnesia/"

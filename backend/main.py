@@ -1,24 +1,8 @@
-from typing import Union
+import uvicorn
+from os import environ
+from core.config import app
 
-from fastapi import FastAPI
+BACKEND_PORT = environ.get("BACKEND_PORT", 5000)
 
-app = FastAPI(
-    title="Rag Doll API",
-    root_path="/api",
-    description="This is a very fancy project.",
-    contact={
-        "name": "Akvo",
-        "url": "https://akvo.org",
-        "email": "dev@akvo.org",
-    },
-)
-
-
-@app.get("/health-check")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+if __name__ == "__main__":
+    uvicorn.run(app)

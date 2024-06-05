@@ -15,19 +15,54 @@
 
 * List of Database
 
-#+name: List of Database
+#+name: List of Table
 #+begin_src sql
-\l
+\d
 #+end_src
 
-#+RESULTS[c17eda74d19c6f0bae09200bfff7efd88eb6bde0]: List of Database
-| List of databases     |          |          |             |             |            |                 |                   |
-|-----------------------+----------+----------+-------------+-------------+------------+-----------------+-------------------|
-| Name                  | Owner    | Encoding | Collate     | Ctype       | ICU Locale | Locale Provider | Access privileges |
-| dev                   | akvo     | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |                   |
-| dev_test              | akvo     | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |                   |
-| postgres              | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            |                   |
-| template0             | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            | =c/postgres       |
-| postgres=CTc/postgres |          |          |             |             |            |                 |                   |
-| template1             | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            | =c/postgres       |
-| postgres=CTc/postgres |          |          |             |             |            |                 |                   |
+#+RESULTS[136795287af44579a6b45d54289bcac05a5f20fa]: List of Database
+| List of relations |                 |          |       |
+|-------------------+-----------------+----------+-------|
+| Schema            | Name            | Type     | Owner |
+| public            | alembic_version | table    | akvo  |
+| public            | chat            | table    | akvo  |
+| public            | chat_id_seq     | sequence | akvo  |
+| public            | user            | table    | akvo  |
+| public            | user_id_seq     | sequence | akvo  |
+
+
+#+name: User
+#+begin_src sql
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_name = 'user'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[8b2e7fe89fa9ce3fd75b2a8788bea1ed8c539e52]: User
+| column_name  | data_type         |
+|--------------+-------------------|
+| id           | integer           |
+| username     | character varying |
+| email        | character varying |
+| phone_number | bigint            |
+| role         | USER-DEFINED      |
+| login_link   | character varying |
+
+#+name: Chat
+#+begin_src sql
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_name = 'chat'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[6036314406e2035650893715bffc2504705b9bbd]: Chat
+| column_name | data_type                   |
+|-------------+-----------------------------|
+| id          | integer                     |
+| user_id     | integer                     |
+| client_id   | integer                     |
+| message     | character varying           |
+| status      | USER-DEFINED                |
+| created_at  | timestamp without time zone |

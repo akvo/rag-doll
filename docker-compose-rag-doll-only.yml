@@ -1,0 +1,70 @@
+services:
+  slackbot:
+    build: slackbot
+    ports:
+      - ${SLACK_BOT_PORT}:${SLACK_BOT_PORT}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
+      RABBITMQ_QUEUE_USER_CHAT_REPLIES: ${RABBITMQ_QUEUE_USER_CHAT_REPLIES}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SLACK_BOT_PORT: ${SLACK_BOT_PORT}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+
+  assistant:
+    build: assistant
+    environment:
+      ASSISTANT_ROLE: ${ASSISTANT_ROLE}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
+      RABBITMQ_QUEUE_USER_CHAT_REPLIES: ${RABBITMQ_QUEUE_USER_CHAT_REPLIES}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      OLLAMA_HOST: ${OLLAMA_HOST}
+      OLLAMA_PORT: ${OLLAMA_PORT}
+      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL}
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+
+  librarian:
+    build: librarian
+    environment:
+      CHROMADB_HOST: ${CHROMADB_HOST}
+      CHROMADB_PORT: ${CHROMADB_PORT}
+      CHROMADB_COLLECTION: ${LIBRARIAN_COLLECTION}
+    depends_on:
+      - chromadb
+    volumes:
+      - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
+    restart: on-failure
+
+  chromadb:
+    image: chromadb/chroma
+    ports:
+      - ${CHROMADB_PORT}:${CHROMADB_PORT}
+    environment:
+      IS_PERSISTENT: True
+      ANONYMIZED_TELEMETRY: False
+    volumes:
+      - ./chromadb-data:/chroma/chroma
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - ${RABBITMQ_PORT}:${RABBITMQ_PORT}
+      - ${RABBITMQ_MANAGEMENT_PORT}:${RABBITMQ_MANAGEMENT_PORT}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - "./rabbitmq-data:/var/lib/rabbitmq/mnesia/"
+    restart: unless-stopped

@@ -89,25 +89,10 @@ const ChatWindow = () => {
             <p className="text-right text-xs text-gray-200 mt-2">10:01 AM</p>
           </div>
         </div>
-        {/* Repeat for other messages */}
-        <div className="flex mb-4">
-          <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-            <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-            <p>I'm doing great, thank you!</p>
-            <p className="text-right text-xs text-gray-400 mt-2">10:02 AM</p>
-          </div>
-        </div>
-        <div className="flex mb-4 justify-end">
-          <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-            <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-            <p>That's great to hear!</p>
-            <p className="text-right text-xs text-gray-200 mt-2">10:03 AM</p>
-          </div>
-        </div>
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-white border-t flex items-center">
+      <div className="p-4 bg-white border-t flex items-center mb-[65px]">
         <textarea
           ref={textareaRef}
           value={message}

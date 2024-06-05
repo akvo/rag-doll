@@ -30,7 +30,7 @@ async def send_login_link(
     return f"{webdomain}/verify/{user.login_link}"
 
 
-@router.get("/verify")
+@router.get("/verify/{login_link:path}")
 async def verify_login_link(
     login_link: str, session: Session = Depends(get_session)
 ):

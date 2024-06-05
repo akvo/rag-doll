@@ -1,8 +1,10 @@
 import jwt
 from os import environ
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 from typing import Optional
+
+tz = timezone.utc
 
 # JWT Secret
 JWT_SECRET = environ.get("JWT_SECRET")
@@ -13,9 +15,9 @@ JWT_ALGORITHM = "HS256"
 def create_jwt_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(tz) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(hours=2)
+        expire = datetime.now(tz) + timedelta(hours=2)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt

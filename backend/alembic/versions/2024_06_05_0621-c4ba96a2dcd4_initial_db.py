@@ -34,9 +34,6 @@ def upgrade() -> None:
         sa.Column(
             "login_link", sqlmodel.sql.sqltypes.AutoString(), nullable=True
         ),
-        sa.Column(
-            "device_token", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email"),
         sa.UniqueConstraint("phone_number"),

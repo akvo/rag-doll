@@ -21,4 +21,3 @@ class User(SQLModel, table=True):
     )
     role: UserRoles = UserRoles.USER
     login_link: str | None = None
-    device_token: str | None = None

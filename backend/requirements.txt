@@ -5,3 +5,4 @@ SQLAlchemy==2.0.30
 psycopg2==2.9.9
 sqlmodel==0.0.18
 black==24.4.2
+pytest==8.2.2

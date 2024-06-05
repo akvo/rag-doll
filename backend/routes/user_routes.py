@@ -27,7 +27,7 @@ async def send_login_link(
     # TODO: Implement this function to send WhatsApp messages
     send_whatsapp_message(phone_number, user.login_link)
     # return {"message": "Login link sent via WhatsApp"}
-    return {"redirect": f"{webdomain}/verify/{user.login_link}"}
+    return f"{webdomain}/verify/{user.login_link}"
 
 
 @router.get("/verify")

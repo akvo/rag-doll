@@ -25,20 +25,6 @@ app.include_router(user_routes.router, tags=["auth"])
 app.include_router(chat_routes.router, tags=["chat"])
 
 
-@app.on_event("startup")
-def on_startup():
-    pass
-    # with Session(engine) as session:
-    #     users = session.exec(select(User)).all()
-    #     if not users:
-    #         user = User(
-    #             username="admin",
-    #             phone_number=1234567890,
-    #         )
-    #         session.add(user)
-    #         session.commit()
-
-
 @app.get("/health-check", tags=["dev"])
 def read_root():
     return {"Hello": "World"}

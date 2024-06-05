@@ -41,7 +41,7 @@ const ChatList = () => {
             <div
               key={x}
               className="p-4 border-b border-gray-200 cursor-pointer"
-              onClick={(x) => handleOnClickChat(x)}
+              onClick={() => handleOnClickChat(x)}
             >
               <div className="flex items-center">
                 <img

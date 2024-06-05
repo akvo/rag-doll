@@ -1,9 +1,30 @@
+"use client";
+
+import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
+
 const ChatTabs = () => {
+  const { clientId } = useChatContext();
+  const chatDispatch = useChatDispatch();
+
+  const handleOnClickChat = () => {
+    chatDispatch({
+      type: "UPDATE",
+      payload: {
+        clientId: null,
+      },
+    });
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-center items-center space-x-20 h-16">
-          <button className="flex flex-col items-center px-4 py-2 text-green-500 hover:text-green-600">
+          <button
+            className={`flex flex-col items-center px-4 py-2 ${
+              !clientId && "text-green-500"
+            }  hover:text-green-600`}
+            onClick={handleOnClickChat}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"

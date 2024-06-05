@@ -17,7 +17,7 @@ const ChatList = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-white overflow-y-scroll flex-shrink-0">
+    <div className="w-full h-screen bg-gray-100 overflow-y-scroll flex-shrink-0">
       <div className="sticky top-0 left-0 right-0 bg-white border-b border-gray-200 z-10">
         <div className="mx-auto p-4">
           <div className="flex items-center space-x-2 mb-4">
@@ -39,7 +39,7 @@ const ChatList = () => {
           {numbers.map((x) => (
             <div
               key={x}
-              className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition"
+              className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
               onClick={() => handleOnClickChat(x)}
             >
               <div className="flex items-center">
@@ -50,7 +50,9 @@ const ChatList = () => {
                 />
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <h3 className="text-lg font-semibold">Friend {x}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Friend {x}
+                    </h3>
                     <p className="text-xs text-gray-500">10:00 AM</p>
                   </div>
                   <p className="text-gray-600 text-sm">Last message...</p>

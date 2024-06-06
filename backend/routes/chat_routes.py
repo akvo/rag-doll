@@ -31,7 +31,10 @@ async def get_chats(
             .where(
                 Chat.chat_session_id == chat.id,
             )
-            .order_by(Chat.created.desc())
+            .order_by(
+                Chat.created_at.desc(),
+                Chat.id.desc(),
+            )
         ).first()
         last_chats.append({"chat_session": chat, "last_message": last_message})
     return last_chats

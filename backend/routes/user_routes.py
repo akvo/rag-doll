@@ -38,9 +38,7 @@ async def verify_login_link(
         select(User).where(User.login_link == login_link)
     ).first()
     if not user:
-        raise HTTPException(
-            status_code=404, detail="User not found or link expired"
-        )
+        raise HTTPException(status_code=400, detail="Invalid verification UUID")
     login_token = create_jwt_token(
         {"sub": str(user.login_link), "uid": user.id},
         expires_delta=timedelta(hours=2),

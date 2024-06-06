@@ -36,8 +36,10 @@ const Login = () => {
         }
       } else if (res.status === 404) {
         setError("Phone number not found.");
+        handleShowNotification();
       } else {
         setError("Error, please try again later.");
+        handleShowNotification();
       }
     } catch (error) {
       setError("Error, please try again later.");

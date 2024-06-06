@@ -35,14 +35,22 @@ const VerifyLogin = ({ params }) => {
   }, [auth.isLogin]);
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <div
-        className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-e-transparent align-[-0.125em] text-primary motion-reduce:animate-[spin_1.5s_linear_infinite] text-green-500"
-        role="status"
-      >
-        <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-          Verifying {params.id}...
-        </span>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex flex-col items-center">
+        <img
+          className="h-16 w-16 mb-4"
+          src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
+          alt="Loading"
+        />
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">
+          Verifying {params.id}
+        </h2>
+        <p className="text-sm text-gray-600 mb-4">Please wait a moment...</p>
+        <div className="flex items-center justify-center space-x-2">
+          <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-bounce"></div>
+          <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-bounce delay-150"></div>
+          <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-bounce delay-300"></div>
+        </div>
       </div>
     </div>
   );

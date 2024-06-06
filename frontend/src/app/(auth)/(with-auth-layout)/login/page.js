@@ -1,30 +1,48 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib";
+import { Notification } from "@/components";
 
 const Login = () => {
   const router = useRouter();
+  const [showNotification, setShowNotification] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleShowNotification = () => {
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
+      setError("");
+    }, 1000);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
     const phone = formData.get("phone");
-    console.log(phone);
-    router.replace("/verify/1234");
 
-    // const response = await fetch("/api/auth/login", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ email, password }),
-    // });
-
-    // if (response.ok) {
-    //   router.push("/");
-    // } else {
-    //   // Handle errors
-    // }
+    try {
+      const res = await api.post(`login?phone_number=${phone}`);
+      const resData = await res.json();
+      if (res.status === 200) {
+        const regex = /https?:\/\/[^\/]+(\/.+)/;
+        const match = resData.match(regex);
+        if (match && match[1]) {
+          router.replace(match[1]);
+        }
+      } else if (res.status === 404) {
+        setError("Phone number not found.");
+      } else {
+        setError("Error, please try again later.");
+      }
+    } catch (error) {
+      setError("Error, please try again later.");
+      handleShowNotification();
+    }
   };
 
   return (
@@ -41,7 +59,7 @@ const Login = () => {
             <input
               id="phone"
               name="phone"
-              type="phone"
+              type="number"
               autoComplete="phone"
               required
               className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-500 sm:text-sm sm:leading-6"
@@ -68,6 +86,8 @@ const Login = () => {
           Register
         </Link>
       </p>
+
+      <Notification message={error} show={showNotification} />
     </>
   );
 };

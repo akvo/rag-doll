@@ -10,8 +10,6 @@ const Settings = () => {
     router.replace("/chats");
   };
 
-  console.log(user, "USER");
-
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="sticky top-0 bg-white shadow-md p-4">

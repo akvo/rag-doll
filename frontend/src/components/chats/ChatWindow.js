@@ -47,7 +47,6 @@ const ChatWindow = () => {
   const handleSend = () => {
     if (message.trim()) {
       // Implement your send message logic here
-      console.log("Send message:", message);
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending
     }

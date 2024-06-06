@@ -32,6 +32,7 @@ const Login = () => {
         const regex = /https?:\/\/[^\/]+(\/.+)/;
         const match = resData.match(regex);
         if (match && match[1]) {
+          // TODO :: Here we should not navigate to verify, user will clik the link from a message they received
           router.replace(match[1]);
         }
       } else if (res.status === 404) {

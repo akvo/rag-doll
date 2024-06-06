@@ -1,21 +1,44 @@
-import enum
-from datetime import datetime
-from sqlalchemy import Column, DateTime
+from datetime import datetime, timezone
+from sqlalchemy import Column, DateTime, SmallInteger
 from sqlmodel import Field, SQLModel
 from typing import Optional
 
+tz = timezone.utc
 
-class MessageStatus(str, enum.Enum):
-    sent = "sent"
-    read = "read"
+
+class Chat_Session(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    client_id: Optional[int] = Field(default=None, foreign_key="client.id")
+    last_read: datetime | None = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=True,
+        ),
+        default=None,
+    )
 
 
 class Chat(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    client_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    chat_session_id: int = Field(foreign_key="chat_session.id")
     message: str
-    status: MessageStatus = Field(default=MessageStatus.sent)
-    created_at: datetime = Field(
-        sa_column=Column(DateTime, default=datetime.utcnow)
+    is_client: int = Field(
+        sa_column=Column(
+            SmallInteger,
+            nullable=False,
+            server_default="0",
+        ),
     )
+    created_at: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default="now()",
+            nullable=False,
+        )
+    )
+
+    def __init__(self, **data):
+        # Remove created_at if it's in the input data
+        data.pop("created_at", None)
+        super().__init__(**data)

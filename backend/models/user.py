@@ -1,11 +1,5 @@
-import enum
 from sqlalchemy import Column, String, BigInteger
 from sqlmodel import Field, SQLModel
-
-
-class UserRoles(enum.Enum):
-    USER: str = "USER"
-    CLIENT: str = "CLIENT"
 
 
 class User(SQLModel, table=True):
@@ -19,5 +13,4 @@ class User(SQLModel, table=True):
     phone_number: int = Field(
         sa_column=Column(BigInteger, unique=True),
     )
-    role: UserRoles = UserRoles.USER
     login_link: str | None = None

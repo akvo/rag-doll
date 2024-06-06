@@ -18,3 +18,10 @@ def test_verify_login_link(client: TestClient) -> None:
     assert response.status_code == 200
     content = response.json()
     assert "token" in content
+
+
+def test_verify_login_link_invalid_uuid(client: TestClient) -> None:
+    response = client.get("/verify/invalid_uuid")
+    assert response.status_code == 400
+    content = response.json()
+    assert content["detail"] == "Invalid verification UUID"

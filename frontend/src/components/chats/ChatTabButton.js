@@ -1,8 +1,7 @@
 "use client";
 
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const chatButtonType = (type) => {
   const { clientId } = useChatContext();

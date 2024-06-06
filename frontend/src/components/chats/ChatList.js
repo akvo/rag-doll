@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { useChatDispatch } from "@/context/ChatContextProvider";
 import { useRouter } from "next/navigation";
 
@@ -8,6 +9,12 @@ const numbers = Array.from({ length: 10 }, (_, index) => index + 1);
 const ChatList = () => {
   const router = useRouter();
   const chatDispatch = useChatDispatch();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
 
   const handleOnClickChat = (id) => {
     chatDispatch({
@@ -22,31 +29,64 @@ const ChatList = () => {
     router.push("/settings");
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="w-full h-screen bg-gray-100 overflow-y-scroll flex-shrink-0">
       <div className="sticky top-0 left-0 right-0 bg-white border-b border-gray-200 z-10">
         <div className="mx-auto p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Chats</h2>
-            <button
-              className="p-2 text-gray-600 focus:outline-none"
-              onClick={handleOnClickSettings}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6"
+            <div className="relative">
+              <button
+                className="p-2 text-gray-600 focus:outline-none"
+                onClick={toggleDropdown}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 6h.01M12 12h.01M12 18h.01M12 6a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01M12 12a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01M12 18a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01"
-                />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6h.01M12 12h.01M12 18h.01M12 6a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01M12 12a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01M12 18a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01"
+                  />
+                </svg>
+              </button>
+              {isDropdownOpen && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 transition ease-out duration-100 transform opacity-100 scale-100 origin-top-right"
+                >
+                  <ul className="py-1">
+                    <li
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={handleOnClickSettings}
+                    >
+                      Settings
+                    </li>
+                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                      About
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <input

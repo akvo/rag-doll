@@ -1,13 +1,28 @@
 "use client";
-import { useUserContext } from "@/context/UserContextProvider";
+import { useUserContext, useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
+import { useAuthDispatch } from "@/context/AuthContextProvider";
+import { deleteCookie } from "../(auth)/verify/[loginId]/util";
 
 const Settings = () => {
   const user = useUserContext();
   const router = useRouter();
+  const userDispatch = useUserDispatch();
+  const authDispatch = useAuthDispatch();
 
   const handleOnClickBack = () => {
     router.replace("/chats");
+  };
+
+  const handleLogout = () => {
+    // Clear user & auth context
+    // Redirect to login page
+    userDispatch({
+      type: "DELETE",
+    });
+    authDispatch({ type: "DELETE" });
+    deleteCookie("AUTH_TOKEN");
+    router.replace("/login");
   };
 
   return (
@@ -26,7 +41,7 @@ const Settings = () => {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M15.75 19.5 8.25 12l7.5-7.5"
+              d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
           <h2 className="ml-4 text-xl text-gray-800">Profile</h2>
@@ -86,6 +101,14 @@ const Settings = () => {
               className="mt-1 py-1.5 px-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-500 focus:ring-opacity-50"
             />
           </div>
+        </div>
+        <div className="mt-6">
+          <button
+            onClick={handleLogout}
+            className="w-full py-2 px-4 bg-white border border-red-500 hover:bg-red-600 text-red-500 hover:text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </div>

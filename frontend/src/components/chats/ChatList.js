@@ -4,13 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import { useChatDispatch } from "@/context/ChatContextProvider";
 import { useRouter } from "next/navigation";
 
-const numbers = Array.from({ length: 10 }, (_, index) => index + 1);
-
 const ChatList = () => {
   const router = useRouter();
   const chatDispatch = useChatDispatch();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [chatItems, setChatItems] = useState(
+    Array.from({ length: 10 }, (_, index) => index + 1)
+  );
+  const [page, setPage] = useState(1);
+  const chatListRef = useRef(null);
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
@@ -29,6 +31,30 @@ const ChatList = () => {
     router.push("/settings");
   };
 
+  const loadMoreChats = () => {
+    setChatItems((prevChats) => [
+      ...prevChats,
+      ...Array.from({ length: 10 }, (_, index) => index + 1 + prevChats.length),
+    ]);
+    setPage((prevPage) => prevPage + 1);
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (chatListRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = chatListRef.current;
+        if (scrollTop + clientHeight >= scrollHeight - 5) {
+          loadMoreChats();
+        }
+      }
+    };
+
+    chatListRef.current.addEventListener("scroll", handleScroll);
+    return () => {
+      chatListRef.current.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -43,7 +69,10 @@ const ChatList = () => {
   }, []);
 
   return (
-    <div className="w-full h-screen bg-gray-100 overflow-y-scroll flex-shrink-0">
+    <div
+      className="w-full h-screen bg-gray-100 overflow-y-scroll flex-shrink-0"
+      ref={chatListRef}
+    >
       <div className="sticky top-0 left-0 right-0 bg-white border-b border-gray-200 z-10">
         <div className="mx-auto p-4">
           <div className="flex items-center justify-between mb-4">
@@ -101,7 +130,7 @@ const ChatList = () => {
       <div className="pt-2 pb-20 w-full">
         {/* Chat List */}
         <div className="bg-white overflow-hidden">
-          {numbers.map((x) => (
+          {chatItems.map((x) => (
             <div
               key={x}
               className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"

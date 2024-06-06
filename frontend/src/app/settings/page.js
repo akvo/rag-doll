@@ -1,8 +1,15 @@
 "use client";
 import { useUserContext } from "@/context/UserContextProvider";
+import { useRouter } from "next/navigation";
 
 const Settings = () => {
   const user = useUserContext();
+  const router = useRouter();
+
+  const handleOnClickBack = () => {
+    router.replace("/chats");
+  };
+
   console.log(user, "USER");
 
   return (
@@ -16,6 +23,7 @@ const Settings = () => {
             strokeWidth={1.5}
             stroke="currentColor"
             className="w-6 h-6 text-gray-800 cursor-pointer"
+            onClick={handleOnClickBack}
           >
             <path
               strokeLinecap="round"

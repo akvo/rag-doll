@@ -7,6 +7,7 @@ const ChatTabs = () => {
         <div className="flex justify-center items-center space-x-20 h-16">
           <ChatTabButton type="chats" />
           <ChatTabButton type="reference" />
+          <ChatTabButton type="settings" />
         </div>
       </div>
     </div>

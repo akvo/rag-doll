@@ -46,6 +46,8 @@ def twilio_send_runner() -> None:
 
             text = queue_message['text']
             phone = queue_message['to']['phone']
+            if '+' not in str(phone):
+                phone = f"+{phone}"
             logging.info(f"sending '{text}' to WhatsApp number {phone}")
             response = twilio_client.messages.create(
                 from_='whatsapp:+14155238886', # XXX externalise
@@ -53,11 +55,11 @@ def twilio_send_runner() -> None:
                 to=f"whatsapp:{phone}"
             )
             logging.warning('XXXX ' + str(response))
-            if response['error']:
-                logging.error(f"Failed to send message to Slack channel {channel}: {response['error']}")
+            # Check the response status instead of subscripting
+            if response.error_code is not None:
+                logging.error(f"Failed to send message to WhatsApp number {phone}: {response.error_message}")
         except Exception as e:
             logging.error(f"{type(e)} while sending message to Twilio: {e}")
-
 
     while True:
         try:

@@ -1,6 +1,7 @@
 services:
   twiliobot:
-    build: twiliobot
+    image: python:3.12.3
+    working_dir: /app
     ports:
       - ${TWILIO_BOT_PORT}:${TWILIO_BOT_PORT}
     environment:
@@ -15,7 +16,9 @@ services:
       TWILIO_BOT_PORT: ${TWILIO_BOT_PORT}
     depends_on:
       - rabbitmq
-    restart: unless-stopped
+    command: ["./run.sh"]
+    volumes:
+      - ./twiliobot:/app:delegated
 
   slackbot:
     build: slackbot

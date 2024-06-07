@@ -14,7 +14,7 @@ def send_test_message_to_queue():
         'to': {
             'phone': '+6281999103535',
         },
-        'text': 'You can login into APP_NAME by click this link: http://localhost:3001/verify/123456'
+        'text': 'Hi Galih, You can login into APP_NAME by click this link: http://localhost:3001/verify/123456'
     }
 
     channel.basic_publish(exchange='', routing_key=os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES"), body=json.dumps(test_message))

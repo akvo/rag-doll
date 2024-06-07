@@ -1,9 +1,7 @@
-FROM python:slim
+FROM python:3.12.3
 
-RUN pip install twilio pika flask
+WORKDIR /usr/src/app
 
-COPY twiliobot.py /app/
-COPY test.py /app/
+COPY . .
 
-CMD /usr/local/bin/python /app/twiliobot.py
-
+CMD ["sh", "run.sh"]

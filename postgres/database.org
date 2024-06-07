@@ -1,0 +1,33 @@
+:PROPERTIES:
+:ID:       b8f8b212-3059-450d-8c02-7cd73e669c56
+:END:
+#+title: Backend Dev Database
+
+#+PROPERTY: header-args:sql     :cache yes
+#+PROPERTY: header-args:sql+    :exports both
+#+PROPERTY: header-args:sql+    :engine postgresql
+#+PROPERTY: header-args:sql+    :dbhost localhost
+#+PROPERTY: header-args:sql+    :dbuser akvo
+#+PROPERTY: header-args:sql+    :dbpassword password
+#+PROPERTY: header-args:sql+    :database dev
+#+PROPERTY: header-args :tangle data-model.sql
+#+STARTUP: showall
+
+* List of Database
+
+#+name: List of Database
+#+begin_src sql
+\l
+#+end_src
+
+#+RESULTS[c17eda74d19c6f0bae09200bfff7efd88eb6bde0]: List of Database
+| List of databases     |          |          |             |             |            |                 |                   |
+|-----------------------+----------+----------+-------------+-------------+------------+-----------------+-------------------|
+| Name                  | Owner    | Encoding | Collate     | Ctype       | ICU Locale | Locale Provider | Access privileges |
+| dev                   | akvo     | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |                   |
+| dev_test              | akvo     | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |                   |
+| postgres              | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            |                   |
+| template0             | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            | =c/postgres       |
+| postgres=CTc/postgres |          |          |             |             |            |                 |                   |
+| template1             | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            | =c/postgres       |
+| postgres=CTc/postgres |          |          |             |             |            |                 |                   |

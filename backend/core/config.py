@@ -4,6 +4,8 @@ from fastapi import FastAPI
 # from core.database import engine
 # from models import User
 from routes import user_routes, chat_routes
+from utils.rabbitmq_client import RabbitMQBackgroundTasks, RabbitMQClient
+from datetime import datetime
 
 
 app = FastAPI(
@@ -25,6 +27,16 @@ app.include_router(user_routes.router, tags=["auth"])
 app.include_router(chat_routes.router, tags=["chat"])
 
 
+@app.on_event("startup")
+async def startup_event():
+    listener = RabbitMQBackgroundTasks()
+    listener.start()
+
+
 @app.get("/health-check", tags=["dev"])
 def read_root():
+    # test send to queue
+    # TODO :: Remove this
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    RabbitMQClient().producer(body=f"Time: {now}")
     return {"Hello": "World"}

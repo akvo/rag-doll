@@ -1,5 +1,7 @@
 import os
 import pika
+import time
+import threading
 
 
 RABBITMQ_USER = os.getenv('RABBITMQ_DEFAULT_USER')
@@ -28,7 +30,7 @@ def create_queue(channel, queue: str):
     return channel
 
 
-class RabbitMQClient():
+class RabbitMQClient(threading.Thread):
     def __init__(self):
         # init queue
         self.connection, self.channel = connect()
@@ -57,3 +59,15 @@ class RabbitMQClient():
             auto_ack=True)
         print(' [*] Waiting for messages. To exit press CTRL+C')
         self.user_chat_queue.start_consuming()
+
+    def run(self, *args, **kwargs):
+        while True:
+            self.consumer()
+            time.sleep()
+
+
+class RabbitMQBackgroundTasks(threading.Thread):
+    def run(self, *args, **kwargs):
+        while True:
+            RabbitMQClient().consumer()
+            time.sleep()

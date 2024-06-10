@@ -13,6 +13,7 @@ const ChatList = () => {
   );
   const [page, setPage] = useState(1);
   const chatListRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);

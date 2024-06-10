@@ -4,7 +4,13 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from core.database import get_db_url
 from sqlmodel import SQLModel
-from models import User, Client, Chat  # noqa
+from models import (  # noqa
+    User,
+    User_Properties,
+    Client,
+    Client_Properties,
+    Chat,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

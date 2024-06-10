@@ -10,12 +10,7 @@ from sqlalchemy.sql import text
 from sqlmodel import create_engine, Session
 
 from core.database import get_db_url, get_session
-from models import (
-    User,
-    Client,
-    Chat_Session,
-    Chat,
-)
+from models import User, Client, Chat_Session, Chat, Chat_Sender
 
 
 def init_db(session: Session) -> None:
@@ -24,8 +19,6 @@ def init_db(session: Session) -> None:
     session.exec(text("DELETE FROM client"))
     session.exec(text("DELETE FROM public.user"))
     user = User(
-        email="test@test.org",
-        username="testing",
         phone_number=999,
     )
     session.add(user)
@@ -44,24 +37,26 @@ def init_db(session: Session) -> None:
     messages = [
         {
             "message": "Hello Admin!",
-            "is_client": 1,
+            "sender": Chat_Sender.CLIENT,
         },
         {
             "message": "Hello, 998",
+            "sender": Chat_Sender.USER,
         },
         {
             "message": "Is there anything I can help you with?",
+            "sender": Chat_Sender.USER,
         },
         {
             "message": "Yes, I need help with something.",
-            "is_client": 1,
+            "sender": Chat_Sender.CLIENT,
         },
     ]
     for message in messages:
         chat = Chat(
             chat_session_id=chat_session.id,
             message=message["message"],
-            is_client=message.get("is_client", 0),
+            sender=message["sender"],
         )
         session.add(chat)
         session.commit()

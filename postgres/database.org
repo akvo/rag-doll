@@ -15,19 +15,124 @@
 
 * List of Database
 
-#+name: List of Database
+#+name: List of Table
 #+begin_src sql
-\l
+\d
 #+end_src
 
-#+RESULTS[c17eda74d19c6f0bae09200bfff7efd88eb6bde0]: List of Database
-| List of databases     |          |          |             |             |            |                 |                   |
-|-----------------------+----------+----------+-------------+-------------+------------+-----------------+-------------------|
-| Name                  | Owner    | Encoding | Collate     | Ctype       | ICU Locale | Locale Provider | Access privileges |
-| dev                   | akvo     | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |                   |
-| dev_test              | akvo     | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |                   |
-| postgres              | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            |                   |
-| template0             | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            | =c/postgres       |
-| postgres=CTc/postgres |          |          |             |             |            |                 |                   |
-| template1             | postgres | UTF8     | en_US.utf8  | en_US.utf8  |            | libc            | =c/postgres       |
-| postgres=CTc/postgres |          |          |             |             |            |                 |                   |
+#+RESULTS[136795287af44579a6b45d54289bcac05a5f20fa]: List of Table
+| List of relations |                          |          |       |
+|-------------------+--------------------------+----------+-------|
+| Schema            | Name                     | Type     | Owner |
+| public            | alembic_version          | table    | akvo  |
+| public            | chat                     | table    | akvo  |
+| public            | chat_id_seq              | sequence | akvo  |
+| public            | chat_session             | table    | akvo  |
+| public            | chat_session_id_seq      | sequence | akvo  |
+| public            | client                   | table    | akvo  |
+| public            | client_id_seq            | sequence | akvo  |
+| public            | client_properties        | table    | akvo  |
+| public            | client_properties_id_seq | sequence | akvo  |
+| public            | user                     | table    | akvo  |
+| public            | user_id_seq              | sequence | akvo  |
+| public            | user_properties          | table    | akvo  |
+| public            | user_properties_id_seq   | sequence | akvo  |
+
+#+name: User
+#+begin_src sql
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_name = 'user'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[8b2e7fe89fa9ce3fd75b2a8788bea1ed8c539e52]: User
+| column_name  | data_type         |
+|--------------+-------------------|
+| id           | integer           |
+| phone_number | bigint            |
+| login_link   | character varying |
+
+#+name: User Properties
+#+begin_src sql
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_name = 'user_properties'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[9e9440d1c4a147a8758e6e916879c5bbec8adaac]: User Properties
+| column_name | data_type         |
+|-------------+-------------------|
+| id          | integer           |
+| user_id     | integer           |
+| name        | character varying |
+| email       | character varying |
+
+#+name Client
+#+begin_src sql
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_name = 'client'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[e58203ceb37ce8963ca9ef5d6e0a36dce3f56b0a]:
+| column_name  | data_type         |
+|--------------+-------------------|
+| id           | integer           |
+| name         | character varying |
+| phone_number | bigint            |
+
+#+name: Client Properties
+#+begin_src sql
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_name = 'client_properties'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[f0754981d9b7d80511bea61ecd8232535030112a]: Client Properties
+| column_name | data_type         |
+|-------------+-------------------|
+| id          | integer           |
+| client_id   | integer           |
+| name        | character varying |
+
+#+name: Chat Session
+#+begin_src sql
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_name = 'chat_session'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[0a530ee790744bf12a99f07461f04ddf5af2fcc5]: Chat Session
+| column_name | data_type                |
+|-------------+--------------------------|
+| id          | integer                  |
+| user_id     | integer                  |
+| client_id   | integer                  |
+| last_read   | timestamp with time zone |
+
+** TZ UTC
+
+#+name Chat
+#+begin_src sql
+SELECT column_name, data_type
+FROM   information_schema.columns
+WHERE  table_name = 'chat'
+ORDER  BY ordinal_position;
+#+end_src
+
+
+#+RESULTS[6036314406e2035650893715bffc2504705b9bbd]:
+| column_name     | data_type                |
+|-----------------+--------------------------|
+| id              | integer                  |
+| chat_session_id | integer                  |
+| message         | character varying        |
+| is_client       | smallint                 |
+| created_at      | timestamp with time zone |
+
+** Remove is_client, change it with Enum: user, client, system and assistant

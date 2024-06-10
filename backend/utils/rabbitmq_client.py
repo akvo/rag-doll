@@ -50,6 +50,7 @@ class RabbitMQClient():
         self.connection.close()
 
     def consumer(self):
+        # TODO :: Change the consumer
         self.user_chat_queue.basic_consume(
             queue=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             on_message_callback=self.consumer_callback,

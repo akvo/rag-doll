@@ -20,7 +20,7 @@ class Chat_Session(SQLModel, table=True):
     client_id: Optional[int] = Field(default=None, foreign_key="client.id")
     last_read: datetime | None = Field(
         sa_column=Column(
-            DateTime(timezone=True),
+            DateTime,
             nullable=True,
         ),
         default=None,
@@ -36,7 +36,7 @@ class Chat(SQLModel, table=True):
     )
     created_at: datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True),
+            DateTime,
             server_default="now()",
             nullable=False,
         )

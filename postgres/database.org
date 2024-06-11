@@ -126,13 +126,11 @@ ORDER  BY ordinal_position;
 #+end_src
 
 
-#+RESULTS[6036314406e2035650893715bffc2504705b9bbd]:
-| column_name     | data_type                |
-|-----------------+--------------------------|
-| id              | integer                  |
-| chat_session_id | integer                  |
-| message         | character varying        |
-| is_client       | smallint                 |
-| created_at      | timestamp with time zone |
-
-** Remove is_client, change it with Enum: user, client, system and assistant
+#+RESULTS[f78c9cea7d9ab3fcacc76443af4586cd9a814a0f]:
+| column_name     | data_type                   |
+|-----------------+-----------------------------|
+| id              | integer                     |
+| chat_session_id | integer                     |
+| message         | character varying           |
+| sender          | USER-DEFINED                |
+| created_at      | timestamp without time zone |

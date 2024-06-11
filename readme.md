@@ -117,8 +117,8 @@ from field (where `platform` equals `SLACK`):
 
 | `.env` | default | description |
 |---|---|---|
-| `RABBITMQ_DEFAULT_USER` | rabbit | The user name for RabbitMQ. |
-| `RABBITMQ_DEFAULT_PASS` | _CHANGEME_ | The default password for accessing queues. Use a generated string. |
+| `RABBITMQ_USER` | rabbit | The user name for RabbitMQ. |
+| `RABBITMQ_PASS` | _CHANGEME_ | The default password for accessing queues. Use a generated string. |
 | `RABBITMQ_QUEUE_USER_CHATS` | user-chats | The queue for chat messages that the user typed. |
 | `RABBITMQ_QUEUE_USER_CHAT_REPLIES` | user-chat-replies | The queue for chat messages that the assisant got from the LLM. |
 | `RABBITMQ_HOST` | rabbitmq | The host that RabbitMQ runs on. |

@@ -1,73 +1,57 @@
 import os
-import pika
-import time
-import threading
+import aio_pika
+import asyncio
 
-
-RABBITMQ_USER = os.getenv('RABBITMQ_USER')
-RABBITMQ_PASS = os.getenv('RABBITMQ_PASS')
+RABBITMQ_USER = os.getenv('RABBITMQ_DEFAULT_USER')
+RABBITMQ_PASS = os.getenv('RABBITMQ_DEFAULT_PASS')
 RABBITMQ_HOST = str(os.getenv('RABBITMQ_HOST'))
 RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
 RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
-    'RABBITMQ_QUEUE_USER_CHAT_REPLIES')
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv('RABBITMQ_QUEUE_USER_CHAT_REPLIES')
+RABBITMQ_QUEUE_MAGIC_LINKS = os.getenv('RABBITMQ_QUEUE_MAGIC_LINKS')
 
 
-def connect():
-    # starting connection
-    credentials = pika.PlainCredentials(
-        username=RABBITMQ_USER, password=RABBITMQ_PASS)
-    parameters = pika.ConnectionParameters(
-        host=RABBITMQ_HOST, port=RABBITMQ_PORT,
-        virtual_host='/', credentials=credentials)
-    connection = pika.BlockingConnection(parameters)
-    channel = connection.channel()
-    return connection, channel
-
-
-def create_queue(channel, queue: str):
-    channel.queue_declare(queue=queue)
-    return channel
-
-
-class RabbitMQClient(threading.Thread):
+class RabbitMQClient:
     def __init__(self):
-        # init queue
-        self.connection, self.channel = connect()
-        self.user_chat_queue = create_queue(
-            channel=self.channel,
-            queue=RABBITMQ_QUEUE_USER_CHATS)
-        self.user_chat_reply_queue = create_queue(
-            channel=self.channel,
-            queue=RABBITMQ_QUEUE_USER_CHAT_REPLIES)
+        self.connection = None
+        self.channel = None
 
-    def consumer_callback(self, ch, method, properties, body):
-        print(f"[x] Received {body}")
+    async def connect(self):
+        self.connection = await aio_pika.connect_robust(
+            host=RABBITMQ_HOST,
+            port=RABBITMQ_PORT,
+            login=RABBITMQ_USER,
+            password=RABBITMQ_PASS
+        )
 
-    def producer(self, body: str):
-        self.channel.basic_publish(
-            exchange='',
-            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            body=body)
-        self.connection.close()
+    async def initialize(self):
+        await self.connect()
+        self.channel = await self.connection.channel()
+        await self.channel.declare_queue(
+            RABBITMQ_QUEUE_USER_CHATS, durable=True)
+        await self.channel.declare_queue(
+            RABBITMQ_QUEUE_USER_CHAT_REPLIES, durable=True)
 
-    def consumer(self):
-        # TODO :: Change the consumer
-        self.user_chat_queue.basic_consume(
-            queue=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            on_message_callback=self.consumer_callback,
-            auto_ack=True)
-        print(' [*] Waiting for messages. To exit press CTRL+C')
-        self.user_chat_queue.start_consuming()
+    async def consumer_callback(self, message: aio_pika.IncomingMessage):
+        async with message.process():
+            print(f"[x] Received {message.body.decode()}")
 
-    def run(self, *args, **kwargs):
-        while True:
-            self.consumer()
-            time.sleep()
+    async def producer(self, body: str):
+        await self.channel.default_exchange.publish(
+            aio_pika.Message(body=body.encode()),
+            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES
+        )
+
+    async def consumer(self):
+        queue = await self.channel.declare_queue(
+            RABBITMQ_QUEUE_USER_CHATS, durable=True)
+        async with queue.iterator() as queue_iter:
+            print("[x] Consumer started")
+            async for message in queue_iter:
+                await self.consumer_callback(message)
+                # Breaking out of the loop if a specific condition is met
+                if RABBITMQ_QUEUE_USER_CHATS in message.body.decode():
+                    break
 
 
-class RabbitMQBackgroundTasks(threading.Thread):
-    def run(self, *args, **kwargs):
-        while True:
-            RabbitMQClient().consumer()
-            time.sleep()
+rabbitmq_client = RabbitMQClient()

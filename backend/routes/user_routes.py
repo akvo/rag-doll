@@ -1,3 +1,4 @@
+import json
 from os import environ
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
@@ -7,6 +8,7 @@ from datetime import timedelta
 from models import User
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
+from utils.rabbitmq_client import rabbitmq_client
 
 router = APIRouter()
 webdomain = environ.get("WEBDOMAIN")
@@ -25,7 +27,7 @@ async def send_login_link(
     user.login_link = str(login_link_uuid)
     session.commit()
     # TODO: Implement this function to send WhatsApp messages
-    send_whatsapp_message(phone_number, user.login_link)
+    await send_whatsapp_message(phone_number, user.login_link)
     # return {"message": "Login link sent via WhatsApp"}
     return f"{webdomain}/verify/{user.login_link}"
 
@@ -46,6 +48,14 @@ async def verify_login_link(
     return {"token": login_token}
 
 
-def send_whatsapp_message(phone_number: int, login_token: str):
+async def send_whatsapp_message(phone_number: int, login_token: str):
     # Implement your WhatsApp API integration here
-    pass
+    link = f"{webdomain}/verify/{login_token}"
+    message_body = {
+        'to': {
+            # need phone number with country code
+            'phone': f'+{phone_number}',
+        },
+        'text': f'You can login into APP_NAME by clicking this link: {link}'
+    }
+    await rabbitmq_client.send_magic_link(body=json.dumps(message_body))

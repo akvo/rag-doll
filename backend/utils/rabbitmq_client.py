@@ -1,6 +1,5 @@
 import os
 import aio_pika
-import asyncio
 
 RABBITMQ_USER = os.getenv('RABBITMQ_DEFAULT_USER')
 RABBITMQ_PASS = os.getenv('RABBITMQ_DEFAULT_PASS')
@@ -31,6 +30,8 @@ class RabbitMQClient:
             RABBITMQ_QUEUE_USER_CHATS, durable=True)
         await self.channel.declare_queue(
             RABBITMQ_QUEUE_USER_CHAT_REPLIES, durable=True)
+        await self.channel.declare_queue(
+            RABBITMQ_QUEUE_MAGIC_LINKS, durable=True)
 
     async def consumer_callback(self, message: aio_pika.IncomingMessage):
         async with message.process():
@@ -40,6 +41,12 @@ class RabbitMQClient:
         await self.channel.default_exchange.publish(
             aio_pika.Message(body=body.encode()),
             routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES
+        )
+
+    async def send_magic_link(self, body: str):
+        await self.channel.default_exchange.publish(
+            aio_pika.Message(body=body.encode()),
+            routing_key=RABBITMQ_QUEUE_MAGIC_LINKS
         )
 
     async def consumer(self):

@@ -7,7 +7,7 @@ class User(SQLModel, table=True):
     phone_number: int = Field(
         sa_column=Column(BigInteger, unique=True),
     )
-    login_link: str | None = None
+    login_code: str | None = None
 
     @property
     def phone_number(self):

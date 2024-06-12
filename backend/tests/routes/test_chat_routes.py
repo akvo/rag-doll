@@ -26,7 +26,7 @@ def test_get_chats_authenticated(client: TestClient) -> None:
     content = response.json()
     assert len(content) == 1
     chat_session = content[0].get("chat_session")
-    assert not chat_session.get("last_read")
+    assert chat_session.get("last_read")
     last_chat_message = content[0].get("last_message")
     sender = content[0].get("last_message").get("sender")
     assert sender == Chat_Sender.CLIENT.value

@@ -1,8 +1,8 @@
 """initial_db
 
-Revision ID: 9c438745ff91
+Revision ID: 90f9f35c14d5
 Revises:
-Create Date: 2024-06-12 07:57:27.270721
+Create Date: 2024-06-12 08:05:27.079019
 
 """
 
@@ -14,7 +14,7 @@ import sqlmodel  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "9c438745ff91"
+revision: str = "90f9f35c14d5"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,15 +25,15 @@ def upgrade() -> None:
     op.create_table(
         "client",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("phone_number", sa.Integer(), nullable=False),
+        sa.Column("phone_number", sa.BigInteger(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
         "user",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("phone_number", sa.Integer(), nullable=False),
+        sa.Column("phone_number", sa.BigInteger(), nullable=False),
         sa.Column(
-            "login_link", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            "login_code", sqlmodel.sql.sqltypes.AutoString(), nullable=True
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -41,7 +41,7 @@ def upgrade() -> None:
         "chat_session",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("client_id", sa.Integer(), nullable=True),
+        sa.Column("client_id", sa.Integer(), nullable=False),
         sa.Column(
             "last_read", sa.DateTime(), server_default="now()", nullable=False
         ),

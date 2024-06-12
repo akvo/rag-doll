@@ -50,9 +50,9 @@ const ChatList = () => {
       }
     };
 
-    chatListRef.current.addEventListener("scroll", handleScroll);
+    chatListRef?.current?.addEventListener("scroll", handleScroll);
     return () => {
-      chatListRef.current.removeEventListener("scroll", handleScroll);
+      chatListRef?.current?.removeEventListener("scroll", handleScroll);
     };
   }, []);
 

@@ -1,4 +1,8 @@
 from fastapi import FastAPI
+from fastapi import Depends
+from core.database import get_session
+from sqlmodel import Session, text
+
 
 # from sqlmodel import Session, select
 # from core.database import engine
@@ -26,5 +30,7 @@ app.include_router(chat_routes.router, tags=["chat"])
 
 
 @app.get("/health-check", tags=["dev"])
-def read_root():
+def read_root(session: Session = Depends(get_session)):
+    # Test select 1
+    session.exec(text("SELECT 1"))
     return {"Hello": "World"}

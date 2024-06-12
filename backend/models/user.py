@@ -22,8 +22,7 @@ class User(SQLModel, table=True):
 
 
 class User_Properties(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
+    user_id: int = Field(foreign_key="user.id", primary_key=True)
     name: str = Field(
         sa_column=Column(String, unique=True),
     )

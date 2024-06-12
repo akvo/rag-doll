@@ -19,8 +19,7 @@ class Client(SQLModel, table=True):
 
 
 class Client_Properties(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
-    client_id: int = Field(foreign_key="client.id")
+    client_id: int = Field(foreign_key="client.id", primary_key=True)
     name: str = Field(
         sa_column=Column(String, unique=True),
     )

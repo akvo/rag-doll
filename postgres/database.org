@@ -3,7 +3,6 @@
 :END:
 #+title: Backend Dev Database
 
-#+PROPERTY: header-args:sql     :cache yes
 #+PROPERTY: header-args:sql+    :exports both
 #+PROPERTY: header-args:sql+    :engine postgresql
 #+PROPERTY: header-args:sql+    :dbhost localhost

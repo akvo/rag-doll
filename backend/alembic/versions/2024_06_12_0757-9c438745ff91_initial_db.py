@@ -1,8 +1,8 @@
 """initial_db
 
-Revision ID: 2fad865e8b6c
+Revision ID: 9c438745ff91
 Revises:
-Create Date: 2024-06-12 07:46:01.047333
+Create Date: 2024-06-12 07:57:27.270721
 
 """
 
@@ -14,7 +14,7 @@ import sqlmodel  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "2fad865e8b6c"
+revision: str = "9c438745ff91"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -43,10 +43,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("client_id", sa.Integer(), nullable=True),
         sa.Column(
-            "last_read",
-            sa.DateTime(timezone=False),
-            server_default="now()",
-            nullable=False,
+            "last_read", sa.DateTime(), server_default="now()", nullable=False
         ),
         sa.ForeignKeyConstraint(
             ["client_id"],
@@ -60,19 +57,17 @@ def upgrade() -> None:
     )
     op.create_table(
         "client_properties",
-        sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("client_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=True),
         sa.ForeignKeyConstraint(
             ["client_id"],
             ["client.id"],
         ),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("client_id"),
         sa.UniqueConstraint("name"),
     )
     op.create_table(
         "user_properties",
-        sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=True),
         sa.Column("email", sa.String(), nullable=True),
@@ -80,7 +75,7 @@ def upgrade() -> None:
             ["user_id"],
             ["user.id"],
         ),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("user_id"),
         sa.UniqueConstraint("email"),
         sa.UniqueConstraint("name"),
     )
@@ -99,10 +94,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "created_at",
-            sa.DateTime(timezone=False),
-            server_default="now()",
-            nullable=False,
+            "created_at", sa.DateTime(), server_default="now()", nullable=False
         ),
         sa.ForeignKeyConstraint(
             ["chat_session_id"],
@@ -121,7 +113,4 @@ def downgrade() -> None:
     op.drop_table("chat_session")
     op.drop_table("user")
     op.drop_table("client")
-
-    # Remove chat_sender
-    op.execute("DROP TYPE chat_sender")
     # ### end Alembic commands ###

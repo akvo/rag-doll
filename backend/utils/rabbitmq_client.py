@@ -44,15 +44,19 @@ class RabbitMQClient:
                 RABBITMQ_QUEUE_USER_CHATS,
                 durable=True
             )
-            # Bind the user chats queue to the topic exchange with a routing key
-            await user_chats_queue.bind(exchange, routing_key=RABBITMQ_ROUTE_USER_CHAT)
+            # Bind the user chats queue
+            # to the topic exchange with a routing key
+            await user_chats_queue.bind(
+                exchange, routing_key=RABBITMQ_ROUTE_USER_CHAT)
             # Declare a queue for user chat replies
             user_chat_replies_queue = await self.channel.declare_queue(
                 RABBITMQ_QUEUE_USER_CHAT_REPLIES,
                 durable=True
             )
-            # Bind the user chat replies queue to the topic exchange with a routing key
-            await user_chat_replies_queue.bind(exchange, routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY)
+            # Bind the user chat replies queue
+            # to the topic exchange with a routing key
+            await user_chat_replies_queue.bind(
+                exchange, routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY)
         except Exception as e:
             logger.error(f"Error initializing RabbitMQ client: {e}")
 
@@ -63,10 +67,13 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"Error processing user chat message: {e}")
 
-    async def user_chat_replies_callback(self, message: aio_pika.IncomingMessage):
+    async def user_chat_replies_callback(
+        self, message: aio_pika.IncomingMessage
+    ):
         try:
             async with message.process():
-                logger.info(f"Received user chat replies: {message.body.decode()}")
+                logger.info(
+                    f"Received user chat replies: {message.body.decode()}")
         except Exception as e:
             logger.error(f"Error processing user chat replies message: {e}")
 
@@ -94,19 +101,29 @@ class RabbitMQClient:
             )
             # Sending the message with a routing key
             await exchange.publish(
-                message, routing_key="user.chat.reply.*")
+                message, routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY)
         except Exception as e:
             logger.error(f"Error publishing message: {e}")
 
     async def consumer_user_chats(self):
         try:
-            # Consumer for user chats
-            user_chats_queue = await self.channel.declare_queue(
-                RABBITMQ_QUEUE_USER_CHATS,
-                durable=True
+            await self.connect()
+            # Creating a channel
+            channel = await self.connection.channel()
+            await channel.set_qos(prefetch_count=1)
+            # declaring exchange
+            exchange = await channel.declare_exchange(
+                RABBITMQ_EXCHANGE_USER_CHATS,
+                aio_pika.ExchangeType.TOPIC
             )
-            async with user_chats_queue.iterator() as user_chats_iter:
-                async for message in user_chats_iter:
+            # Declaring a queue
+            queue = await channel.declare_queue(
+                RABBITMQ_QUEUE_USER_CHATS, durable=True)
+            # Binding the queue to the exchange with a routing key
+            await queue.bind(exchange, routing_key=RABBITMQ_ROUTE_USER_CHAT)
+            # Start listening to the queue
+            async with queue.iterator() as queue_iter:
+                async for message in queue_iter:
                     await self.user_chats_callback(message)
         except Exception as e:
             logger.error(f"Error consuming user chats: {e}")
@@ -114,12 +131,24 @@ class RabbitMQClient:
     async def consumer_user_chat_replies(self):
         try:
             # Consumer for user chat replies
-            user_chat_replies_queue = await self.channel.declare_queue(
-                RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                durable=True
+            await self.connect()
+            # Creating a channel
+            channel = await self.connection.channel()
+            await channel.set_qos(prefetch_count=1)
+            # declaring exchange
+            exchange = await channel.declare_exchange(
+                RABBITMQ_EXCHANGE_USER_CHATS,
+                aio_pika.ExchangeType.TOPIC
             )
-            async with user_chat_replies_queue.iterator() as user_chat_replies_iter:
-                async for message in user_chat_replies_iter:
+            # Declaring a queue
+            queue = await channel.declare_queue(
+                RABBITMQ_QUEUE_USER_CHAT_REPLIES, durable=True)
+            # Binding the queue to the exchange with a routing key
+            await queue.bind(
+                exchange, routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY)
+            # Start listening to the queue
+            async with queue.iterator() as queue_iter:
+                async for message in queue_iter:
                     await self.user_chat_replies_callback(message)
         except Exception as e:
             logger.error(f"Error consuming user chat replies: {e}")

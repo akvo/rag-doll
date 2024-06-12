@@ -46,11 +46,11 @@ WHERE  table_name = 'user'
 ORDER  BY ordinal_position;
 #+end_src
 
-#+RESULTS[8b2e7fe89fa9ce3fd75b2a8788bea1ed8c539e52]: User
+#+RESULTS[90d5a9c744a30872c2d3f044ab17598fdff170ae]: User
 | column_name  | data_type         |
 |--------------+-------------------|
 | id           | integer           |
-| phone_number | bigint            |
+| phone_number | integer           |
 | login_link   | character varying |
 
 #+name: User Properties
@@ -108,12 +108,12 @@ ORDER  BY ordinal_position;
 #+end_src
 
 #+RESULTS[0a530ee790744bf12a99f07461f04ddf5af2fcc5]: Chat Session
-| column_name | data_type                |
-|-------------+--------------------------|
-| id          | integer                  |
-| user_id     | integer                  |
-| client_id   | integer                  |
-| last_read   | timestamp with time zone |
+| column_name | data_type                   |
+|-------------+-----------------------------|
+| id          | integer                     |
+| user_id     | integer                     |
+| client_id   | integer                     |
+| last_read   | timestamp without time zone |
 
 ** TZ UTC
 
@@ -126,7 +126,7 @@ ORDER  BY ordinal_position;
 #+end_src
 
 
-#+RESULTS[f78c9cea7d9ab3fcacc76443af4586cd9a814a0f]:
+#+RESULTS[6036314406e2035650893715bffc2504705b9bbd]:
 | column_name     | data_type                   |
 |-----------------+-----------------------------|
 | id              | integer                     |

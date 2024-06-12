@@ -1,8 +1,8 @@
 """initial_db
 
-Revision ID: b139a6d7b217
+Revision ID: 90f9f35c14d5
 Revises:
-Create Date: 2024-06-10 06:34:37.105075
+Create Date: 2024-06-12 08:05:27.079019
 
 """
 
@@ -14,7 +14,7 @@ import sqlmodel  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "b139a6d7b217"
+revision: str = "90f9f35c14d5"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,26 +25,26 @@ def upgrade() -> None:
     op.create_table(
         "client",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("phone_number", sa.BigInteger(), nullable=True),
+        sa.Column("phone_number", sa.BigInteger(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("phone_number"),
     )
     op.create_table(
         "user",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("phone_number", sa.BigInteger(), nullable=True),
+        sa.Column("phone_number", sa.BigInteger(), nullable=False),
         sa.Column(
-            "login_link", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            "login_code", sqlmodel.sql.sqltypes.AutoString(), nullable=True
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("phone_number"),
     )
     op.create_table(
         "chat_session",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("client_id", sa.Integer(), nullable=True),
-        sa.Column("last_read", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("client_id", sa.Integer(), nullable=False),
+        sa.Column(
+            "last_read", sa.DateTime(), server_default="now()", nullable=False
+        ),
         sa.ForeignKeyConstraint(
             ["client_id"],
             ["client.id"],
@@ -57,19 +57,17 @@ def upgrade() -> None:
     )
     op.create_table(
         "client_properties",
-        sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("client_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=True),
         sa.ForeignKeyConstraint(
             ["client_id"],
             ["client.id"],
         ),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("client_id"),
         sa.UniqueConstraint("name"),
     )
     op.create_table(
         "user_properties",
-        sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=True),
         sa.Column("email", sa.String(), nullable=True),
@@ -77,7 +75,7 @@ def upgrade() -> None:
             ["user_id"],
             ["user.id"],
         ),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("user_id"),
         sa.UniqueConstraint("email"),
         sa.UniqueConstraint("name"),
     )
@@ -96,10 +94,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default="now()",
-            nullable=False,
+            "created_at", sa.DateTime(), server_default="now()", nullable=False
         ),
         sa.ForeignKeyConstraint(
             ["chat_session_id"],

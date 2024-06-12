@@ -103,6 +103,7 @@ services:
       DATABASE_URL: postgresql://akvo:${POSTGRES_PASS}@postgres:${POSTGRES_PORT}/dev
       BACKEND_PORT: ${BACKEND_PORT}
       JWT_SECRET: ${JWT_SECRET}
+      WEBDOMAIN: "http://localhost:${FRONTEND_PORT}"
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated

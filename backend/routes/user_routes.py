@@ -12,6 +12,7 @@ from utils.rabbitmq_client import rabbitmq_client
 
 router = APIRouter()
 webdomain = environ.get("WEBDOMAIN")
+MAGIC_LINK_CHAT_TEMPLATE = environ.get("MAGIC_LINK_CHAT_TEMPLATE")
 
 
 @router.post("/login")
@@ -56,6 +57,6 @@ async def send_whatsapp_message(phone_number: int, login_token: str):
             # need phone number with country code
             'phone': f'+{phone_number}',
         },
-        'text': f'You can login into APP_NAME by clicking this link: {link}'
+        'text': str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link)
     }
     await rabbitmq_client.send_magic_link(body=json.dumps(message_body))

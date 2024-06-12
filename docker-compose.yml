@@ -112,6 +112,7 @@ services:
       RABBITMQ_QUEUE_MAGIC_LINKS: ${RABBITMQ_QUEUE_MAGIC_LINKS}
       RABBITMQ_HOST: ${RABBITMQ_HOST}
       RABBITMQ_PORT: ${RABBITMQ_PORT}
+      MAGIC_LINK_CHAT_TEMPLATE: ${MAGIC_LINK_CHAT_TEMPLATE}
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated

@@ -19,12 +19,12 @@ def init_db(session: Session) -> None:
     session.exec(text("DELETE FROM client"))
     session.exec(text("DELETE FROM public.user"))
     user = User(
-        phone_number=999,
+        phone_number="+999",
     )
     session.add(user)
     session.commit()
     client = Client(
-        phone_number=998,
+        phone_number="+998",
     )
     session.add(client)
     session.commit()
@@ -40,7 +40,7 @@ def init_db(session: Session) -> None:
             "sender": Chat_Sender.CLIENT,
         },
         {
-            "message": "Hello, 998",
+            "message": "Hello, +998",
             "sender": Chat_Sender.USER,
         },
         {

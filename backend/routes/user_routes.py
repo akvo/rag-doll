@@ -14,8 +14,12 @@ webdomain = environ.get("WEBDOMAIN")
 
 @router.post("/login")
 async def send_login_link(
-    phone_number: int, session: Session = Depends(get_session)
+    phone_number: str, session: Session = Depends(get_session)
 ):
+    if phone_number[0] != "+":
+        raise HTTPException(
+            status_code=400, detail="Phone number must start with +"
+        )
     user = session.exec(
         select(User).where(User.phone_number == phone_number)
     ).first()

@@ -31,14 +31,20 @@ app.include_router(chat_routes.router, tags=["chat"])
 async def startup_event():
     await rabbitmq_client.initialize()
     loop = asyncio.get_running_loop()
-    loop.create_task(rabbitmq_client.consumer_user_chats())
-    loop.create_task(rabbitmq_client.consumer_user_chat_replies())
-    loop.create_task(rabbitmq_client.consumer_chat_history())
+    loop.create_task(rabbitmq_client.consume_user_chats())
+    loop.create_task(rabbitmq_client.consume_user_chat_replies())
+    loop.create_task(rabbitmq_client.consume_chat_history())
 
 
 @app.post("/test-rabbitmq-send-message", tags=["dev"])
 async def send_message(message: str):
     await rabbitmq_client.producer(body=message)
+    return {"status": "Message sent"}
+
+
+@app.post("/test-rabbitmq-send-magic-link", tags=["dev"])
+async def send_magic_link(message: str):
+    await rabbitmq_client.send_magic_link(body=message)
     return {"status": "Message sent"}
 
 

@@ -47,39 +47,39 @@ class RabbitMQClient:
     async def declare_queues(self):
         try:
             # Declare and bind user chats queue
-            user_chats_queue = await self.channel.declare_queue(
+            self.user_chats_queue = await self.channel.declare_queue(
                 RABBITMQ_QUEUE_USER_CHATS,
                 durable=True
             )
-            await user_chats_queue.bind(
+            await self.user_chats_queue.bind(
                 self.exchange,
                 routing_key=RABBITMQ_ROUTE_USER_CHAT
             )
 
             # Declare and bind user chat replies queue
-            user_chat_replies_queue = await self.channel.declare_queue(
+            self.user_chat_replies_queue = await self.channel.declare_queue(
                 RABBITMQ_QUEUE_USER_CHAT_REPLIES,
                 durable=True
             )
-            await user_chat_replies_queue.bind(
+            await self.user_chat_replies_queue.bind(
                 self.exchange,
                 routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
             )
         except Exception as e:
             logger.error(f"Error declaring or binding queues: {e}")
 
-    async def producer(self, body: str):
+    async def producer(self, body: str, reply_to: str = None):
         try:
             await self.connect()
             message = aio_pika.Message(
                 body=body.encode('utf-8'),
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                headers={"reply_to": reply_to}
             )
             await self.exchange.publish(
                 message,
                 routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
             )
-            logger.info(f"Message sent: {body}")
         except Exception as e:
             logger.error(f"Error publishing message: {e}")
 
@@ -90,9 +90,21 @@ class RabbitMQClient:
     ):
         try:
             async with message.process():
-                logger.info(
-                    f"Received {consumer_type} message: {message.body.decode()}"
-                )
+                body = message.body.decode()
+                reply_to = message.headers.get("reply_to")
+                ignore = message.headers.get("ignore", False)
+                if not ignore:
+                    log = f"Received {consumer_type} message: {body}"
+                    logger.info(
+                        f"{log}, Reply To: {reply_to}"
+                    )
+                # Handle the message based on reply_to value
+                if reply_to == "twiliobot":
+                    # Process message intended for TwilioBot
+                    pass
+                elif reply_to == "slackbot":
+                    # Process message intended for SlackBot
+                    pass
         except Exception as e:
             logger.error(f"Error processing {consumer_type} message: {e}")
 
@@ -110,7 +122,19 @@ class RabbitMQClient:
             "user chat reply"
         )
 
-    async def consume(self, queue_name: str, routing_key: str, consumer_type: str):
+    async def consume_twiliobot(self):
+        await self.consume(
+            RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            "*.twiliobot",
+            "twiliobot"
+        )
+
+    async def consume(
+        self,
+        queue_name: str,
+        routing_key: str,
+        consumer_type: str
+    ):
         try:
             await self.connect()
             queue = await self.channel.declare_queue(queue_name, durable=True)
@@ -134,10 +158,18 @@ class RabbitMQClient:
 
     async def send_magic_link(self, body: str):
         try:
-            await self.channel.default_exchange.publish(
-                aio_pika.Message(body=body.encode('utf-8')),
-                routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
+            routing_key = f"{RABBITMQ_ROUTE_USER_CHAT_REPLY}.twiliobot"
+            await self.connect()
+            message = aio_pika.Message(
+                body=body.encode('utf-8'),
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                headers={"ignore": True}
             )
+            await self.exchange.publish(
+                message,
+                routing_key=routing_key
+            )
+            logger.info(f"Magic link sent: {body}")
         except Exception as e:
             logger.error(f"Error sending magic link: {e}")
 

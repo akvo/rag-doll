@@ -32,6 +32,7 @@ async def startup_event():
     await rabbitmq_client.initialize()
     loop = asyncio.get_running_loop()
     loop.create_task(rabbitmq_client.consumer_user_chats())
+    loop.create_task(rabbitmq_client.consumer_user_chat_replies())
     loop.create_task(rabbitmq_client.consumer_chat_history())
 
 

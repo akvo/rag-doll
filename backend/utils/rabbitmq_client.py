@@ -1,8 +1,6 @@
 import os
-import sys
 import aio_pika
 import logging
-import asyncio
 
 RABBITMQ_USER = os.getenv('RABBITMQ_DEFAULT_USER')
 RABBITMQ_PASS = os.getenv('RABBITMQ_DEFAULT_PASS')
@@ -11,7 +9,8 @@ RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
 RABBITMQ_EXCHANGE_USER_CHATS = os.getenv('RABBITMQ_EXCHANGE_USER_CHATS')
 RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv('RABBITMQ_QUEUE_USER_CHAT_REPLIES')
-RABBITMQ_QUEUE_MAGIC_LINKS = os.getenv('RABBITMQ_QUEUE_MAGIC_LINKS')
+RABBITMQ_ROUTE_USER_CHAT = os.getenv('RABBITMQ_ROUTE_USER_CHAT')
+RABBITMQ_ROUTE_USER_CHAT_REPLY = os.getenv('RABBITMQ_ROUTE_USER_CHAT_REPLY')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,25 +34,25 @@ class RabbitMQClient:
         try:
             await self.connect()
             self.channel = await self.connection.channel()
-            # Declare a fanout exchange
+            # Declare a topic exchange
             exchange = await self.channel.declare_exchange(
                 RABBITMQ_EXCHANGE_USER_CHATS,
-                aio_pika.ExchangeType.FANOUT
+                aio_pika.ExchangeType.TOPIC
             )
             # Declare a queue for user chats
             user_chats_queue = await self.channel.declare_queue(
                 RABBITMQ_QUEUE_USER_CHATS,
                 durable=True
             )
-            # Bind the user chats queue to the fanout exchange
-            await user_chats_queue.bind(exchange)
+            # Bind the user chats queue to the topic exchange with a routing key
+            await user_chats_queue.bind(exchange, routing_key=RABBITMQ_ROUTE_USER_CHAT)
             # Declare a queue for user chat replies
             user_chat_replies_queue = await self.channel.declare_queue(
                 RABBITMQ_QUEUE_USER_CHAT_REPLIES,
                 durable=True
             )
-            # Bind the user chats replies queue to the fanout exchange
-            await user_chat_replies_queue.bind(exchange)
+            # Bind the user chat replies queue to the topic exchange with a routing key
+            await user_chat_replies_queue.bind(exchange, routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY)
         except Exception as e:
             logger.error(f"Error initializing RabbitMQ client: {e}")
 
@@ -63,6 +62,13 @@ class RabbitMQClient:
                 logger.info(f"Received user chat: {message.body.decode()}")
         except Exception as e:
             logger.error(f"Error processing user chat message: {e}")
+
+    async def user_chat_replies_callback(self, message: aio_pika.IncomingMessage):
+        try:
+            async with message.process():
+                logger.info(f"Received user chat replies: {message.body.decode()}")
+        except Exception as e:
+            logger.error(f"Error processing user chat replies message: {e}")
 
     async def chat_history_callback(self, message: aio_pika.IncomingMessage):
         try:
@@ -79,17 +85,16 @@ class RabbitMQClient:
             channel = await self.connection.channel()
             exchange = await channel.declare_exchange(
                 RABBITMQ_EXCHANGE_USER_CHATS,
-                aio_pika.ExchangeType.FANOUT,
+                aio_pika.ExchangeType.TOPIC,
             )
             # Ensure message is persistent
-            # (stored to disk, so they are not retained if the broker crashes)
             message = aio_pika.Message(
-                body.encode('utf-8'),
+                body=body.encode('utf-8'),
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
             )
-            # Sending the message
+            # Sending the message with a routing key
             await exchange.publish(
-                message, routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES)
+                message, routing_key="user.chat.reply.*")
         except Exception as e:
             logger.error(f"Error publishing message: {e}")
 
@@ -106,6 +111,19 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"Error consuming user chats: {e}")
 
+    async def consumer_user_chat_replies(self):
+        try:
+            # Consumer for user chat replies
+            user_chat_replies_queue = await self.channel.declare_queue(
+                RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+                durable=True
+            )
+            async with user_chat_replies_queue.iterator() as user_chat_replies_iter:
+                async for message in user_chat_replies_iter:
+                    await self.user_chat_replies_callback(message)
+        except Exception as e:
+            logger.error(f"Error consuming user chat replies: {e}")
+
     async def consumer_chat_history(self):
         try:
             await self.connect()
@@ -115,14 +133,16 @@ class RabbitMQClient:
             # declaring exchange
             exchange = await channel.declare_exchange(
                 RABBITMQ_EXCHANGE_USER_CHATS,
-                aio_pika.ExchangeType.FANOUT
+                aio_pika.ExchangeType.TOPIC
             )
-            # Declaring queue
+            # Declaring an anonymous exclusive queue
             queue = await channel.declare_queue(exclusive=True)
-            # Binding the queue to the exchange
-            await queue.bind(exchange)
-            # Start listening the queue
-            await queue.consume(self.chat_history_callback)
+            # Binding the queue to the exchange with a wildcard routing key
+            await queue.bind(exchange, routing_key="#")
+            # Start listening to the queue
+            async with queue.iterator() as queue_iter:
+                async for message in queue_iter:
+                    await self.chat_history_callback(message)
         except Exception as e:
             logger.error(f"Error consuming chat history: {e}")
 
@@ -130,7 +150,7 @@ class RabbitMQClient:
         try:
             await self.channel.default_exchange.publish(
                 aio_pika.Message(body=body.encode('utf-8')),
-                routing_key=RABBITMQ_QUEUE_MAGIC_LINKS
+                routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES
             )
         except Exception as e:
             logger.error(f"Error sending magic link: {e}")

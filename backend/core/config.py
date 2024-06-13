@@ -1,3 +1,7 @@
+import asyncio
+import logging
+
+
 from fastapi import FastAPI
 from fastapi import Depends
 from core.database import get_session
@@ -8,8 +12,12 @@ from sqlmodel import Session, text
 # from core.database import engine
 # from models import User
 from routes import user_routes, chat_routes
-import asyncio
 from utils.rabbitmq_client import rabbitmq_client
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 app = FastAPI(
@@ -33,12 +41,11 @@ app.include_router(chat_routes.router, tags=["chat"])
 
 @app.on_event("startup")
 async def startup_event():
-    await rabbitmq_client.initialize()
-    loop = asyncio.get_running_loop()
-    loop.create_task(rabbitmq_client.consume_user_chats())
-    loop.create_task(rabbitmq_client.consume_user_chat_replies())
-    loop.create_task(rabbitmq_client.consume_chat_history())
-    loop.create_task(rabbitmq_client.consume_twiliobot())
+    try:
+        await rabbitmq_client.initialize()
+        asyncio.create_task(rabbitmq_client.consume_chat_history())
+    except Exception as e:
+        logging.error(f"Error initializing RabbitMQ in backend app: {e}")
 
 
 @app.post("/test-rabbitmq-send-message", tags=["dev"])

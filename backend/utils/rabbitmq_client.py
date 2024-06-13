@@ -44,6 +44,14 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"Error initializing RabbitMQ client: {e}")
 
+    async def close_connection(self):
+        try:
+            if self.connection and not self.connection.is_closed:
+                await self.connection.close()
+                logger.info("Connection closed")
+        except Exception as e:
+            logger.error(f"Error closing RabbitMQ connection: {e}")
+
     async def declare_queues(self):
         try:
             # Declare and bind user chats queue
@@ -63,7 +71,7 @@ class RabbitMQClient:
             )
             await self.user_chat_replies_queue.bind(
                 self.exchange,
-                routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
+                routing_key=f"{RABBITMQ_ROUTE_USER_CHAT_REPLY}.*"
             )
         except Exception as e:
             logger.error(f"Error declaring or binding queues: {e}")

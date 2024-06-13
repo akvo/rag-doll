@@ -2,6 +2,7 @@ import os
 import aio_pika
 import logging
 
+
 # Configuration
 RABBITMQ_USER = os.getenv('RABBITMQ_USER')
 RABBITMQ_PASS = os.getenv('RABBITMQ_PASS')
@@ -22,15 +23,21 @@ class RabbitMQClient:
     def __init__(self):
         self.connection = None
         self.channel = None
+        self.exchange = None
 
     async def connect(self):
-        if not self.connection or self.connection.is_closed:
-            self.connection = await aio_pika.connect_robust(
-                host=RABBITMQ_HOST,
-                port=RABBITMQ_PORT,
-                login=RABBITMQ_USER,
-                password=RABBITMQ_PASS
-            )
+        try:
+            if not self.connection or self.connection.is_closed:
+                self.connection = await aio_pika.connect_robust(
+                    host=RABBITMQ_HOST,
+                    port=RABBITMQ_PORT,
+                    login=RABBITMQ_USER,
+                    password=RABBITMQ_PASS,
+                    timeout=1000
+                )
+                logger.info("Connected to RabbitMQ")
+        except Exception as e:
+            logger.error(f"Connection failed: {e}")
 
     async def initialize(self):
         try:
@@ -63,7 +70,6 @@ class RabbitMQClient:
                 self.exchange,
                 routing_key=RABBITMQ_ROUTE_USER_CHAT
             )
-
             # Declare and bind user chat replies queue
             self.user_chat_replies_queue = await self.channel.declare_queue(
                 RABBITMQ_QUEUE_USER_CHAT_REPLIES,
@@ -103,9 +109,7 @@ class RabbitMQClient:
                 ignore = message.headers.get("ignore", False)
                 if not ignore:
                     log = f"Received {consumer_type} message: {body}"
-                    logger.info(
-                        f"{log}, Reply To: {reply_to}"
-                    )
+                    logger.info(f"{log}, Reply To: {reply_to}")
                 # Handle the message based on reply_to value
                 if reply_to == "twiliobot":
                     # Process message intended for TwilioBot
@@ -116,21 +120,8 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"Error processing {consumer_type} message: {e}")
 
-    async def consume_user_chats(self):
-        await self.consume(
-            RABBITMQ_QUEUE_USER_CHATS,
-            RABBITMQ_ROUTE_USER_CHAT,
-            "user chat"
-        )
-
-    async def consume_user_chat_replies(self):
-        await self.consume(
-            RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            RABBITMQ_ROUTE_USER_CHAT_REPLY,
-            "user chat reply"
-        )
-
-    async def consume_twiliobot(self):
+    async def consume_reply_to_twiliobot(self):
+        await self.connect()
         await self.consume(
             RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             "*.twiliobot",
@@ -152,34 +143,6 @@ class RabbitMQClient:
             ))
         except Exception as e:
             logger.error(f"Error consuming {consumer_type}: {e}")
-
-    async def consume_chat_history(self):
-        try:
-            await self.connect()
-            queue = await self.channel.declare_queue(exclusive=True)
-            await queue.bind(self.exchange, routing_key="#")
-            await queue.consume(
-                lambda msg: self.consumer_callback(msg, "chat history")
-            )
-        except Exception as e:
-            logger.error(f"Error consuming chat history: {e}")
-
-    async def send_magic_link(self, body: str):
-        try:
-            routing_key = f"{RABBITMQ_ROUTE_USER_CHAT_REPLY}.twiliobot"
-            await self.connect()
-            message = aio_pika.Message(
-                body=body.encode('utf-8'),
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-                headers={"ignore": True}
-            )
-            await self.exchange.publish(
-                message,
-                routing_key=routing_key
-            )
-            logger.info(f"Magic link sent: {body}")
-        except Exception as e:
-            logger.error(f"Error sending magic link: {e}")
 
 
 rabbitmq_client = RabbitMQClient()

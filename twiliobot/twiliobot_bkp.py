@@ -19,7 +19,7 @@ import pika
 # --- RabbitMQ Section
 
 def connect_and_create_queue(queue: str):
-    pika_credentials = pika.PlainCredentials(os.getenv("RABBITMQ_DEFAULT_USER"), os.getenv("RABBITMQ_DEFAULT_PASS"))
+    pika_credentials = pika.PlainCredentials(os.getenv("RABBITMQ_USER"), os.getenv("RABBITMQ_PASS"))
     pika_parameters = pika.ConnectionParameters(os.getenv("RABBITMQ_HOST"),
                                                 int(os.getenv("RABBITMQ_PORT")),
                                                 '/', pika_credentials)
@@ -29,7 +29,7 @@ def connect_and_create_queue(queue: str):
     return q
 
 RABBITMQ_QUEUE_USER_CHATS=os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-user_chat_queue       = connect_and_create_queue(RABBITMQ_QUEUE_USER_CHATS)
+user_chat_queue = connect_and_create_queue(RABBITMQ_QUEUE_USER_CHATS)
 RABBITMQ_QUEUE_USER_CHAT_REPLIES=os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
 user_chat_reply_queue = connect_and_create_queue(RABBITMQ_QUEUE_USER_CHAT_REPLIES)
 

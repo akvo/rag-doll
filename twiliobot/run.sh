@@ -4,4 +4,6 @@ apt update && apt install -y build-essential
 pip -q install --upgrade pip
 pip -q install --cache-dir=.pip -r requirements.txt
 
-python ./twiliobot.py
+
+# python ./main.py
+python ./twiliobot_bkp.py

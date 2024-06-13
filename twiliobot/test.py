@@ -3,7 +3,7 @@ import json
 import os
 
 def send_test_message_to_queue():
-    pika_credentials = pika.PlainCredentials(os.getenv("RABBITMQ_DEFAULT_USER"), os.getenv("RABBITMQ_DEFAULT_PASS"))
+    pika_credentials = pika.PlainCredentials(os.getenv("RABBITMQ_USER"), os.getenv("RABBITMQ_PASS"))
     pika_parameters = pika.ConnectionParameters(os.getenv("RABBITMQ_HOST"),
                                                 int(os.getenv("RABBITMQ_PORT")),
                                                 '/', pika_credentials)

@@ -12,8 +12,8 @@ import pika
 logging.basicConfig(level=logging.INFO)
 
 # Load environment variables for RabbitMQ and Twilio configuration
-RABBITMQ_USER = os.getenv("RABBITMQ_DEFAULT_USER")
-RABBITMQ_PASS = os.getenv("RABBITMQ_DEFAULT_PASS")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS")
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST")
 RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT"))
 RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")

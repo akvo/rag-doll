@@ -3,15 +3,23 @@ import aio_pika
 import logging
 
 # Configuration
-RABBITMQ_USER = os.getenv('RABBITMQ_DEFAULT_USER')
-RABBITMQ_PASS = os.getenv('RABBITMQ_DEFAULT_PASS')
+RABBITMQ_USER = os.getenv('RABBITMQ_USER')
+RABBITMQ_PASS = os.getenv('RABBITMQ_PASS')
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST')
 RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
 RABBITMQ_EXCHANGE_USER_CHATS = os.getenv('RABBITMQ_EXCHANGE_USER_CHATS')
 RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv('RABBITMQ_QUEUE_USER_CHAT_REPLIES')
-RABBITMQ_ROUTE_USER_CHAT = os.getenv('RABBITMQ_ROUTE_USER_CHAT')
-RABBITMQ_ROUTE_USER_CHAT_REPLY = os.getenv('RABBITMQ_ROUTE_USER_CHAT_REPLY')
+
+
+def convert_to_dot_notation(string):
+    return string.replace('_', '.').replace('-', '.')
+
+
+RABBITMQ_ROUTE_USER_CHAT = convert_to_dot_notation(RABBITMQ_QUEUE_USER_CHATS)
+RABBITMQ_ROUTE_USER_CHAT_REPLY = convert_to_dot_notation(
+    RABBITMQ_QUEUE_USER_CHAT_REPLIES)
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,7 +61,7 @@ class RabbitMQClient:
             )
             await self.user_chats_queue.bind(
                 self.exchange,
-                routing_key=RABBITMQ_ROUTE_USER_CHAT
+                routing_key=f"{RABBITMQ_ROUTE_USER_CHAT}.*"
             )
 
             # Declare and bind user chat replies queue
@@ -63,7 +71,7 @@ class RabbitMQClient:
             )
             await self.user_chat_replies_queue.bind(
                 self.exchange,
-                routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
+                routing_key=f"{RABBITMQ_ROUTE_USER_CHAT_REPLY}.*"
             )
         except Exception as e:
             logger.error(f"Error declaring or binding queues: {e}")
@@ -80,6 +88,7 @@ class RabbitMQClient:
                 message,
                 routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
             )
+            logger.info(f"Message sent: {body}")
         except Exception as e:
             logger.error(f"Error publishing message: {e}")
 
@@ -123,10 +132,11 @@ class RabbitMQClient:
         )
 
     async def consume_twiliobot(self):
+        # TODO :: will remove, example to use in twiliobot
         await self.consume(
             RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             "*.twiliobot",
-            "twiliobot"
+            "twiliobot app"
         )
 
     async def consume(

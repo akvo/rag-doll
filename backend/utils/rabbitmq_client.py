@@ -61,7 +61,7 @@ class RabbitMQClient:
             )
             await self.user_chats_queue.bind(
                 self.exchange,
-                routing_key=f"{RABBITMQ_ROUTE_USER_CHAT}.*"
+                routing_key=RABBITMQ_ROUTE_USER_CHAT
             )
 
             # Declare and bind user chat replies queue
@@ -71,7 +71,7 @@ class RabbitMQClient:
             )
             await self.user_chat_replies_queue.bind(
                 self.exchange,
-                routing_key=f"{RABBITMQ_ROUTE_USER_CHAT_REPLY}.*"
+                routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
             )
         except Exception as e:
             logger.error(f"Error declaring or binding queues: {e}")
@@ -117,28 +117,6 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"Error processing {consumer_type} message: {e}")
 
-    async def consume_user_chats(self):
-        await self.consume(
-            RABBITMQ_QUEUE_USER_CHATS,
-            RABBITMQ_ROUTE_USER_CHAT,
-            "user chat"
-        )
-
-    async def consume_user_chat_replies(self):
-        await self.consume(
-            RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            RABBITMQ_ROUTE_USER_CHAT_REPLY,
-            "user chat reply"
-        )
-
-    async def consume_twiliobot(self):
-        # TODO :: will remove, example to use in twiliobot
-        await self.consume(
-            RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            "*.twiliobot",
-            "twiliobot app"
-        )
-
     async def consume(
         self,
         queue_name: str,
@@ -152,6 +130,7 @@ class RabbitMQClient:
             await queue.consume(lambda msg: self.consumer_callback(
                 msg, consumer_type
             ))
+            logger.info(f"Consume Q:{queue_name} | RK:{routing_key}")
         except Exception as e:
             logger.error(f"Error consuming {consumer_type}: {e}")
 
@@ -179,9 +158,30 @@ class RabbitMQClient:
                 message,
                 routing_key=routing_key
             )
-            logger.info(f"Magic link sent: {body}")
+            logger.info(f"Magic link sent: {body}, key: {routing_key}")
         except Exception as e:
             logger.error(f"Error sending magic link: {e}")
+
+    async def consume_user_chats(self):
+        await self.consume(
+            RABBITMQ_QUEUE_USER_CHATS,
+            RABBITMQ_ROUTE_USER_CHAT,
+            "user chat"
+        )
+
+    async def consume_user_chat_replies(self):
+        await self.consume(
+            RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            RABBITMQ_ROUTE_USER_CHAT_REPLY,
+            "user chat reply"
+        )
+
+    async def consume_twiliobot(self):
+        await self.consume(
+            RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            "*.twiliobot",
+            "twiliobot app"
+        )
 
 
 rabbitmq_client = RabbitMQClient()

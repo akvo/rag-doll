@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi import Depends
 from core.database import get_session
 from sqlmodel import Session, text
@@ -43,12 +43,20 @@ async def startup_event():
 
 @app.post("/test-rabbitmq-send-message", tags=["dev"])
 async def send_message(message: str):
+    if not message:
+        raise HTTPException(
+            status_code=400,
+            detail="Must be a non-empty string.")
     await rabbitmq_client.producer(body=message)
     return {"status": "Message sent"}
 
 
 @app.post("/test-rabbitmq-send-magic-link", tags=["dev"])
 async def send_magic_link(message: str):
+    if not message:
+        raise HTTPException(
+            status_code=400,
+            detail="Must be a non-empty string.")
     await rabbitmq_client.send_magic_link(body=message)
     return {"status": "Message sent"}
 

@@ -2,6 +2,8 @@ import os
 import aio_pika
 import logging
 
+from typing import Callable
+
 # Configuration
 RABBITMQ_USER = os.getenv('RABBITMQ_USER')
 RABBITMQ_PASS = os.getenv('RABBITMQ_PASS')
@@ -72,6 +74,7 @@ class RabbitMQClient:
         self,
         message: aio_pika.IncomingMessage,
         routing_key: str,
+        callback: Callable = None
     ):
         try:
             async with message.process():
@@ -81,23 +84,31 @@ class RabbitMQClient:
                 logger.info(
                     f"{log}, Reply To: {reply_to}"
                 )
-                # Handle the message based on reply_to value
-                if (
-                    routing_key == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
-                    reply_to == RABBITMQ_QUEUE_TWILIOBOT_REPLIES
-                ):
-                    # Process message intended for TwilioBot
-                    await self.producer(
-                        body=body,
-                        routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                        reply_to=reply_to
-                    )
-                if (
-                    routing_key == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
-                    reply_to == RABBITMQ_QUEUE_SLACKBOT_REPLIES
-                ):
-                    # Process message intended for SlackBot
-                    pass
+                # use callback function
+                if callback:
+                    callback(body=body)
+                else:
+                    # Handle the message based on reply_to value
+                    if (
+                        routing_key == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
+                        reply_to == RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+                    ):
+                        # Process message intended for TwilioBot
+                        await self.producer(
+                            body=body,
+                            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+                            reply_to=reply_to
+                        )
+                    elif (
+                        routing_key == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
+                        reply_to == RABBITMQ_QUEUE_SLACKBOT_REPLIES
+                    ):
+                        # Process message intended for SlackBot
+                        await self.producer(
+                            body=body,
+                            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+                            reply_to=reply_to
+                        )
         except Exception as e:
             logger.error(f"Error processing {routing_key} message: {e}")
 
@@ -105,47 +116,56 @@ class RabbitMQClient:
         self,
         queue_name: str,
         routing_key: str,
+        callback: Callable = None
     ):
+        if callback and not callable(callback):
+            raise TypeError(f"The argument {callback} is not callable")
         try:
             await self.connect()
             queue = await self.channel.declare_queue(queue_name, durable=True)
             await queue.bind(self.exchange, routing_key=routing_key)
             await queue.consume(lambda msg: self.consumer_callback(
                 message=msg,
-                routing_key=routing_key
+                routing_key=routing_key,
+                callback=callback
             ))
             logger.info(f"Consume Q:{queue_name} | RK:{routing_key}")
         except Exception as e:
             logger.error(f"Error consuming {routing_key}: {e}")
 
-    async def consume_user_chats(self):
+    async def consume_user_chats(self, callback: Callable = None):
         await self.consume(
             queue_name=RABBITMQ_QUEUE_USER_CHATS,
             routing_key=RABBITMQ_QUEUE_USER_CHATS,
+            callback=callback
         )
 
-    async def consume_user_chat_replies(self):
+    async def consume_user_chat_replies(self, callback: Callable = None):
         await self.consume(
             queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            callback=callback
         )
 
-    async def consume_twiliobot(self):
+    async def consume_twiliobot(self, callback: Callable = None):
         await self.consume(
             queue_name=RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
             routing_key=f"*.{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
+            callback=callback
         )
 
-    async def consume_slackbot(self):
+    async def consume_slackbot(self, callback: Callable = None):
         await self.consume(
             queue_name=RABBITMQ_QUEUE_SLACKBOT_REPLIES,
             routing_key=f"*.{RABBITMQ_QUEUE_SLACKBOT_REPLIES}",
+            callback=callback
         )
 
-    async def consume_chat_history(self):
+    async def consume_chat_history(self, callback: Callable = None):
         await self.consume(
             queue_name=RABBITMQ_QUEUE_HISTORIES,
             routing_key="#",
+            callback=callback
         )
 
 

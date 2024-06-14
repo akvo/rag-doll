@@ -50,6 +50,8 @@ async def verify_login_code(
         {"sub": str(user.login_code), "uid": user.id},
         expires_delta=timedelta(hours=2),
     )
+    user.login_code = None
+    session.commit()
     return {"token": login_token}
 
 
@@ -57,10 +59,10 @@ async def send_whatsapp_message(phone_number: int, login_token: str):
     # Implement your WhatsApp API integration here
     link = f"{webdomain}/verify/{login_token}"
     message_body = {
-        'to': {
+        "to": {
             # need phone number with country code
-            'phone': f'+{phone_number}',
+            "phone": f"+{phone_number}",
         },
-        'text': str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link)
+        "text": str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link),
     }
     await rabbitmq_client.send_magic_link(body=json.dumps(message_body))

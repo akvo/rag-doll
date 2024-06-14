@@ -76,9 +76,16 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"Error declaring or binding queues: {e}")
 
-    async def producer(self, body: str, reply_to: str = None):
+    async def producer(
+        self,
+        body: str,
+        routing_key: str = RABBITMQ_ROUTE_USER_CHAT,
+        reply_to: str = None
+    ):
         try:
             await self.connect()
+            if reply_to:
+                routing_key = f"{routing_key}.{reply_to}"
             message = aio_pika.Message(
                 body=body.encode('utf-8'),
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
@@ -86,9 +93,9 @@ class RabbitMQClient:
             )
             await self.exchange.publish(
                 message,
-                routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
+                routing_key=routing_key
             )
-            logger.info(f"Message sent: {body}")
+            logger.info(f"Message sent: {body}, routing_key: {routing_key}")
         except Exception as e:
             logger.error(f"Error publishing message: {e}")
 
@@ -101,16 +108,18 @@ class RabbitMQClient:
             async with message.process():
                 body = message.body.decode()
                 reply_to = message.headers.get("reply_to")
-                ignore = message.headers.get("ignore", False)
-                if not ignore:
-                    log = f"Received {consumer_type} message: {body}"
-                    logger.info(
-                        f"{log}, Reply To: {reply_to}"
-                    )
+                log = f"Received {consumer_type} message: {body}"
+                logger.info(
+                    f"{log}, Reply To: {reply_to}"
+                )
                 # Handle the message based on reply_to value
                 if reply_to == "twiliobot":
                     # Process message intended for TwilioBot
-                    pass
+                    await self.producer(
+                        body=body,
+                        routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY,
+                        reply_to=reply_to
+                    )
                 elif reply_to == "slackbot":
                     # Process message intended for SlackBot
                     pass
@@ -147,18 +156,11 @@ class RabbitMQClient:
 
     async def send_magic_link(self, body: str):
         try:
-            routing_key = f"{RABBITMQ_ROUTE_USER_CHAT_REPLY}.twiliobot"
-            await self.connect()
-            message = aio_pika.Message(
-                body=body.encode('utf-8'),
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-                headers={"ignore": True}
+            await self.producer(
+                body=body,
+                routing_key=RABBITMQ_ROUTE_USER_CHAT,
+                reply_to="twilobot"
             )
-            await self.exchange.publish(
-                message,
-                routing_key=routing_key
-            )
-            logger.info(f"Magic link sent: {body}, key: {routing_key}")
         except Exception as e:
             logger.error(f"Error sending magic link: {e}")
 

@@ -71,20 +71,19 @@ class RabbitMQClient:
     async def consumer_callback(
         self,
         message: aio_pika.IncomingMessage,
-        queue_name: str,
-        consumer_type: str
+        routing_key: str,
     ):
         try:
             async with message.process():
                 body = message.body.decode()
                 reply_to = message.headers.get("reply_to")
-                log = f"Received {consumer_type} message: {body}"
+                log = f"Received {routing_key} message: {body}"
                 logger.info(
                     f"{log}, Reply To: {reply_to}"
                 )
                 # Handle the message based on reply_to value
                 if (
-                    queue_name == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
+                    routing_key == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
                     reply_to == RABBITMQ_QUEUE_TWILIOBOT_REPLIES
                 ):
                     # Process message intended for TwilioBot
@@ -94,13 +93,13 @@ class RabbitMQClient:
                         reply_to=reply_to
                     )
                 if (
-                    queue_name == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
+                    routing_key == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
                     reply_to == RABBITMQ_QUEUE_SLACKBOT_REPLIES
                 ):
                     # Process message intended for SlackBot
                     pass
         except Exception as e:
-            logger.error(f"Error processing {consumer_type} message: {e}")
+            logger.error(f"Error processing {routing_key} message: {e}")
 
     async def consume(
         self,
@@ -113,8 +112,7 @@ class RabbitMQClient:
             await queue.bind(self.exchange, routing_key=routing_key)
             await queue.consume(lambda msg: self.consumer_callback(
                 message=msg,
-                queue_name=queue_name,
-                consumer_type=routing_key
+                routing_key=routing_key
             ))
             logger.info(f"Consume Q:{queue_name} | RK:{routing_key}")
         except Exception as e:
@@ -136,6 +134,12 @@ class RabbitMQClient:
         await self.consume(
             queue_name=RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
             routing_key=f"*.{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
+        )
+
+    async def consume_slackbot(self):
+        await self.consume(
+            queue_name=RABBITMQ_QUEUE_SLACKBOT_REPLIES,
+            routing_key=f"*.{RABBITMQ_QUEUE_SLACKBOT_REPLIES}",
         )
 
     async def consume_chat_history(self):

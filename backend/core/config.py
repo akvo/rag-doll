@@ -24,8 +24,6 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     loop.create_task(rabbitmq_client.consume_user_chats())
     loop.create_task(rabbitmq_client.consume_user_chat_replies())
-    loop.create_task(rabbitmq_client.consume_chat_history())
-    loop.create_task(rabbitmq_client.consume_twiliobot())
     yield
 
 

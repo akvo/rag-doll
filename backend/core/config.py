@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from fastapi import Depends
 from core.database import get_session
@@ -10,6 +12,18 @@ from sqlmodel import Session, text
 from routes import user_routes, chat_routes
 import asyncio
 from utils.rabbitmq_client import rabbitmq_client
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await rabbitmq_client.initialize()
+    loop = asyncio.get_running_loop()
+    loop.create_task(rabbitmq_client.consume_user_chats())
+    loop.create_task(rabbitmq_client.consume_user_chat_replies())
+    loop.create_task(rabbitmq_client.consume_chat_history())
+    loop.create_task(rabbitmq_client.consume_twiliobot())
+    yield
+    loop.clear()
 
 
 app = FastAPI(
@@ -25,20 +39,11 @@ app = FastAPI(
         "name": "MIT",
         "url": "https://opensource.org/licenses/MIT",
     },
+    lifespan=lifespan
 )
 
 app.include_router(user_routes.router, tags=["auth"])
 app.include_router(chat_routes.router, tags=["chat"])
-
-
-@app.on_event("startup")
-async def startup_event():
-    await rabbitmq_client.initialize()
-    loop = asyncio.get_running_loop()
-    loop.create_task(rabbitmq_client.consume_user_chats())
-    loop.create_task(rabbitmq_client.consume_user_chat_replies())
-    loop.create_task(rabbitmq_client.consume_chat_history())
-    loop.create_task(rabbitmq_client.consume_twiliobot())
 
 
 @app.post("/test-rabbitmq-send-message", tags=["dev"])

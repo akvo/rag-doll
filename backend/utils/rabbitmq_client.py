@@ -10,15 +10,9 @@ RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
 RABBITMQ_EXCHANGE_USER_CHATS = os.getenv('RABBITMQ_EXCHANGE_USER_CHATS')
 RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv('RABBITMQ_QUEUE_USER_CHAT_REPLIES')
-
-
-def convert_to_dot_notation(string):
-    return string.replace('_', '.').replace('-', '.')
-
-
-RABBITMQ_ROUTE_USER_CHAT = convert_to_dot_notation(RABBITMQ_QUEUE_USER_CHATS)
-RABBITMQ_ROUTE_USER_CHAT_REPLY = convert_to_dot_notation(
-    RABBITMQ_QUEUE_USER_CHAT_REPLIES)
+RABBITMQ_QUEUE_TWILIOBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
+RABBITMQ_QUEUE_SLACKBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_SLACKBOT_REPLIES')
+RABBITMQ_QUEUE_HISTORIES = os.getenv('RABBITMQ_QUEUE_HISTORIES')
 
 
 # Configure logging
@@ -48,38 +42,13 @@ class RabbitMQClient:
                 RABBITMQ_EXCHANGE_USER_CHATS,
                 aio_pika.ExchangeType.TOPIC
             )
-            await self.declare_queues()
         except Exception as e:
             logger.error(f"Error initializing RabbitMQ client: {e}")
-
-    async def declare_queues(self):
-        try:
-            # Declare and bind user chats queue
-            self.user_chats_queue = await self.channel.declare_queue(
-                RABBITMQ_QUEUE_USER_CHATS,
-                durable=True
-            )
-            await self.user_chats_queue.bind(
-                self.exchange,
-                routing_key=RABBITMQ_ROUTE_USER_CHAT
-            )
-
-            # Declare and bind user chat replies queue
-            self.user_chat_replies_queue = await self.channel.declare_queue(
-                RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                durable=True
-            )
-            await self.user_chat_replies_queue.bind(
-                self.exchange,
-                routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY
-            )
-        except Exception as e:
-            logger.error(f"Error declaring or binding queues: {e}")
 
     async def producer(
         self,
         body: str,
-        routing_key: str = RABBITMQ_ROUTE_USER_CHAT,
+        routing_key: str,
         reply_to: str = None
     ):
         try:
@@ -102,6 +71,7 @@ class RabbitMQClient:
     async def consumer_callback(
         self,
         message: aio_pika.IncomingMessage,
+        queue_name: str,
         consumer_type: str
     ):
         try:
@@ -113,14 +83,20 @@ class RabbitMQClient:
                     f"{log}, Reply To: {reply_to}"
                 )
                 # Handle the message based on reply_to value
-                if reply_to == "twiliobot":
+                if (
+                    queue_name == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
+                    reply_to == RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+                ):
                     # Process message intended for TwilioBot
                     await self.producer(
                         body=body,
-                        routing_key=RABBITMQ_ROUTE_USER_CHAT_REPLY,
+                        routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
                         reply_to=reply_to
                     )
-                elif reply_to == "slackbot":
+                if (
+                    queue_name == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
+                    reply_to == RABBITMQ_QUEUE_SLACKBOT_REPLIES
+                ):
                     # Process message intended for SlackBot
                     pass
         except Exception as e:
@@ -130,59 +106,42 @@ class RabbitMQClient:
         self,
         queue_name: str,
         routing_key: str,
-        consumer_type: str
     ):
         try:
             await self.connect()
             queue = await self.channel.declare_queue(queue_name, durable=True)
             await queue.bind(self.exchange, routing_key=routing_key)
             await queue.consume(lambda msg: self.consumer_callback(
-                msg, consumer_type
+                message=msg,
+                queue_name=queue_name,
+                consumer_type=routing_key
             ))
             logger.info(f"Consume Q:{queue_name} | RK:{routing_key}")
         except Exception as e:
-            logger.error(f"Error consuming {consumer_type}: {e}")
-
-    async def consume_chat_history(self):
-        try:
-            await self.connect()
-            queue = await self.channel.declare_queue(exclusive=True)
-            await queue.bind(self.exchange, routing_key="#")
-            await queue.consume(
-                lambda msg: self.consumer_callback(msg, "chat history")
-            )
-        except Exception as e:
-            logger.error(f"Error consuming chat history: {e}")
-
-    async def send_magic_link(self, body: str):
-        try:
-            await self.producer(
-                body=body,
-                routing_key=RABBITMQ_ROUTE_USER_CHAT,
-                reply_to="twilobot"
-            )
-        except Exception as e:
-            logger.error(f"Error sending magic link: {e}")
+            logger.error(f"Error consuming {routing_key}: {e}")
 
     async def consume_user_chats(self):
         await self.consume(
-            RABBITMQ_QUEUE_USER_CHATS,
-            RABBITMQ_ROUTE_USER_CHAT,
-            "user chat"
+            queue_name=RABBITMQ_QUEUE_USER_CHATS,
+            routing_key=RABBITMQ_QUEUE_USER_CHATS,
         )
 
     async def consume_user_chat_replies(self):
         await self.consume(
-            RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            RABBITMQ_ROUTE_USER_CHAT_REPLY,
-            "user chat reply"
+            queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
         )
 
     async def consume_twiliobot(self):
         await self.consume(
-            RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            "*.twiliobot",
-            "twiliobot app"
+            queue_name=RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
+            routing_key=f"*.{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
+        )
+
+    async def consume_chat_history(self):
+        await self.consume(
+            queue_name=RABBITMQ_QUEUE_HISTORIES,
+            routing_key="#",
         )
 
 

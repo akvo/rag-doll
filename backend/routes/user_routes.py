@@ -8,7 +8,11 @@ from datetime import timedelta
 from models import User
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
-from utils.rabbitmq_client import rabbitmq_client
+from utils.rabbitmq_client import (
+    rabbitmq_client,
+    RABBITMQ_QUEUE_USER_CHATS,
+    RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+)
 
 router = APIRouter()
 webdomain = environ.get("WEBDOMAIN")
@@ -65,4 +69,8 @@ async def send_whatsapp_message(phone_number: int, login_token: str):
         },
         "text": str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link),
     }
-    await rabbitmq_client.send_magic_link(body=json.dumps(message_body))
+    await rabbitmq_client.producer(
+            body=json.dumps(message_body),
+            routing_key=RABBITMQ_QUEUE_USER_CHATS,
+            reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+        )

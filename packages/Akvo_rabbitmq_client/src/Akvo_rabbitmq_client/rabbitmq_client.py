@@ -37,6 +37,11 @@ class RabbitMQClient:
                 password=RABBITMQ_PASS
             )
 
+    async def close_connection(self):
+        if self.connection and not self.connection.is_closed:
+            await self.connection.close()
+            logger.info("RabbitMQ connection closed.")
+
     async def initialize(self):
         try:
             await self.connect()

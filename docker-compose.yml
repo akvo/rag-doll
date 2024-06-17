@@ -136,6 +136,26 @@ services:
     depends_on:
       - backend
 
+  packages:
+    image: python:3.12.3
+    working_dir: /app
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_EXCHANGE_USER_CHATS: ${RABBITMQ_EXCHANGE_USER_CHATS}
+      RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
+      RABBITMQ_QUEUE_USER_CHAT_REPLIES: ${RABBITMQ_QUEUE_USER_CHAT_REPLIES}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_QUEUE_TWILIOBOT_REPLIES: ${RABBITMQ_QUEUE_TWILIOBOT_REPLIES}
+      RABBITMQ_QUEUE_SLACKBOT_REPLIES: ${RABBITMQ_QUEUE_SLACKBOT_REPLIES}
+      RABBITMQ_QUEUE_HISTORIES: ${RABBITMQ_QUEUE_HISTORIES}
+    command: ["./tests.sh"]
+    volumes:
+      - ./packages:/app:delegated
+    depends_on:
+      - rabbitmq
+
 volumes:
   pg-data:
   pg-admin-data:

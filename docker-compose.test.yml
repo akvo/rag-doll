@@ -1,4 +1,4 @@
 services:
   backend:
-    image: eu.gcr.io/akvo-lumen/wai-sdg-portal/backend:latest
+    image: eu.gcr.io/akvo-lumen/agriconnect/backend:latest
     command: ["./test.sh"]

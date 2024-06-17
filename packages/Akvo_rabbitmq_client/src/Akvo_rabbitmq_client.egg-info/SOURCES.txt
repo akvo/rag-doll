@@ -1,0 +1,8 @@
+setup.py
+src/Akvo_rabbitmq_client/__init__.py
+src/Akvo_rabbitmq_client/rabbitmq_client.py
+src/Akvo_rabbitmq_client.egg-info/PKG-INFO
+src/Akvo_rabbitmq_client.egg-info/SOURCES.txt
+src/Akvo_rabbitmq_client.egg-info/dependency_links.txt
+src/Akvo_rabbitmq_client.egg-info/requires.txt
+src/Akvo_rabbitmq_client.egg-info/top_level.txt

@@ -43,3 +43,7 @@ services:
       - ./backend:/app:delegated
     depends_on:
       - postgres
+
+volumes:
+  pg-data:
+  rabbitmq-data:

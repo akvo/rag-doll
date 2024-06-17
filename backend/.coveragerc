@@ -1,7 +1,7 @@
 [run]
 branch = True
 omit = */__init__*
-       */test*.py
+       */tests/*
        */alembic/*
        */core/database.py
 disable_warnings = no-data-collected

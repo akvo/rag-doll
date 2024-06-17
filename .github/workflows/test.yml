@@ -1,0 +1,19 @@
+name: Build & Test
+on:
+  push:
+    branches:
+      - main
+      - feature*
+  pull_request:
+    branches:
+      - main
+      - feature*
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build and Test
+        run: |
+          ./ci/build.sh

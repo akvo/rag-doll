@@ -1,0 +1,4 @@
+services:
+  backend:
+    image: eu.gcr.io/akvo-lumen/wai-sdg-portal/backend:latest
+    command: ["./test.sh"]

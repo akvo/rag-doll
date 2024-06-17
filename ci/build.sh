@@ -25,10 +25,10 @@ backend_build() {
         --tag "${IMAGE_PREFIX}/backend:${CI_COMMIT}" backend
 }
 
-cp .env.template .env
+cp env.template .env
 
 backend_build
 docker compose \
     -f docker-compose.yml \
-    -f docker-compose.test \
+    -f docker-compose.test.yml \
     run -T backend ./test.sh

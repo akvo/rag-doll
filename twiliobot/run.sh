@@ -5,5 +5,4 @@ pip -q install --upgrade pip
 pip -q install --cache-dir=.pip -r requirements.txt
 
 
-# python ./main.py
-python ./twiliobot_bkp.py
+python ./main.py

@@ -4,4 +4,7 @@ WORKDIR /usr/src/app
 
 COPY . .
 
+# Copy the rabbitmq_client_package into the container
+COPY ../packages/Akvo_rabbitmq_client /app/Akvo_rabbitmq_client
+
 CMD ["sh", "run.sh"]

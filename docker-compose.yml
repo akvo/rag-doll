@@ -30,6 +30,7 @@ services:
     command: ["./run.sh"]
     volumes:
       - ./twiliobot:/app:delegated
+      - ./packages/Akvo_rabbitmq_client:/app/Akvo_rabbitmq_client:delegated
 
   slackbot:
     build: slackbot

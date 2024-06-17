@@ -11,7 +11,7 @@ from sqlmodel import Session, text
 # from models import User
 from routes import user_routes, chat_routes
 import asyncio
-from utils.rabbitmq_client import (
+from Akvo_rabbitmq_client.rabbitmq_client import (
     rabbitmq_client,
     RABBITMQ_QUEUE_USER_CHATS,
     RABBITMQ_QUEUE_TWILIOBOT_REPLIES

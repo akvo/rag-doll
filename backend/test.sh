@@ -18,5 +18,4 @@ if [[ -n "${COVERALLS_REPO_TOKEN:-}" ]] ; then
   coveralls
 fi
 
-./storage.sh clear
 flake8

@@ -8,7 +8,7 @@ from datetime import timedelta
 from models import User
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
-from utils.rabbitmq_client import (
+from Akvo_rabbitmq_client.rabbitmq_client import (
     rabbitmq_client,
     RABBITMQ_QUEUE_USER_CHATS,
     RABBITMQ_QUEUE_TWILIOBOT_REPLIES

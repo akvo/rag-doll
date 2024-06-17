@@ -104,6 +104,7 @@ services:
       BACKEND_PORT: ${BACKEND_PORT}
       JWT_SECRET: ${JWT_SECRET}
       WEBDOMAIN: "http://localhost:${FRONTEND_PORT}"
+      MAGIC_LINK_CHAT_TEMPLATE: ${MAGIC_LINK_CHAT_TEMPLATE}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASS: ${RABBITMQ_PASS}
       RABBITMQ_EXCHANGE_USER_CHATS: ${RABBITMQ_EXCHANGE_USER_CHATS}
@@ -114,10 +115,10 @@ services:
       RABBITMQ_QUEUE_TWILIOBOT_REPLIES: ${RABBITMQ_QUEUE_TWILIOBOT_REPLIES}
       RABBITMQ_QUEUE_SLACKBOT_REPLIES: ${RABBITMQ_QUEUE_SLACKBOT_REPLIES}
       RABBITMQ_QUEUE_HISTORIES: ${RABBITMQ_QUEUE_HISTORIES}
-      MAGIC_LINK_CHAT_TEMPLATE: ${MAGIC_LINK_CHAT_TEMPLATE}
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated
+      - ./packages/Akvo_rabbitmq_client:/app/Akvo_rabbitmq_client:delegated
     depends_on:
       - postgres
 

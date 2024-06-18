@@ -118,6 +118,7 @@ services:
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated
+      - ./setup.cfg:/app/setup.cfg:ro
     depends_on:
       - postgres
 

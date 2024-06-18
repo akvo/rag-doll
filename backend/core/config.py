@@ -21,6 +21,7 @@ async def lifespan(app: FastAPI):
     loop.create_task(rabbitmq_client.consume_user_chats())
     loop.create_task(rabbitmq_client.consume_user_chat_replies())
     yield
+    await rabbitmq_client.close_connection()
 
 
 app = FastAPI(

@@ -5,7 +5,7 @@ set -euo pipefail
 pip -q install --upgrade pip
 pip -q install --cache-dir=.pip -r requirements.txt
 
-pip install --cache-dir=.pip Akvo_rabbitmq_client --no-index --find-links file:/app/Akvo_rabbitmq_client
+pip install /lib/Akvo_rabbitmq_client
 
 echo "Running tests"
 COVERAGE_PROCESS_START=./.coveragerc \

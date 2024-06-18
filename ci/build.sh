@@ -17,9 +17,16 @@ backend_build() {
         --tag "${IMAGE_PREFIX}/backend:${CI_COMMIT}" backend
 }
 
+package_build() {
+    cd "$(pwd)/packages/Akvo_rabbitmq_client"
+    python setup.py sdist bdist_wheel
+    cd "$(git rev-parse --show-toplevel)"
+}
+
 cp env.template .env
 
 backend_build
+package_build
 docker compose \
     -f docker-compose.test.yml \
     run -T backend ./test.sh

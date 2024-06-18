@@ -10,8 +10,13 @@ from core.database import get_session
 from utils.jwt_handler import create_jwt_token
 from Akvo_rabbitmq_client import rabbitmq_client
 
+
 router = APIRouter()
 webdomain = environ.get("WEBDOMAIN")
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = environ.get(
+    'RABBITMQ_QUEUE_USER_CHAT_REPLIES')
+RABBITMQ_QUEUE_TWILIOBOT_REPLIES = environ.get(
+    'RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
 MAGIC_LINK_CHAT_TEMPLATE = environ.get("MAGIC_LINK_CHAT_TEMPLATE")
 
 
@@ -63,8 +68,9 @@ async def send_whatsapp_message(phone_number: int, login_token: str):
         },
         "text": str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link),
     }
+    routing_key = f"{RABBITMQ_QUEUE_USER_CHAT_REPLIES}"
+    routing_key += f".{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}"
     await rabbitmq_client.producer(
             body=json.dumps(message_body),
-            routing_key=rabbitmq_client.RABBITMQ_QUEUE_USER_CHATS,
-            reply_to=rabbitmq_client.RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+            routing_key=routing_key
         )

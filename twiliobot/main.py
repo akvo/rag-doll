@@ -1,47 +1,67 @@
 import os
 import logging
+import json
 import asyncio
-import threading
+from datetime import datetime
 
-from flask import Flask
+from quart import Quart, request
 from Akvo_rabbitmq_client import rabbitmq_client
 from twiliobot_client import twiliobot_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-twilio_app = Flask(__name__)
+app = Quart(__name__)
 
 
-@twilio_app.route("/whatsapp", methods=["GET", "POST"])
-def on_whatsapp_message():
-    return {"Hello": "World"}
+def twilio_POST_to_queue_message(values: dict) -> str:
+    iso_timestamp = datetime.now().isoformat()
+    queue_message = {
+        'id': values['MessageSid'],
+        'timestamp': iso_timestamp,
+        'platform': 'WHATSAPP',
+        'from': {
+            'phone': values['From'].split(':')[1],
+        },
+        'text': values['Body']
+    }
+    return json.dumps(queue_message)
 
 
-async def consume_twiliobot_messages():
+async def initialize_rabbitmq():
     try:
         await rabbitmq_client.initialize()
-        await rabbitmq_client.consume_twiliobot(
-            callback=twiliobot_client.send_whatsapp_message)
     except Exception as e:
-        logging.error(f"Error initializing RabbitMQ in twiliobot app: {e}")
+        logger.error(f"Error initializing RabbitMQ: {e}")
 
 
-def start_background_loop(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
+@app.before_serving
+async def before_server_start():
+    await initialize_rabbitmq()
+    asyncio.create_task(rabbitmq_client.consume_twiliobot(
+        callback=twiliobot_client.send_whatsapp_message
+    ))
+
+
+@app.route("/whatsapp", methods=["GET", "POST"])
+async def receive_whatsapp_message():
+    try:
+        values = await request.form
+        logger.info(f"Receive Whatsapp msg: {values}")
+        body = twilio_POST_to_queue_message(values)
+        await initialize_rabbitmq()
+        asyncio.create_task(rabbitmq_client.producer(
+            body=body,
+            routing_key=rabbitmq_client.RABBITMQ_QUEUE_USER_CHATS,
+            # reply_to=rabbitmq_client.RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+        ))
+        logger.info(f"Message sent to RabbitMQ: {body}")
+    except Exception as e:
+        logger.error(f"Error receive Whatsapp msg: {values}: {e}")
+        return f"Internal error: {type(e)} - {e}", 500
+    return "I'll look into it..."
 
 
 if __name__ == "__main__":
-    # Create a new event loop
-    loop = asyncio.new_event_loop()
-    # Start the event loop in a new thread
-    t = threading.Thread(target=start_background_loop, args=(loop,))
-    t.start()
-
-    # Schedule the consume_twiliobot_messages coroutine to run in the event loop
-    asyncio.run_coroutine_threadsafe(consume_twiliobot_messages(), loop)
-
-    # Start the Flask app
     port = int(os.environ.get("TWILIO_BOT_PORT", 5000))
-    twilio_app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=True)

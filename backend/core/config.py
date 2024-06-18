@@ -11,11 +11,7 @@ from sqlmodel import Session, text
 # from models import User
 from routes import user_routes, chat_routes
 import asyncio
-from Akvo_rabbitmq_client.rabbitmq_client import (
-    rabbitmq_client,
-    RABBITMQ_QUEUE_USER_CHATS,
-    RABBITMQ_QUEUE_TWILIOBOT_REPLIES
-)
+from Akvo_rabbitmq_client import rabbitmq_client
 
 
 @asynccontextmanager
@@ -55,7 +51,7 @@ async def send_message(message: str):
             detail="Must be a non-empty string.")
     await rabbitmq_client.producer(
         body=message,
-        routing_key=RABBITMQ_QUEUE_USER_CHATS
+        routing_key=rabbitmq_client.RABBITMQ_QUEUE_USER_CHATS
     )
     return {"status": "Message sent"}
 
@@ -68,8 +64,8 @@ async def send_magic_link(message: str):
             detail="Must be a non-empty string.")
     await rabbitmq_client.producer(
             body=message,
-            routing_key=RABBITMQ_QUEUE_USER_CHATS,
-            reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+            routing_key=rabbitmq_client.RABBITMQ_QUEUE_USER_CHATS,
+            reply_to=rabbitmq_client.RABBITMQ_QUEUE_TWILIOBOT_REPLIES
         )
     return {"status": "Message sent"}
 

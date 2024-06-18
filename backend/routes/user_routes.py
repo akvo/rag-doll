@@ -8,11 +8,7 @@ from datetime import timedelta
 from models import User
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
-from Akvo_rabbitmq_client.rabbitmq_client import (
-    rabbitmq_client,
-    RABBITMQ_QUEUE_USER_CHATS,
-    RABBITMQ_QUEUE_TWILIOBOT_REPLIES
-)
+from Akvo_rabbitmq_client import rabbitmq_client
 
 router = APIRouter()
 webdomain = environ.get("WEBDOMAIN")
@@ -71,6 +67,6 @@ async def send_whatsapp_message(phone_number: int, login_token: str):
     }
     await rabbitmq_client.producer(
             body=json.dumps(message_body),
-            routing_key=RABBITMQ_QUEUE_USER_CHATS,
-            reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+            routing_key=rabbitmq_client.RABBITMQ_QUEUE_USER_CHATS,
+            reply_to=rabbitmq_client.RABBITMQ_QUEUE_TWILIOBOT_REPLIES
         )

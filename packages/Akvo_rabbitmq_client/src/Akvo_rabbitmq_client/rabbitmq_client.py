@@ -19,16 +19,6 @@ class RabbitMQClient:
         self.RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
         self.RABBITMQ_EXCHANGE_USER_CHATS = os.getenv(
             'RABBITMQ_EXCHANGE_USER_CHATS')
-        self.RABBITMQ_QUEUE_USER_CHATS = os.getenv(
-            'RABBITMQ_QUEUE_USER_CHATS')
-        self.RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
-            'RABBITMQ_QUEUE_USER_CHAT_REPLIES')
-        self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES = os.getenv(
-            'RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
-        self.RABBITMQ_QUEUE_SLACKBOT_REPLIES = os.getenv(
-            'RABBITMQ_QUEUE_SLACKBOT_REPLIES')
-        self.RABBITMQ_QUEUE_HISTORIES = os.getenv(
-            'RABBITMQ_QUEUE_HISTORIES')
 
     async def connect(self):
         if not self.connection or self.connection.is_closed:
@@ -92,31 +82,8 @@ class RabbitMQClient:
                 logger.info(
                     f"{log}, Reply To: {reply_to}"
                 )
-                # use callback function
                 if callback:
                     callback(body=body)
-                else:
-                    # Handle the message based on reply_to value
-                    if (
-                        routing_key == self.RABBITMQ_QUEUE_USER_CHAT_REPLIES and
-                        reply_to == self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES
-                    ):
-                        # Process message intended for TwilioBot
-                        await self.producer(
-                            body=body,
-                            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                            reply_to=reply_to
-                        )
-                    elif (
-                        routing_key == self.RABBITMQ_QUEUE_USER_CHAT_REPLIES and
-                        reply_to == self.RABBITMQ_QUEUE_SLACKBOT_REPLIES
-                    ):
-                        # Process message intended for SlackBot
-                        await self.producer(
-                            body=body,
-                            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                            reply_to=reply_to
-                        )
         except Exception as e:
             logger.error(f"Error processing {routing_key} message: {e}")
 
@@ -140,41 +107,6 @@ class RabbitMQClient:
             logger.info(f"Consume Q:{queue_name} | RK:{routing_key}")
         except Exception as e:
             logger.error(f"Error consuming {routing_key}: {e}")
-
-    async def consume_user_chats(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_USER_CHATS,
-            routing_key=self.RABBITMQ_QUEUE_USER_CHATS,
-            callback=callback
-        )
-
-    async def consume_user_chat_replies(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            callback=callback
-        )
-
-    async def consume_twiliobot(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
-            routing_key=f"*.{self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
-            callback=callback
-        )
-
-    async def consume_slackbot(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_SLACKBOT_REPLIES,
-            routing_key=f"*.{self.RABBITMQ_QUEUE_SLACKBOT_REPLIES}",
-            callback=callback
-        )
-
-    async def consume_chat_history(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_HISTORIES,
-            routing_key="#",
-            callback=callback
-        )
 
 
 rabbitmq_client = RabbitMQClient()

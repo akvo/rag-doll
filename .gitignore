@@ -4,3 +4,6 @@
 .env
 .DS_Store
 *.log
+*.coverage
+*.coverage.*
+**/setup.cfg

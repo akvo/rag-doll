@@ -116,6 +116,7 @@ services:
     volumes:
       - ./backend:/app:delegated
       - ./packages/Akvo_rabbitmq_client:/app/Akvo_rabbitmq_client:delegated
+      - ./setup.cfg:/app/setup.cfg:ro
     depends_on:
       - postgres
 

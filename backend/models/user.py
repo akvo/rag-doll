@@ -11,14 +11,14 @@ class User(SQLModel, table=True):
 
     @property
     def phone_number(self):
-        return f"+{self._phone_number}"
+        return f"+{self.phone_number}"
 
     # validate phone number to have a + sign
     @phone_number.setter
-    def phone_number(self, phone_number: int):
+    def phone_number(self, phone_number: str):
         if phone_number[0] != "+":
             raise ValueError("Phone number must start with a + sign")
-        self._phone_number = phone_number[1:]
+        self.phone_number = phone_number[1:]
 
 
 class User_Properties(SQLModel, table=True):

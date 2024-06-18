@@ -4,20 +4,7 @@ import logging
 
 from typing import Callable
 
-# Configuration
-RABBITMQ_USER = os.getenv('RABBITMQ_USER')
-RABBITMQ_PASS = os.getenv('RABBITMQ_PASS')
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST')
-RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
-RABBITMQ_EXCHANGE_USER_CHATS = os.getenv('RABBITMQ_EXCHANGE_USER_CHATS')
-RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv('RABBITMQ_QUEUE_USER_CHAT_REPLIES')
-RABBITMQ_QUEUE_TWILIOBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
-RABBITMQ_QUEUE_SLACKBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_SLACKBOT_REPLIES')
-RABBITMQ_QUEUE_HISTORIES = os.getenv('RABBITMQ_QUEUE_HISTORIES')
 
-
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -27,14 +14,29 @@ class RabbitMQClient:
         self.connection = None
         self.channel = None
         self.RABBITMQ_USER = os.getenv('RABBITMQ_USER')
+        self.RABBITMQ_PASS = os.getenv('RABBITMQ_PASS')
+        self.RABBITMQ_HOST = os.getenv('RABBITMQ_HOST')
+        self.RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
+        self.RABBITMQ_EXCHANGE_USER_CHATS = os.getenv(
+            'RABBITMQ_EXCHANGE_USER_CHATS')
+        self.RABBITMQ_QUEUE_USER_CHATS = os.getenv(
+            'RABBITMQ_QUEUE_USER_CHATS')
+        self.RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
+            'RABBITMQ_QUEUE_USER_CHAT_REPLIES')
+        self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES = os.getenv(
+            'RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
+        self.RABBITMQ_QUEUE_SLACKBOT_REPLIES = os.getenv(
+            'RABBITMQ_QUEUE_SLACKBOT_REPLIES')
+        self.RABBITMQ_QUEUE_HISTORIES = os.getenv(
+            'RABBITMQ_QUEUE_HISTORIES')
 
     async def connect(self):
         if not self.connection or self.connection.is_closed:
             self.connection = await aio_pika.connect_robust(
-                host=RABBITMQ_HOST,
-                port=RABBITMQ_PORT,
-                login=RABBITMQ_USER,
-                password=RABBITMQ_PASS
+                host=self.RABBITMQ_HOST,
+                port=self.RABBITMQ_PORT,
+                login=self.RABBITMQ_USER,
+                password=self.RABBITMQ_PASS
             )
 
     async def close_connection(self):
@@ -47,7 +49,7 @@ class RabbitMQClient:
             await self.connect()
             self.channel = await self.connection.channel()
             self.exchange = await self.channel.declare_exchange(
-                RABBITMQ_EXCHANGE_USER_CHATS,
+                self.RABBITMQ_EXCHANGE_USER_CHATS,
                 aio_pika.ExchangeType.TOPIC
             )
         except Exception as e:
@@ -96,23 +98,23 @@ class RabbitMQClient:
                 else:
                     # Handle the message based on reply_to value
                     if (
-                        routing_key == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
-                        reply_to == RABBITMQ_QUEUE_TWILIOBOT_REPLIES
+                        routing_key == self.RABBITMQ_QUEUE_USER_CHAT_REPLIES and
+                        reply_to == self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES
                     ):
                         # Process message intended for TwilioBot
                         await self.producer(
                             body=body,
-                            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+                            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
                             reply_to=reply_to
                         )
                     elif (
-                        routing_key == RABBITMQ_QUEUE_USER_CHAT_REPLIES and
-                        reply_to == RABBITMQ_QUEUE_SLACKBOT_REPLIES
+                        routing_key == self.RABBITMQ_QUEUE_USER_CHAT_REPLIES and
+                        reply_to == self.RABBITMQ_QUEUE_SLACKBOT_REPLIES
                     ):
                         # Process message intended for SlackBot
                         await self.producer(
                             body=body,
-                            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+                            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
                             reply_to=reply_to
                         )
         except Exception as e:
@@ -141,35 +143,35 @@ class RabbitMQClient:
 
     async def consume_user_chats(self, callback: Callable = None):
         await self.consume(
-            queue_name=RABBITMQ_QUEUE_USER_CHATS,
-            routing_key=RABBITMQ_QUEUE_USER_CHATS,
+            queue_name=self.RABBITMQ_QUEUE_USER_CHATS,
+            routing_key=self.RABBITMQ_QUEUE_USER_CHATS,
             callback=callback
         )
 
     async def consume_user_chat_replies(self, callback: Callable = None):
         await self.consume(
-            queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            queue_name=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             callback=callback
         )
 
     async def consume_twiliobot(self, callback: Callable = None):
         await self.consume(
-            queue_name=RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
-            routing_key=f"*.{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
+            queue_name=self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
+            routing_key=f"*.{self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
             callback=callback
         )
 
     async def consume_slackbot(self, callback: Callable = None):
         await self.consume(
-            queue_name=RABBITMQ_QUEUE_SLACKBOT_REPLIES,
-            routing_key=f"*.{RABBITMQ_QUEUE_SLACKBOT_REPLIES}",
+            queue_name=self.RABBITMQ_QUEUE_SLACKBOT_REPLIES,
+            routing_key=f"*.{self.RABBITMQ_QUEUE_SLACKBOT_REPLIES}",
             callback=callback
         )
 
     async def consume_chat_history(self, callback: Callable = None):
         await self.consume(
-            queue_name=RABBITMQ_QUEUE_HISTORIES,
+            queue_name=self.RABBITMQ_QUEUE_HISTORIES,
             routing_key="#",
             callback=callback
         )

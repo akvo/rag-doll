@@ -1,7 +1,7 @@
 import unittest
 import asyncio
 from unittest.mock import MagicMock
-from Akvo_rabbitmq_client.rabbitmq_client import RabbitMQClient
+from Akvo_rabbitmq_client import rabbitmq_client
 
 
 class TestRabbitMQClient(unittest.TestCase):
@@ -9,7 +9,7 @@ class TestRabbitMQClient(unittest.TestCase):
     def setUp(self):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self.client = RabbitMQClient()
+        self.client = rabbitmq_client
 
     def tearDown(self):
         async def cleanup():

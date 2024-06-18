@@ -5,6 +5,7 @@ import threading
 
 from flask import Flask
 from Akvo_rabbitmq_client import rabbitmq_client
+from twiliobot_client import twiliobot_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,7 +21,8 @@ def on_whatsapp_message():
 async def consume_twiliobot_messages():
     try:
         await rabbitmq_client.initialize()
-        await rabbitmq_client.consume_twiliobot()
+        await rabbitmq_client.consume_twiliobot(
+            callback=twiliobot_client.send_whatsapp_message)
     except Exception as e:
         logging.error(f"Error initializing RabbitMQ in twiliobot app: {e}")
 

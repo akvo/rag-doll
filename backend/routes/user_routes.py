@@ -32,7 +32,7 @@ async def send_login_link(
     user.login_code = str(login_code_uuid)
     session.commit()
     # TODO: Implement this function to send WhatsApp messages
-    send_whatsapp_message(phone_number, user.login_code)
+    await send_whatsapp_message(phone_number, user.login_code)
     # return {"message": "Login link sent via WhatsApp"}
     return f"{webdomain}/verify/{user.login_code}"
 
@@ -61,7 +61,7 @@ async def send_whatsapp_message(phone_number: int, login_token: str):
     message_body = {
         "to": {
             # need phone number with country code
-            "phone": f"+{phone_number}",
+            "phone": phone_number,
         },
         "text": str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link),
     }

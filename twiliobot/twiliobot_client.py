@@ -7,12 +7,12 @@ from twilio.base.exceptions import TwilioRestException
 
 from twilio.rest import Client
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class TwiliobotClient:
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
-
         self.TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
         self.TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
         self.TWILIO_WHATSAPP_FROM = "whatsapp:+14155238886"
@@ -44,34 +44,34 @@ class TwiliobotClient:
         Consume messages from the RabbitMQ queue and send them via Twilio.
         """
         try:
-            self.logger.info(f"Message received: {message_body}")
-            queue_message = json.loads(message_body.decode("utf8"))
+            logger.info(f"Message received: {message_body}")
+            queue_message = json.loads(message_body.decode())
             text = queue_message["text"]
             phone = queue_message["to"]["phone"]
 
             chunks = self.chunk_text_by_paragraphs(text, 1500)
-            self.logger.info(f"sending '{text}' to WhatsApp number {phone}")
+            logger.info(f"sending '{text}' to WhatsApp number {phone}")
             for chunk in chunks:
-                self.logger.info(f"sending '{chunk}' to WhatsApp")
-                self.logger.info(f"number {phone}")
+                logger.info(f"sending '{chunk}' to WhatsApp")
+                logger.info(f"number {phone}")
                 response = self.twilio_client.messages.create(
                     from_=self.TWILIO_WHATSAPP_FROM,
                     body=chunk,
                     to=f"whatsapp:{phone}",
                 )
                 if response.error_code is not None:
-                    self.logger.error(
+                    logger.error(
                         f"Failed to send message to WhatsApp number "
                         f"{phone}: {response.error_message}"
                     )
                 time.sleep(0.5)  # 500ms delay
 
         except JSONDecodeError as e:
-            self.logger.error(f"Error decoding JSON message: {e}")
+            logger.error(f"Error decoding JSON message: {e}")
         except TwilioRestException as e:
-            self.logger.error(f"Error sending message to Twilio: {e}")
+            logger.error(f"Error sending message to Twilio: {e}")
         except Exception as e:
-            self.logger.error(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
 
 
 twiliobot_client = TwiliobotClient()

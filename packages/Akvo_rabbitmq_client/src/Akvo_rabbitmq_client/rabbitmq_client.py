@@ -94,7 +94,7 @@ class RabbitMQClient:
                 )
                 # use callback function
                 if callback:
-                    callback(body=body)
+                    callback(message_body=message.body)
                 else:
                     # Handle the message based on reply_to value
                     if (

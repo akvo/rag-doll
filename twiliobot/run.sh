@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -eu
-apt update && apt install -y build-essential
+
+# Install required packages
 pip -q install --upgrade pip
 pip -q install --cache-dir=.pip -r requirements.txt
 
-
-python ./main.py
+# Run Hypercorn with auto-reload
+hypercorn main:application --bind 0.0.0.0:$TWILIO_BOT_PORT --reload

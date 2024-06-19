@@ -9,16 +9,40 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+class MissingEnvironmentVariableError(Exception):
+    """Custom exception for missing environment variables."""
+    def __init__(self, variable_name):
+        self.variable_name = variable_name
+        self.message = f"Missing required environment variable: {variable_name}"
+        super().__init__(self.message)
+
+
 class RabbitMQClient:
     def __init__(self):
-        self.connection = None
-        self.channel = None
         self.RABBITMQ_USER = os.getenv('RABBITMQ_USER')
         self.RABBITMQ_PASS = os.getenv('RABBITMQ_PASS')
         self.RABBITMQ_HOST = os.getenv('RABBITMQ_HOST')
-        self.RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
+        self.RABBITMQ_PORT = os.getenv('RABBITMQ_PORT')
         self.RABBITMQ_EXCHANGE_USER_CHATS = os.getenv(
             'RABBITMQ_EXCHANGE_USER_CHATS')
+
+        self.validate_environment_variables()
+
+        self.RABBITMQ_PORT = int(self.RABBITMQ_PORT)
+        self.connection = None
+        self.channel = None
+
+    def validate_environment_variables(self):
+        required_variables = [
+            'RABBITMQ_USER',
+            'RABBITMQ_PASS',
+            'RABBITMQ_HOST',
+            'RABBITMQ_PORT',
+            'RABBITMQ_EXCHANGE_USER_CHATS'
+        ]
+        for var in required_variables:
+            if getattr(self, var) is None:
+                raise MissingEnvironmentVariableError(var)
 
     async def connect(self):
         if not self.connection or self.connection.is_closed:
@@ -109,4 +133,7 @@ class RabbitMQClient:
             logger.error(f"Error consuming {routing_key}: {e}")
 
 
-rabbitmq_client = RabbitMQClient()
+try:
+    rabbitmq_client = RabbitMQClient()
+except MissingEnvironmentVariableError as e:
+    logger.error(f"MissingEnvironmentVariableError: {e}")

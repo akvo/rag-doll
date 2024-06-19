@@ -55,6 +55,7 @@ async def receive_whatsapp_message():
         values = await request.form
         logger.info(f"Received Whatsapp message: {values}")
         body = twilio_POST_to_queue_message(values)
+        # num_media = int(request.values.get("NumMedia"))
         # Ensure RabbitMQ is initialized before sending message
         await rabbitmq_client.initialize()
         # Send message to RabbitMQ

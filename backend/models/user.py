@@ -9,16 +9,17 @@ class User(SQLModel, table=True):
     )
     login_code: str | None = None
 
-    @property
-    def phone_number(self):
+    # return phone number in international format
+    def __str__(self) -> str:
         return f"+{self.phone_number}"
 
-    # validate phone number to have a + sign
-    @phone_number.setter
-    def phone_number(self, phone_number: str):
-        if phone_number[0] != "+":
-            raise ValueError("Phone number must start with a + sign")
-        self.phone_number = phone_number[1:]
+    # dict user serialize phone number to international format
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "phone_number": str(self),
+            "login_code": self.login_code,
+        }
 
 
 class User_Properties(SQLModel, table=True):

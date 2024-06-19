@@ -1,6 +1,25 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
-from models import User
+from models import User, Client
+
+
+def test_get_phone_number_in_international_format(session: Session) -> None:
+    user = session.exec(select(User).where(User.phone_number == "+999")).first()
+    assert str(user) == "+999"
+    assert user.serialize() == {
+        "id": user.id,
+        "phone_number": "+999",
+        "login_code": None,
+    }
+
+    client = session.exec(
+        select(Client).where(Client.phone_number == "+998")
+    ).first()
+    assert str(client) == "+998"
+    assert client.serialize() == {
+        "id": client.id,
+        "phone_number": "+998",
+    }
 
 
 def test_send_login_link(client: TestClient) -> None:

@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
         routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
     ))
     yield
-    await rabbitmq_client.close_connection()
+    await rabbitmq_client.disconnect()
 
 
 app = FastAPI(

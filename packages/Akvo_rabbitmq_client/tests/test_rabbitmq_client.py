@@ -13,7 +13,7 @@ class TestRabbitMQClient(unittest.TestCase):
 
     def tearDown(self):
         async def cleanup():
-            await self.client.close_connection()
+            await self.client.disconnect()
         self.loop.run_until_complete(cleanup())
         self.loop.close()
 

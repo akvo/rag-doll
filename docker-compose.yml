@@ -116,6 +116,7 @@ services:
       - ./packages/Akvo_rabbitmq_client:/lib/Akvo_rabbitmq_client:delegated
     depends_on:
       - postgres
+      - rabbitmq
 
   frontend:
     image: akvo/akvo-node-18-alpine:20230831.105309.b9593b7

@@ -2,7 +2,6 @@ import pytest
 from quart.testing import QuartClient
 
 from main import app as quart_app
-from unittest.mock import AsyncMock, patch
 
 
 # Mocked rabbitmq_client and twiliobot_client for testing

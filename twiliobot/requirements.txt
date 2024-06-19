@@ -1,5 +1,4 @@
 twilio==9.1.1
-# flask==3.0.3
-# flask[async]
-# celery==5.4.0
 quart==0.19.6
+pytest==8.2.2
+pytest-asyncio==0.23.7

@@ -1,18 +1,15 @@
-
 # Define RabbitMQ environment variables once at the top level
 x-environments: &rabbitmq_client_env
   RABBITMQ_USER: ${RABBITMQ_USER}
   RABBITMQ_PASS: ${RABBITMQ_PASS}
+  RABBITMQ_HOST: ${RABBITMQ_HOST}
+  RABBITMQ_PORT: ${RABBITMQ_PORT}
   RABBITMQ_EXCHANGE_USER_CHATS: ${RABBITMQ_EXCHANGE_USER_CHATS}
   RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
   RABBITMQ_QUEUE_USER_CHAT_REPLIES: ${RABBITMQ_QUEUE_USER_CHAT_REPLIES}
   RABBITMQ_QUEUE_TWILIOBOT_REPLIES: ${RABBITMQ_QUEUE_TWILIOBOT_REPLIES}
   RABBITMQ_QUEUE_SLACKBOT_REPLIES: ${RABBITMQ_QUEUE_SLACKBOT_REPLIES}
   RABBITMQ_QUEUE_HISTORIES: ${RABBITMQ_QUEUE_HISTORIES}
-  RABBITMQ_HOST: ${RABBITMQ_HOST}
-  RABBITMQ_PORT: ${RABBITMQ_PORT}
-  RABBITMQ_MANAGEMENT_PORT: ${RABBITMQ_MANAGEMENT_PORT}
-
 
 services:
   twiliobot:
@@ -132,7 +129,8 @@ services:
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated
-      - ./packages/Akvo_rabbitmq_client:/app/Akvo_rabbitmq_client:delegated
+      - ./setup.cfg:/app/setup.cfg:ro
+      - ./packages/Akvo_rabbitmq_client:/lib/Akvo_rabbitmq_client:delegated
     depends_on:
       - postgres
       - rabbitmq

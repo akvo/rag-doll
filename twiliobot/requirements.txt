@@ -3,5 +3,3 @@ twilio==9.1.1
 # flask[async]
 # celery==5.4.0
 quart==0.19.6
-
--e /app/Akvo_rabbitmq_client

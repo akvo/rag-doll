@@ -9,26 +9,40 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+class MissingEnvironmentVariableError(Exception):
+    """Custom exception for missing environment variables."""
+    def __init__(self, variable_name):
+        self.variable_name = variable_name
+        self.message = f"Missing required environment variable: {variable_name}"
+        super().__init__(self.message)
+
+
 class RabbitMQClient:
     def __init__(self):
-        self.connection = None
-        self.channel = None
         self.RABBITMQ_USER = os.getenv('RABBITMQ_USER')
         self.RABBITMQ_PASS = os.getenv('RABBITMQ_PASS')
         self.RABBITMQ_HOST = os.getenv('RABBITMQ_HOST')
-        self.RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT'))
+        self.RABBITMQ_PORT = os.getenv('RABBITMQ_PORT')
         self.RABBITMQ_EXCHANGE_USER_CHATS = os.getenv(
             'RABBITMQ_EXCHANGE_USER_CHATS')
-        self.RABBITMQ_QUEUE_USER_CHATS = os.getenv(
-            'RABBITMQ_QUEUE_USER_CHATS')
-        self.RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
-            'RABBITMQ_QUEUE_USER_CHAT_REPLIES')
-        self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES = os.getenv(
-            'RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
-        self.RABBITMQ_QUEUE_SLACKBOT_REPLIES = os.getenv(
-            'RABBITMQ_QUEUE_SLACKBOT_REPLIES')
-        self.RABBITMQ_QUEUE_HISTORIES = os.getenv(
-            'RABBITMQ_QUEUE_HISTORIES')
+
+        self.validate_environment_variables()
+
+        self.RABBITMQ_PORT = int(self.RABBITMQ_PORT)
+        self.connection = None
+        self.channel = None
+
+    def validate_environment_variables(self):
+        required_variables = [
+            'RABBITMQ_USER',
+            'RABBITMQ_PASS',
+            'RABBITMQ_HOST',
+            'RABBITMQ_PORT',
+            'RABBITMQ_EXCHANGE_USER_CHATS'
+        ]
+        for var in required_variables:
+            if getattr(self, var) is None:
+                raise MissingEnvironmentVariableError(var)
 
     async def connect(self):
         if not self.connection or self.connection.is_closed:
@@ -39,7 +53,7 @@ class RabbitMQClient:
                 password=self.RABBITMQ_PASS
             )
 
-    async def close_connection(self):
+    async def disconnect(self):
         if self.connection and not self.connection.is_closed:
             await self.connection.close()
             logger.info("RabbitMQ connection closed.")
@@ -92,31 +106,8 @@ class RabbitMQClient:
                 logger.info(
                     f"{log}, Reply To: {reply_to}"
                 )
-                # use callback function
                 if callback:
                     callback(body=body)
-                else:
-                    # Handle the message based on reply_to value
-                    if (
-                        routing_key == self.RABBITMQ_QUEUE_USER_CHAT_REPLIES and
-                        reply_to == self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES
-                    ):
-                        # Process message intended for TwilioBot
-                        await self.producer(
-                            body=body,
-                            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                            reply_to=reply_to
-                        )
-                    elif (
-                        routing_key == self.RABBITMQ_QUEUE_USER_CHAT_REPLIES and
-                        reply_to == self.RABBITMQ_QUEUE_SLACKBOT_REPLIES
-                    ):
-                        # Process message intended for SlackBot
-                        await self.producer(
-                            body=body,
-                            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                            reply_to=reply_to
-                        )
         except Exception as e:
             logger.error(f"Error processing {routing_key} message: {e}")
 
@@ -141,40 +132,8 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"Error consuming {routing_key}: {e}")
 
-    async def consume_user_chats(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_USER_CHATS,
-            routing_key=self.RABBITMQ_QUEUE_USER_CHATS,
-            callback=callback
-        )
 
-    async def consume_user_chat_replies(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            routing_key=self.RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            callback=callback
-        )
-
-    async def consume_twiliobot(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
-            routing_key=f"*.{self.RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
-            callback=callback
-        )
-
-    async def consume_slackbot(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_SLACKBOT_REPLIES,
-            routing_key=f"*.{self.RABBITMQ_QUEUE_SLACKBOT_REPLIES}",
-            callback=callback
-        )
-
-    async def consume_chat_history(self, callback: Callable = None):
-        await self.consume(
-            queue_name=self.RABBITMQ_QUEUE_HISTORIES,
-            routing_key="#",
-            callback=callback
-        )
-
-
-rabbitmq_client = RabbitMQClient()
+try:
+    rabbitmq_client = RabbitMQClient()
+except MissingEnvironmentVariableError as e:
+    logger.error(f"MissingEnvironmentVariableError: {e}")

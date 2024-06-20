@@ -17,6 +17,7 @@ def init_db(session: Session) -> None:
     session.exec(text("DELETE FROM chat"))
     session.exec(text("DELETE FROM chat_session"))
     session.exec(text("DELETE FROM client"))
+    session.exec(text("DELETE FROM user_properties"))
     session.exec(text("DELETE FROM public.user"))
     user = User(
         phone_number="+999",

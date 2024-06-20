@@ -3,21 +3,15 @@ from faker import Faker
 from models.user import User
 from models.client import Client, Client_Properties
 from models.chat import Chat, Chat_Sender, Chat_Session
-from core.database import get_db_url
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from seeder.session_local import get_session_local
 from sqlalchemy.exc import IntegrityError
+
 
 faker = Faker()
 
-# Initialize SessionLocal directly in conversation_demo_seeder.py
-DATABASE_URL = get_db_url()
-engine = create_engine(DATABASE_URL, echo=False)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 
 def get_last_user():
-    session = SessionLocal()
+    session = get_session_local()
     try:
         last_user = session.query(User).order_by(User.id.desc()).first()
         return last_user
@@ -31,7 +25,7 @@ def create_client():
     client = Client(
         phone_number=int("".join(filter(str.isdigit, phone_number))))
 
-    session = SessionLocal()
+    session = get_session_local()
     try:
         session.add(client)
         session.flush()  # Flush to generate client.id
@@ -51,7 +45,7 @@ def create_client():
 
 
 def seed_chat_data(user_id, client_id):
-    session = SessionLocal()
+    session = get_session_local()
     try:
         # Create a chat session
         chat_session = Chat_Session(user_id=user_id, client_id=client_id)

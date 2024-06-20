@@ -1,19 +1,13 @@
 from faker import Faker
 from models.user import User, User_Properties
-from core.database import get_db_url
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from seeder.session_local import get_session_local
+
 
 faker = Faker()
 
-# Initialize SessionLocal directly in user_seeder.py
-DATABASE_URL = get_db_url()
-engine = create_engine(DATABASE_URL, echo=False)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 
 def seed_users(count: int):
-    session = SessionLocal()
+    session = get_session_local()
     try:
         for _ in range(count):
             phone_number = faker.phone_number()
@@ -42,7 +36,7 @@ def seed_users(count: int):
 
 
 def interactive_seeder():
-    session = SessionLocal()
+    session = get_session_local()
     try:
         phone_number = input("Enter phone number: ")
         user = User(

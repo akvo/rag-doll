@@ -1,15 +1,16 @@
 from seeder.user_seeder import seed_users, interactive_seeder
 from sqlalchemy.sql import text
+from sqlmodel import Session
 
 
-def test_seed_users(session):
+def test_seed_users(session: Session):
     # Test seeding users
     seed_users(3)  # Seed 3 users
     result = session.exec(text("SELECT COUNT(*) FROM \"user\""))
     assert result.scalar() > 3
 
 
-def test_interactive_seeder(session, monkeypatch):
+def test_interactive_seeder(session: Session, monkeypatch):
     # Simulate user input for interactive seeder
     user_input = [
         "123456789",  # Phone number

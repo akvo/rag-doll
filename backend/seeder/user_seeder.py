@@ -1,13 +1,13 @@
 from faker import Faker
 from models.user import User, User_Properties
-from seeder.session_local import get_session_local
+from core.database import engine
+from sqlmodel import Session
 
 
 faker = Faker()
 
 
-def seed_users(count: int):
-    session = get_session_local()
+def seed_users(session: Session, count: int):
     try:
         for _ in range(count):
             phone_number = faker.phone_number()
@@ -35,8 +35,7 @@ def seed_users(count: int):
         print("Seeder process completed.")
 
 
-def interactive_seeder():
-    session = get_session_local()
+def interactive_seeder(session: Session):
     try:
         phone_number = input("Enter phone number: ")
         user = User(
@@ -64,8 +63,12 @@ def interactive_seeder():
 if __name__ == "__main__":
     import sys
 
+    session = Session(engine)
+
     if "-i" in sys.argv:
-        interactive_seeder()
+        interactive_seeder(session=session)
     else:
         count = int(input("How many users do you want to seed? "))
-        seed_users(count)
+        seed_users(session=session, count=count)
+
+    session.close()

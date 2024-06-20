@@ -5,7 +5,7 @@
   },
   {
     "message": "My name is Ahmed.",
-    "sender": "user"
+    "sender": "client"
   },
   {
     "message": "Hi Ahmed, how can I assist you today?",
@@ -13,7 +13,7 @@
   },
   {
     "message": "I need help with my crops, they are not growing well.",
-    "sender": "user"
+    "sender": "client"
   },
   {
     "message": "I can connect you with an extension officer for expert advice. Please wait a moment.",
@@ -21,31 +21,31 @@
   },
   {
     "message": "Hello Ahmed, I am the extension officer. Can you tell me more about the issues with your crops?",
-    "sender": "client"
+    "sender": "user"
   },
   {
     "message": "The leaves are turning yellow and the growth is stunted.",
-    "sender": "user"
+    "sender": "client"
   },
   {
     "message": "It sounds like there could be a nutrient deficiency or a pest problem. Have you noticed any insects on the plants?",
-    "sender": "client"
+    "sender": "user"
   },
   {
     "message": "Yes, there are some small insects on the leaves.",
-    "sender": "user"
+    "sender": "client"
   },
   {
     "message": "Based on your description, it might be an aphid infestation. I recommend using an organic insecticide. Also, ensure your soil has enough nitrogen.",
-    "sender": "client"
-  },
-  {
-    "message": "Thank you for the advice. I will try that.",
     "sender": "user"
   },
   {
-    "message": "You're welcome, Ahmed. If you need further assistance, feel free to ask.",
+    "message": "Thank you for the advice. I will try that.",
     "sender": "client"
+  },
+  {
+    "message": "You're welcome, Ahmed. If you need further assistance, feel free to ask.",
+    "sender": "user"
   },
   {
     "message": "Is there anything else I can help you with?",
@@ -53,7 +53,7 @@
   },
   {
     "message": "No, that would be all for now. Thank you.",
-    "sender": "user"
+    "sender": "client"
   },
   {
     "message": "Have a great day, Ahmed!",

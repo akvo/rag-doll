@@ -5,7 +5,7 @@ from sqlmodel import Session
 
 def test_seed_users(session: Session):
     # Test seeding users
-    seed_users(10)  # Seed 3 users
+    seed_users(session=session, count=10)  # Seed 3 users
     result = session.exec(text("SELECT COUNT(*) FROM \"user\""))
     assert result.scalar() > 10
     result_up = session.exec(text("SELECT COUNT(*) FROM \"user_properties\""))
@@ -21,7 +21,7 @@ def test_interactive_seeder(session: Session, monkeypatch):
         "john.doe@example.com",  # Email
     ]
     monkeypatch.setattr('builtins.input', lambda _: user_input.pop(0))
-    interactive_seeder()
+    interactive_seeder(session=session)
     phone_number = "123456789"
     result = session.exec(text(
         "SELECT * FROM \"user\" WHERE phone_number = :phone_number"

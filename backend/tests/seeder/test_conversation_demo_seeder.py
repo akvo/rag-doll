@@ -18,20 +18,20 @@ def conversation_data():
 
 
 def test_create_client(session: Session):
-    create_client()
+    create_client(session=session)
     result = session.exec(text("SELECT COUNT(*) FROM \"client\""))
     assert result.scalar() > 1
 
 
 def test_seed_chat_data(session: Session, conversation_data):
-    last_user = get_last_user()
+    last_user = get_last_user(session=session)
     assert last_user is not None
 
     user_id = last_user.id
-    client_id = create_client()
+    client_id = create_client(session=session)
     assert client_id is not None
 
-    seed_chat_data(user_id, client_id)
+    seed_chat_data(session=session, user_id=user_id, client_id=client_id)
 
     # Verify chat sessions after seeding
     chat_sessions = session.exec(

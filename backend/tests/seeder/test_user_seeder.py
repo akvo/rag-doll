@@ -5,9 +5,11 @@ from sqlmodel import Session
 
 def test_seed_users(session: Session):
     # Test seeding users
-    seed_users(3)  # Seed 3 users
+    seed_users(10)  # Seed 3 users
     result = session.exec(text("SELECT COUNT(*) FROM \"user\""))
-    assert result.scalar() > 3
+    assert result.scalar() > 10
+    result_up = session.exec(text("SELECT COUNT(*) FROM \"user_properties\""))
+    assert result_up.scalar() > 0
 
 
 def test_interactive_seeder(session: Session, monkeypatch):
@@ -22,6 +24,11 @@ def test_interactive_seeder(session: Session, monkeypatch):
     interactive_seeder()
     phone_number = "123456789"
     result = session.exec(text(
-        "SELECT COUNT(*) FROM \"user\" WHERE phone_number = :phone_number"
-    ).bindparams(phone_number=phone_number))
-    assert result.scalar() == 1
+        "SELECT * FROM \"user\" WHERE phone_number = :phone_number"
+    ).bindparams(phone_number=phone_number)).fetchall()
+    assert len(result) == 1
+    user_id = result[0].id
+    result_up = session.exec(text(
+        "SELECT COUNT(*) FROM \"user_properties\" WHERE user_id = :user_id"
+    ).bindparams(user_id=user_id))
+    assert result_up.scalar() > 0

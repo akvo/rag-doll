@@ -1,6 +1,6 @@
 import json
 import pytest
-from seeder.conversation_demo_seeder import (
+from seeder.conversation import (
     create_client,
     seed_chat_data,
     get_last_user,
@@ -14,7 +14,7 @@ from sqlmodel import Session, select
 
 @pytest.fixture
 def conversation_data():
-    json_path = "./seeder/conversation_demo.json"
+    json_path = "./seeder/fixtures/conversation_demo.json"
     with open(json_path, "r") as f:
         data = json.load(f)
     return data

@@ -46,7 +46,7 @@ def seed_chat_data(session: Session, user_id: int, client_id: int):
 
     # Load conversation demo from JSON
     # (assuming conversation_demo.json is in the seeder folder)
-    json_path = "seeder/conversation_demo.json"
+    json_path = "./seeder/fixtures/conversation_demo.json"
     with open(json_path, "r") as f:
         conversation_data = json.load(f)
 

@@ -1,4 +1,4 @@
-from seeder.user_seeder import (
+from seeder.user import (
     seed_users,
     interactive_seeder,
     User,

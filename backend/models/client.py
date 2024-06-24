@@ -1,21 +1,25 @@
 from sqlalchemy import Column, String, BigInteger
 from sqlmodel import Field, SQLModel
+from utils.util import sanitize_phone_number
 
 
 class Client(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     phone_number: int = Field(sa_column=Column(BigInteger, unique=True))
 
-    @property
-    def phone_number(self):
-        return f"+{self._phone_number}"
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.phone_number = sanitize_phone_number(
+            phone_number=data.get('phone_number'))
 
-    # validate phone number to have a + sign
-    @phone_number.setter
-    def phone_number(self, phone_number: int):
-        if phone_number[0] != "+":
-            raise ValueError("Phone number must start with a + sign")
-        self._phone_number = phone_number[1:]
+    def __str__(self) -> str:
+        return f"+{self.phone_number}"
+
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "phone_number": str(self),
+        }
 
 
 class Client_Properties(SQLModel, table=True):

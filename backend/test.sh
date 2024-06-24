@@ -5,6 +5,8 @@ set -euo pipefail
 pip -q install --upgrade pip
 pip -q install --cache-dir=.pip -r requirements.txt
 
+pip -q install --cache-dir=.pip /lib/Akvo_rabbitmq_client
+
 echo "Running tests"
 COVERAGE_PROCESS_START=./.coveragerc \
   coverage run --parallel-mode --concurrency=thread,gevent --rcfile=./.coveragerc \

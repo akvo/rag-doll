@@ -1,3 +1,5 @@
+import os
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -11,20 +13,28 @@ from sqlmodel import Session, text
 # from models import User
 from routes import user_routes, chat_routes
 import asyncio
-from utils.rabbitmq_client import (
-    rabbitmq_client,
-    RABBITMQ_QUEUE_USER_CHATS,
-    RABBITMQ_QUEUE_TWILIOBOT_REPLIES
-)
+from Akvo_rabbitmq_client import rabbitmq_client
+
+
+RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv('RABBITMQ_QUEUE_USER_CHAT_REPLIES')
+RABBITMQ_QUEUE_TWILIOBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await rabbitmq_client.initialize()
     loop = asyncio.get_running_loop()
-    loop.create_task(rabbitmq_client.consume_user_chats())
-    loop.create_task(rabbitmq_client.consume_user_chat_replies())
+    loop.create_task(rabbitmq_client.consume(
+        queue_name=RABBITMQ_QUEUE_USER_CHATS,
+        routing_key=RABBITMQ_QUEUE_USER_CHATS,
+    ))
+    loop.create_task(rabbitmq_client.consume(
+        queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+        routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+    ))
     yield
+    await rabbitmq_client.disconnect()
 
 
 app = FastAPI(

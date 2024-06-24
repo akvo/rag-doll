@@ -13,11 +13,19 @@ from core.database import get_db_url, get_session
 from models import User, Client, Chat_Session, Chat, Chat_Sender
 
 
+def truncate(session: Session, table: str):
+    session.exec(text(f"TRUNCATE TABLE public.{table} CASCADE;"))
+    session.commit()
+    session.flush()
+
+
 def init_db(session: Session) -> None:
-    session.exec(text("DELETE FROM chat"))
-    session.exec(text("DELETE FROM chat_session"))
-    session.exec(text("DELETE FROM client"))
-    session.exec(text("DELETE FROM public.user"))
+    truncate(session=session, table="chat")
+    truncate(session=session, table="chat_session")
+    truncate(session=session, table="client_properties")
+    truncate(session=session, table="client")
+    truncate(session=session, table="user_properties")
+    truncate(session=session, table="user")
     user = User(
         phone_number="+999",
     )

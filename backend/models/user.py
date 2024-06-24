@@ -1,7 +1,6 @@
-import re
-
 from sqlalchemy import Column, String, BigInteger
 from sqlmodel import Field, SQLModel
+from utils.util import sanitize_phone_number
 
 
 class User(SQLModel, table=True):
@@ -13,16 +12,8 @@ class User(SQLModel, table=True):
 
     def __init__(self, **data):
         super().__init__(**data)
-        self.phone_number = self._sanitize_phone_number(
-            data.get('phone_number'))
-
-    def _sanitize_phone_number(self, phone_number):
-        if isinstance(phone_number, int):
-            return phone_number
-        if not re.match(r'^\+\d+$', phone_number):
-            raise ValueError("Phone number contains invalid characters")
-        phone_number_digits = re.sub(r'\D', '', phone_number)
-        return int(phone_number_digits)
+        self.phone_number = sanitize_phone_number(
+            phone_number=data.get('phone_number'))
 
     # return phone number in international format
     def __str__(self) -> str:

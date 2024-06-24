@@ -61,7 +61,7 @@ def test_verify_login_link_invalid_uuid(client: TestClient) -> None:
     assert content["detail"] == "Invalid verification UUID"
 
 
-def test_set_phone_number_strips_plus_sign(session: Session) -> None:
+def test_user_set_phone_number_strips_plus_sign(session: Session) -> None:
     user = User(phone_number="+12345")
     session.add(user)
     session.commit()
@@ -75,12 +75,41 @@ def test_set_phone_number_strips_plus_sign(session: Session) -> None:
     }
 
 
-def test_invalid_phone_number_with_invalid_characters(session: Session) -> None:
+def test_user_invalid_phone_number_with_invalid_characters(
+    session: Session
+) -> None:
     invalid_phone_numbers = ["+123 45", "+123-45", "+123#45"]
     for phone_number in invalid_phone_numbers:
         try:
             user = User(phone_number=phone_number)
             session.add(user)
+            session.commit()
+            assert False, f"Expected ValueError for phone number {phone_number}"
+        except ValueError as e:
+            assert str(e) == "Phone number contains invalid characters"
+
+
+def test_client_set_phone_number_strips_plus_sign(session: Session) -> None:
+    client = Client(phone_number="+12345")
+    session.add(client)
+    session.commit()
+    session.refresh(client)
+    assert client.phone_number == 12345
+    assert str(client) == "+12345"
+    assert client.serialize() == {
+        "id": client.id,
+        "phone_number": "+12345",
+    }
+
+
+def test_client_invalid_phone_number_with_invalid_characters(
+    session: Session
+) -> None:
+    invalid_phone_numbers = ["+123 45", "+123-45", "+123#45"]
+    for phone_number in invalid_phone_numbers:
+        try:
+            client = Client(phone_number=phone_number)
+            session.add(client)
             session.commit()
             assert False, f"Expected ValueError for phone number {phone_number}"
         except ValueError as e:

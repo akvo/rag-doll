@@ -36,7 +36,6 @@ async def send_login_link(
     login_code_uuid = uuid4()
     user.login_code = str(login_code_uuid)
     session.commit()
-    # TODO: Implement this function to send WhatsApp messages
     await send_whatsapp_message(phone_number, user.login_code)
     # return {"message": "Login link sent via WhatsApp"}
     return f"{webdomain}/verify/{user.login_code}"

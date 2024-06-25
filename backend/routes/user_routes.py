@@ -28,6 +28,11 @@ async def send_login_link(
         raise HTTPException(
             status_code=400, detail="Phone number must start with +"
         )
+    # validate phone number with regex
+    if not phone_number[1:].isdigit():
+        raise HTTPException(
+            status_code=400, detail="Phone number must be digits"
+        )
     user = session.exec(
         select(User).where(User.phone_number == phone_number)
     ).first()

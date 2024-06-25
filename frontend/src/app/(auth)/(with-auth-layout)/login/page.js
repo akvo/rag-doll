@@ -5,11 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
 import { Notification } from "@/components";
+import "react-phone-number-input/style.css";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 
 const Login = () => {
   const router = useRouter();
   const [showNotification, setShowNotification] = useState(false);
   const [error, setError] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState(null);
 
   const handleShowNotification = () => {
     setShowNotification(true);
@@ -22,11 +25,22 @@ const Login = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
-    const phone = formData.get("phone");
+    if (!phoneNumber) {
+      setError("Phone number required.");
+      handleShowNotification();
+      return;
+    }
+
+    if (!isValidPhoneNumber(phoneNumber)) {
+      setError("Invalid phone number.");
+      handleShowNotification();
+      return;
+    }
 
     try {
-      const res = await api.post(`login?phone_number=${phone}`);
+      const res = await api.post(
+        `login?phone_number=${encodeURIComponent(phoneNumber)}`
+      );
       const resData = await res.json();
       if (res.status === 200) {
         const regex = /https?:\/\/[^\/]+(\/.+)/;
@@ -59,12 +73,13 @@ const Login = () => {
             Phone Number
           </label>
           <div className="mt-2">
-            <input
+            <PhoneInput
               id="phone"
               name="phone"
-              type="number"
-              autoComplete="phone"
-              required
+              placeholder="Enter phone number"
+              value={phoneNumber}
+              onChange={setPhoneNumber}
+              international
               className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-500 sm:text-sm sm:leading-6"
             />
           </div>

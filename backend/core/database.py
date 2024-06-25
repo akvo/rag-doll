@@ -9,7 +9,7 @@ def get_db_url():
     return DB_URL
 
 
-engine = create_engine(get_db_url(), echo=True)
+engine = create_engine(get_db_url(), echo=False)
 
 
 def get_session():

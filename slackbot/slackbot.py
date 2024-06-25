@@ -18,7 +18,7 @@ from pika.exceptions import StreamLostError
 # --- RabbitMQ Section
 
 def connect_and_create_queue(queue: str):
-    pika_credentials = pika.PlainCredentials(os.getenv("RABBITMQ_DEFAULT_USER"), os.getenv("RABBITMQ_DEFAULT_PASS"))
+    pika_credentials = pika.PlainCredentials(os.getenv("RABBITMQ_USER"), os.getenv("RABBITMQ_PASS"))
     pika_parameters = pika.ConnectionParameters(os.getenv("RABBITMQ_HOST"),
                                                 int(os.getenv("RABBITMQ_PORT")),
                                                 '/', pika_credentials)

@@ -117,8 +117,8 @@ from field (where `platform` equals `SLACK`):
 
 | `.env` | default | description |
 |---|---|---|
-| `RABBITMQ_DEFAULT_USER` | rabbit | The user name for RabbitMQ. |
-| `RABBITMQ_DEFAULT_PASS` | _CHANGEME_ | The default password for accessing queues. Use a generated string. |
+| `RABBITMQ_USER` | rabbit | The user name for RabbitMQ. |
+| `RABBITMQ_PASS` | _CHANGEME_ | The default password for accessing queues. Use a generated string. |
 | `RABBITMQ_QUEUE_USER_CHATS` | user-chats | The queue for chat messages that the user typed. |
 | `RABBITMQ_QUEUE_USER_CHAT_REPLIES` | user-chat-replies | The queue for chat messages that the assisant got from the LLM. |
 | `RABBITMQ_HOST` | rabbitmq | The host that RabbitMQ runs on. |
@@ -136,6 +136,7 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 |---|---|---|
 | `BACKEND_PORT` | 5000 | The external port used by the Backend |
 | `JWT_SECRET` | _CHANGEME_ | JWT-based auth secret key, used in the process of signing a token |
+| `MAGIC_LINK_CHAT_TEMPLATE` | _CHANGEME_ | A template for magic link message, e.g. "You can login into APP_NAME by clicking this link: {magic_link}" |
 
 ### Frontend (Next JS)
 

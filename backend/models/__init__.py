@@ -1,3 +1,3 @@
-from .user import User  # noqa
-from .client import Client  # noqa
-from .chat import Chat, Chat_Session  # noqa
+from .user import User, User_Properties  # noqa
+from .client import Client, Client_Properties  # noqa
+from .chat import Chat, Chat_Session, Chat_Sender  # noqa

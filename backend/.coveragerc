@@ -1,0 +1,21 @@
+[run]
+branch = True
+omit = */__init__*
+       */tests/*
+       */alembic/*
+       */core/database.py
+disable_warnings = no-data-collected
+parallel = true
+concurrency = multiprocessing
+
+[report]
+precision = 1
+show_missing = True
+ignore_errors = True
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    except ImportError
+    def __repr__
+    if self\.logger\.debug
+    if __name__ == .__main__.:

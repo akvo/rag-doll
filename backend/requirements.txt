@@ -6,3 +6,7 @@ psycopg2==2.9.9
 sqlmodel==0.0.18
 black==24.4.2
 pytest==8.2.2
+coveralls==4.0.1
+gevent==24.2.1
+flake8==7.1.0
+Faker==25.8.0

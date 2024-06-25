@@ -3,7 +3,6 @@
 :END:
 #+title: Backend Dev Database
 
-#+PROPERTY: header-args:sql     :cache yes
 #+PROPERTY: header-args:sql+    :exports both
 #+PROPERTY: header-args:sql+    :engine postgresql
 #+PROPERTY: header-args:sql+    :dbhost localhost
@@ -20,49 +19,124 @@
 \d
 #+end_src
 
-#+RESULTS[136795287af44579a6b45d54289bcac05a5f20fa]: List of Database
-| List of relations |                 |          |       |
-|-------------------+-----------------+----------+-------|
-| Schema            | Name            | Type     | Owner |
-| public            | alembic_version | table    | akvo  |
-| public            | chat            | table    | akvo  |
-| public            | chat_id_seq     | sequence | akvo  |
-| public            | user            | table    | akvo  |
-| public            | user_id_seq     | sequence | akvo  |
+#+RESULTS[136795287af44579a6b45d54289bcac05a5f20fa]: List of Table
+| List of relations |                          |          |       |
+|-------------------+--------------------------+----------+-------|
+| Schema            | Name                     | Type     | Owner |
+| public            | alembic_version          | table    | akvo  |
+| public            | chat                     | table    | akvo  |
+| public            | chat_id_seq              | sequence | akvo  |
+| public            | chat_session             | table    | akvo  |
+| public            | chat_session_id_seq      | sequence | akvo  |
+| public            | client                   | table    | akvo  |
+| public            | client_id_seq            | sequence | akvo  |
+| public            | client_properties        | table    | akvo  |
+| public            | client_properties_id_seq | sequence | akvo  |
+| public            | user                     | table    | akvo  |
+| public            | user_id_seq              | sequence | akvo  |
+| public            | user_properties          | table    | akvo  |
+| public            | user_properties_id_seq   | sequence | akvo  |
 
+#+name: Primary Keys
+#+begin_src sql
+SELECT tc.table_name, kcu.column_name
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+  ON tc.constraint_name = kcu.constraint_name
+  WHERE tc.constraint_type = 'PRIMARY KEY'
+ORDER BY kcu.ordinal_position;
+#+end_src
 
 #+name: User
 #+begin_src sql
-SELECT column_name, data_type
+SELECT column_name, data_type, is_nullable
 FROM   information_schema.columns
 WHERE  table_name = 'user'
 ORDER  BY ordinal_position;
 #+end_src
 
-#+RESULTS[8b2e7fe89fa9ce3fd75b2a8788bea1ed8c539e52]: User
-| column_name  | data_type         |
-|--------------+-------------------|
-| id           | integer           |
-| username     | character varying |
-| email        | character varying |
-| phone_number | bigint            |
-| role         | USER-DEFINED      |
-| login_link   | character varying |
+#+RESULTS[90d5a9c744a30872c2d3f044ab17598fdff170ae]: User
+| column_name  | data_type         | is_nullable |
+|--------------+-------------------+-------------|
+| id           | integer           | NO          |
+| phone_number | bigint            | NO          |
+| login_code   | character varying | YES         |
 
-#+name: Chat
+#+name: User Properties
 #+begin_src sql
-SELECT column_name, data_type
+SELECT column_name, data_type, is_nullable
+FROM   information_schema.columns
+WHERE  table_name = 'user_properties'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[9e9440d1c4a147a8758e6e916879c5bbec8adaac]: User Properties
+| column_name | data_type         | is_nullable |
+|-------------+-------------------+-------------|
+| user_id     | integer           | NO          |
+| name        | character varying | YES         |
+| email       | character varying | YES         |
+
+#+name Client
+#+begin_src sql
+SELECT column_name, data_type, is_nullable
+FROM   information_schema.columns
+WHERE  table_name = 'client'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[e58203ceb37ce8963ca9ef5d6e0a36dce3f56b0a]:
+| column_name  | data_type | is_nullable |
+|--------------+-----------+-------------|
+| id           | integer   | NO          |
+| phone_number | integer   | NO          |
+
+#+name: Client Properties
+#+begin_src sql
+SELECT column_name, data_type, is_nullable
+FROM   information_schema.columns
+WHERE  table_name = 'client_properties'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[f0754981d9b7d80511bea61ecd8232535030112a]: Client Properties
+| column_name | data_type         | is_nullable |
+|-------------+-------------------+-------------|
+| client_id   | integer           | NO          |
+| name        | character varying | YES         |
+
+#+name: Chat Session
+#+begin_src sql
+SELECT column_name, data_type, is_nullable
+FROM   information_schema.columns
+WHERE  table_name = 'chat_session'
+ORDER  BY ordinal_position;
+#+end_src
+
+#+RESULTS[0a530ee790744bf12a99f07461f04ddf5af2fcc5]: Chat Session
+| column_name | data_type                   | is_nullable |
+|-------------+-----------------------------+-------------|
+| id          | integer                     | NO          |
+| user_id     | integer                     | NO          |
+| client_id   | integer                     | YES         |
+| last_read   | timestamp without time zone | NO          |
+
+** TZ UTC
+
+#+name Chat
+#+begin_src sql
+SELECT column_name, data_type, is_nullable
 FROM   information_schema.columns
 WHERE  table_name = 'chat'
 ORDER  BY ordinal_position;
 #+end_src
 
-#+RESULTS[6036314406e2035650893715bffc2504705b9bbd]: Chat
-| column_name | data_type                   |
-|-------------+-----------------------------|
-| id          | integer                     |
-| user_id     | integer                     |
-| client_id   | integer                     |
-| message     | character varying           |
-| status      | USER-DEFINED                |
-| created_at  | timestamp without time zone |
+
+#+RESULTS[6036314406e2035650893715bffc2504705b9bbd]:
+| column_name     | data_type                   | is_nullable |
+|-----------------+-----------------------------+-------------|
+| id              | integer                     | NO          |
+| chat_session_id | integer                     | NO          |
+| message         | character varying           | NO          |
+| sender          | USER-DEFINED                | NO          |
+| created_at      | timestamp without time zone | NO          |

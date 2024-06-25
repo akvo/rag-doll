@@ -4,26 +4,27 @@ from models import User, Client
 
 
 def test_get_phone_number_in_international_format(session: Session) -> None:
-    user = session.exec(select(User).where(User.phone_number == "+999")).first()
-    assert str(user) == "+999"
+    user = session.exec(
+        select(User).where(User.phone_number == "+12345678900")).first()
+    assert str(user) == "+12345678900"
     assert user.serialize() == {
         "id": user.id,
-        "phone_number": "+999",
+        "phone_number": "+12345678900",
         "login_code": None,
     }
 
     client = session.exec(
-        select(Client).where(Client.phone_number == "+998")
+        select(Client).where(Client.phone_number == "+6281234567890")
     ).first()
-    assert str(client) == "+998"
+    assert str(client) == "+6281234567890"
     assert client.serialize() == {
         "id": client.id,
-        "phone_number": "+998",
+        "phone_number": "+6281234567890",
     }
 
 
 def test_send_login_link(client: TestClient) -> None:
-    response = client.post("/login?phone_number=%2B999")
+    response = client.post("/login?phone_number=%2B12345678900")
     assert response.status_code == 200
     content = response.json()
     assert content.split("/")[-2] == "verify"
@@ -31,7 +32,7 @@ def test_send_login_link(client: TestClient) -> None:
 
 
 def test_verify_login_link(client: TestClient, session: Session) -> None:
-    response = client.post("/login?phone_number=%2B999")
+    response = client.post("/login?phone_number=%2B12345678900")
     assert response.status_code == 200
     content = response.json()
     verification_uuid = content.split("/")[-1]
@@ -43,15 +44,21 @@ def test_verify_login_link(client: TestClient, session: Session) -> None:
     assert response.status_code == 400
     content = response.json()
     assert content["detail"] == "Invalid verification UUID"
-    user = session.exec(select(User).where(User.phone_number == "+999")).first()
+    user = session.exec(
+        select(User).where(User.phone_number == "+12345678900")).first()
     assert user.login_code is None
 
 
 def test_phone_number_must_start_with_plus_sign(client: TestClient) -> None:
-    response = client.post("/login?phone_number=999")
-    assert response.status_code == 400
+    response = client.post("/login?phone_number=12345678900")
+    assert response.status_code == 422
     content = response.json()
-    assert content["detail"] == "Phone number must start with +"
+    assert content["detail"] == [{
+        'input': '12345678900',
+        'loc': ['query', 'phone_number'],
+        'msg': 'value is not a valid phone number',
+        'type': 'value_error'
+    }]
 
 
 def test_verify_login_link_invalid_uuid(client: TestClient) -> None:
@@ -62,15 +69,15 @@ def test_verify_login_link_invalid_uuid(client: TestClient) -> None:
 
 
 def test_user_set_phone_number_strips_plus_sign(session: Session) -> None:
-    user = User(phone_number="+12345")
+    user = User(phone_number="+12345678901")
     session.add(user)
     session.commit()
     session.refresh(user)
-    assert user.phone_number == 12345
-    assert str(user) == "+12345"
+    assert user.phone_number == 12345678901
+    assert str(user) == "+12345678901"
     assert user.serialize() == {
         "id": user.id,
-        "phone_number": "+12345",
+        "phone_number": "+12345678901",
         "login_code": None,
     }
 

@@ -5,7 +5,6 @@ const env = dotenv.config();
 const backend_port = env.parsed.BACKEND_PORT;
 
 const nextConfig = {
-  // output: "export",
   async rewrites() {
     return [
       {

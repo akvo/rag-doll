@@ -1,10 +1,12 @@
 import json
+import phonenumbers
 from os import environ
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from uuid import uuid4
 from datetime import timedelta
 
+from pydantic_extra_types.phone_numbers import PhoneNumber
 from models import User
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
@@ -14,25 +16,20 @@ from Akvo_rabbitmq_client import rabbitmq_client
 router = APIRouter()
 webdomain = environ.get("WEBDOMAIN")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = environ.get(
-    'RABBITMQ_QUEUE_USER_CHAT_REPLIES')
+    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
+)
 RABBITMQ_QUEUE_TWILIOBOT_REPLIES = environ.get(
-    'RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
+    "RABBITMQ_QUEUE_TWILIOBOT_REPLIES"
+)
 MAGIC_LINK_CHAT_TEMPLATE = environ.get("MAGIC_LINK_CHAT_TEMPLATE")
 
 
 @router.post("/login")
 async def send_login_link(
-    phone_number: str, session: Session = Depends(get_session)
+    phone_number: PhoneNumber, session: Session = Depends(get_session)
 ):
-    if phone_number[0] != "+":
-        raise HTTPException(
-            status_code=400, detail="Phone number must start with +"
-        )
-    # validate phone number with regex
-    if not phone_number[1:].isdigit():
-        raise HTTPException(
-            status_code=400, detail="Phone number must be digits"
-        )
+    phone_number = phonenumbers.parse(phone_number)
+    phone_number = f"+{phone_number.country_code}{phone_number.national_number}"
     user = session.exec(
         select(User).where(User.phone_number == phone_number)
     ).first()
@@ -76,6 +73,5 @@ async def send_whatsapp_message(phone_number: int, login_token: str):
     routing_key = f"{RABBITMQ_QUEUE_USER_CHAT_REPLIES}"
     routing_key += f".{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}"
     await rabbitmq_client.producer(
-            body=json.dumps(message_body),
-            routing_key=routing_key
-        )
+        body=json.dumps(message_body), routing_key=routing_key
+    )

@@ -10,3 +10,5 @@ coveralls==4.0.1
 gevent==24.2.1
 flake8==7.1.0
 Faker==25.8.0
+pydantic-extra-types==2.8.2
+phonenumbers==8.13.39

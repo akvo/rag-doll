@@ -1,3 +1,5 @@
+import pytest
+
 from seeder.user import (
     seed_users,
     interactive_seeder,
@@ -5,6 +7,7 @@ from seeder.user import (
     User_Properties
 )
 from sqlmodel import Session, select
+from pydantic import ValidationError
 
 
 def test_seed_users(session: Session):
@@ -53,7 +56,5 @@ def test_interactive_seeder_with_wrong_phone_number(
     ]
     monkeypatch.setattr('builtins.input', lambda _: user_input.pop(0))
 
-    try:
+    with pytest.raises(ValidationError):
         interactive_seeder(session=session)
-    except Exception as e:
-        assert "1 validation error for UserCreateModel" in str(e)

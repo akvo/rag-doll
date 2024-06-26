@@ -87,7 +87,9 @@ const ChatWindow = () => {
               </Fragment>
             ))}
           </p>
-          <p className="text-right text-xs text-gray-200 mt-2">10:01 AM</p>
+          <p className="text-right text-xs text-gray-200 mt-2">
+            {`10.${ci + 10} AM`}
+          </p>
         </div>
       </div>
     ));

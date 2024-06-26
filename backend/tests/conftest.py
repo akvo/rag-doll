@@ -124,3 +124,9 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture
+def backend_url():
+    BACKEND_PORT = os.getenv("BACKEND_PORT")
+    return f"http://backend:{BACKEND_PORT}/api"

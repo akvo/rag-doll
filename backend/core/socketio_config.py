@@ -6,12 +6,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-sio_server = socketio.AsyncServer(async_mode='asgi')
+SOCKETIO_PATH = "sockets"
 
+sio_server = socketio.AsyncServer(async_mode='asgi')
 
 sio_app = socketio.ASGIApp(
     socketio_server=sio_server,
-    socketio_path="sockets"
+    socketio_path=SOCKETIO_PATH
 )
 
 

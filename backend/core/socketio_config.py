@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-SOCKETIO_PATH = "sockets"
+SOCKETIO_PATH = ""
 
 sio_server = socketio.AsyncServer(
     async_mode='asgi',

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
+import { socket } from "@/lib";
 
 const ChatWindow = () => {
   const chatContext = useChatContext();
@@ -24,6 +25,18 @@ const ChatWindow = () => {
       dignissim. Curabitur fringilla hendrerit dui, vitae consequat dolor
     </>,
   ]);
+  const [chats, setOnChats] = useState([]);
+
+  useEffect(() => {
+    function onChats(value) {
+      setOnChats((previous) => [...previous, value]);
+    }
+    socket.on("chats", onChats);
+
+    return () => {
+      socket.off("chats", onChats);
+    };
+  }, []);
 
   const handleInput = (event) => {
     const textarea = textareaRef.current;
@@ -46,6 +59,7 @@ const ChatWindow = () => {
 
   const handleSend = () => {
     if (message.trim()) {
+      socket.timeout(5000).emit("chats", message);
       // Implement your send message logic here
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending
@@ -101,23 +115,22 @@ const ChatWindow = () => {
           <div className="flex mb-4 justify-end">
             <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
               <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis
-                eget sollicitudin augue. Curabitur quis risus ut nulla
-                consectetur gravida. Nunc sit amet turpis tempor, rutrum mi vel,
-                molestie purus. Lorem ipsum dolor sit amet, consectetur
-                adipiscing elit. In hac habitasse platea dictumst. Donec
-                dignissim mi ut eros elementum fringilla. Phasellus maximus
-                feugiat nunc. Aliquam erat volutpat. Cras dictum tortor bibendum
-                velit dapibus, in rutrum mi porttitor. In malesuada odio at
-                augue efficitur maximus. Nullam elementum est a sagittis
-                consectetur. Nullam ac sem dolor. Pellentesque quis sagittis
-                augue. Quisque lobortis sed eros ut dignissim. Curabitur
-                fringilla hendrerit dui, vitae consequat dolor.
-              </p>
+              <p>Lorem ipsum dolor sit amet.</p>
               <p className="text-right text-xs text-gray-200 mt-2">10:01 AM</p>
             </div>
           </div>
+          {/* Sent message */}
+          {chats.map((c, ci) => (
+            <div key={`chat-${ci}`} className="flex mb-4 justify-end">
+              <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+                <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+                <p>{c}</p>
+                <p className="text-right text-xs text-gray-200 mt-2">
+                  10:01 AM
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* AI Messages */}

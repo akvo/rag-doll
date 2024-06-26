@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, socket } from "@/lib";
+import { api } from "@/lib";
 import { Notification } from "@/components";
 import "react-phone-number-input/style.css";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
@@ -13,37 +13,6 @@ const Login = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [error, setError] = useState("");
   const [phoneNumber, setPhoneNumber] = useState(null);
-
-  const [isConnected, setIsConnected] = useState(false);
-  const [fooEvents, setFooEvents] = useState([]);
-
-  useEffect(() => {
-    function onConnect() {
-      setIsConnected(true);
-    }
-
-    function onDisconnect() {
-      setIsConnected(false);
-    }
-
-    function onFooEvent(value) {
-      setFooEvents((previous) => [...previous, value]);
-    }
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-    socket.on("chats", onFooEvent);
-
-    socket.emit("chats", `Test socket`);
-
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("chats", onFooEvent);
-    };
-  }, []);
-  console.log(socket, isConnected, "isConnected");
-  console.log(fooEvents, "fooEvents");
 
   const handleShowNotification = () => {
     setShowNotification(true);

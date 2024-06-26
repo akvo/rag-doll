@@ -1,6 +1,7 @@
 import os
 import warnings
 import pytest
+import asyncio
 
 from collections.abc import Generator
 from alembic import command
@@ -11,6 +12,8 @@ from sqlmodel import create_engine, Session
 
 from core.database import get_db_url, get_session
 from models import User, Client, Chat_Session, Chat, Chat_Sender
+
+from core.socketio_config import sio_server
 
 
 def truncate(session: Session, table: str):
@@ -108,3 +111,16 @@ def client() -> Generator[TestClient, None, None]:
     app.dependency_overrides[get_session] = override_get_db
     with TestClient(app) as c:
         yield c
+
+
+# Deactivate monitoring task in python-socketio
+# to avoid errors during shutdown
+sio_server.eio.start_service_task = False
+
+
+@pytest.fixture
+def event_loop():
+    """Override the default event loop fixture to allow for async tests."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()

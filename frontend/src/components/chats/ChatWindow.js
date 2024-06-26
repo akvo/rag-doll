@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket } from "@/lib";
 
@@ -37,6 +37,13 @@ const ChatWindow = () => {
       socket.off("chats", onChats);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const messagesContainer = document.getElementById("messagesContainer");
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }, [chats]); // Trigger on chats change to scroll to the bottom
 
   const handleInput = (event) => {
     const textarea = textareaRef.current;
@@ -103,7 +110,10 @@ const ChatWindow = () => {
       {/* Messages */}
       <div className="flex flex-col h-3/4">
         {/* User Messages */}
-        <div className="flex-1 p-4 overflow-auto border-b">
+        <div
+          id="messagesContainer"
+          className="flex-1 p-4 overflow-auto border-b"
+        >
           <div className="flex mb-4">
             <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
               <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>

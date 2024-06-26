@@ -1,5 +1,9 @@
+import os
 import socketio
 import logging
+import json
+
+from Akvo_rabbitmq_client import rabbitmq_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -33,8 +37,16 @@ async def sio_disconnect(sid):
 @sio_server.on('chats')
 async def chat_message(sid, msg):
     """Receive a chat message and send to all clients"""
-    logger.info(f"Server received: {msg}")
-    await sio_server.emit('chats', msg)
+    RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
+    logger.info(f"Server received: {msg} {RABBITMQ_QUEUE_USER_CHATS}")
+    await rabbitmq_client.producer(
+        body=json.dumps(msg),
+        routing_key=RABBITMQ_QUEUE_USER_CHATS)
+
+
+async def chats_callback(body: str):
+    logger.info(f"Server received chats_callback: {body}")
+    await sio_server.emit('chats', json.loads(body))
 
 
 async def chat_replies_callback(body: str):

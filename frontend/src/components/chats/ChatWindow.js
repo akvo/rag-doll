@@ -68,7 +68,7 @@ const ChatWindow = () => {
 
   const handleSend = () => {
     if (message.trim()) {
-      socket.timeout(5000).emit("chats", { phone: "+6281999103535", message });
+      socket.timeout(5000).emit("chats", { phone: "+628123456789", message });
       // Implement your send message logic here
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending

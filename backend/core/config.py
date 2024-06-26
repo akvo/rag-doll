@@ -13,7 +13,7 @@ from sqlmodel import Session, text
 # from models import User
 from routes import user_routes, chat_routes
 from Akvo_rabbitmq_client import rabbitmq_client
-from core.socketio_config import sio_app
+from core.socketio_config import sio_app, chat_replies_callback
 
 
 RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
@@ -32,6 +32,7 @@ async def lifespan(app: FastAPI):
     loop.create_task(rabbitmq_client.consume(
         queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
         routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+        callback=chat_replies_callback
     ))
     yield
     await rabbitmq_client.disconnect()

@@ -35,3 +35,14 @@ async def chat_message(sid, msg):
     """Receive a chat message and send to all clients"""
     logger.info(f"Server received: {msg}")
     await sio_server.emit('chats', msg)
+
+
+async def chat_replies_callback(body: str):
+    logger.info(f"Server received chat_replies_callback: {body}")
+    await sio_server.emit(
+        'chats',
+        {
+            "phone": "+628123456789",
+            "reply": body,
+        }
+    )

@@ -19,7 +19,7 @@ async def test_chat_simple(event_loop, backend_url: str) -> None:
         future.set_result(data)
 
     message = {
-        "phone": "+6281999103535",
+        "phone": "+628123456789",
         "reply": "Yes, John Doe, How are you?"
     }
     await sio_client.connect(

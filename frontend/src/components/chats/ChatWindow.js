@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useLayoutEffect } from "react";
+import { useRef, useState, useEffect, useLayoutEffect, Fragment } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket } from "@/lib";
 
@@ -43,7 +43,8 @@ const ChatWindow = () => {
     if (messagesContainer) {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
-  }, [chats]); // Trigger on chats change to scroll to the bottom
+    // Trigger on chats change to scroll to the bottom
+  }, [chats]);
 
   const handleInput = (event) => {
     const textarea = textareaRef.current;
@@ -71,6 +72,25 @@ const ChatWindow = () => {
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending
     }
+  };
+
+  const renderChatMessages = () => {
+    return chats.map((c, ci) => (
+      <div key={`chat-${ci}`} className="flex mb-4 justify-end">
+        <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+          <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+          <p>
+            {c.split("\n").map((line, index) => (
+              <Fragment key={index}>
+                {line}
+                <br />
+              </Fragment>
+            ))}
+          </p>
+          <p className="text-right text-xs text-gray-200 mt-2">10:01 AM</p>
+        </div>
+      </div>
+    ));
   };
 
   return (
@@ -130,17 +150,7 @@ const ChatWindow = () => {
             </div>
           </div>
           {/* Sent message */}
-          {chats.map((c, ci) => (
-            <div key={`chat-${ci}`} className="flex mb-4 justify-end">
-              <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-                <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-                <p>{c}</p>
-                <p className="text-right text-xs text-gray-200 mt-2">
-                  10:01 AM
-                </p>
-              </div>
-            </div>
-          ))}
+          {renderChatMessages()}
         </div>
 
         {/* AI Messages */}

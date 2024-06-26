@@ -21,7 +21,8 @@ async def test_chat_simple(event_loop, backend_url: str) -> None:
     message = 'Hello World!'
     await sio_client.connect(
         url=backend_url,
-        socketio_path=SOCKETIO_PATH
+        socketio_path=SOCKETIO_PATH,
+        transports=["websocket", "polling"]
     )
     await sio_client.emit('chats', message)
     # wait for the result to be set (avoid waiting forever)

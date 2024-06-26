@@ -8,7 +8,9 @@ logger = logging.getLogger(__name__)
 
 SOCKETIO_PATH = "sockets"
 
-sio_server = socketio.AsyncServer(async_mode='asgi')
+sio_server = socketio.AsyncServer(
+    async_mode='asgi',
+)
 
 sio_app = socketio.ASGIApp(
     socketio_server=sio_server,

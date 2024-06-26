@@ -8,7 +8,6 @@ from fastapi import Depends
 from core.database import get_session
 from sqlmodel import Session, text
 
-
 # from sqlmodel import Session, select
 # from core.database import engine
 # from models import User

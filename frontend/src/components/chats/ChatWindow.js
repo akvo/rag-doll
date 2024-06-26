@@ -45,6 +45,7 @@ const ChatWindow = () => {
     }
     // Trigger on chats change to scroll to the bottom
   }, [chats]);
+  console.log(chats);
 
   const handleInput = (event) => {
     const textarea = textareaRef.current;
@@ -67,7 +68,7 @@ const ChatWindow = () => {
 
   const handleSend = () => {
     if (message.trim()) {
-      socket.timeout(5000).emit("chats", message);
+      socket.timeout(5000).emit("chats", { phone: "+6281999103535", message });
       // Implement your send message logic here
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending
@@ -80,12 +81,13 @@ const ChatWindow = () => {
         <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
           <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
           <p>
-            {c.split("\n").map((line, index) => (
+            {JSON.stringify(c)}
+            {/* {c?.split("\n")?.map((line, index) => (
               <Fragment key={index}>
                 {line}
                 <br />
               </Fragment>
-            ))}
+            ))} */}
           </p>
           <p className="text-right text-xs text-gray-200 mt-2">
             {`10.${ci + 10} AM`}

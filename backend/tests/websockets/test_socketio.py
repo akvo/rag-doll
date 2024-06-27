@@ -9,7 +9,11 @@ from core.socketio_config import SOCKETIO_PATH
 async def test_chat_simple(event_loop, backend_url: str) -> None:
     """A simple websocket test using the sio_client fixture"""
 
-    sio_client = socketio.AsyncClient()
+    sio_client = socketio.AsyncClient(
+        engineio_logger=True,
+        logger=True,
+        ssl_verify=False
+    )
     future = asyncio.get_running_loop().create_future()
 
     @sio_client.on('chats')

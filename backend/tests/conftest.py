@@ -2,6 +2,7 @@ import os
 import warnings
 import pytest
 import asyncio
+import subprocess
 
 from collections.abc import Generator
 from alembic import command
@@ -130,3 +131,15 @@ def event_loop():
 def backend_url():
     BACKEND_PORT = os.getenv("BACKEND_PORT")
     return f"http://backend:{BACKEND_PORT}/api"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def run_app():
+    # Start the FastAPI server
+    BACKEND_PORT = os.getenv("BACKEND_PORT")
+    FASTAPI_COMMAND = [
+        "uvicorn", "main:app", "--host", "0.0.0.0", "--port", BACKEND_PORT]
+    process = subprocess.Popen(FASTAPI_COMMAND)
+    yield
+    # Terminate the FastAPI server
+    process.terminate()

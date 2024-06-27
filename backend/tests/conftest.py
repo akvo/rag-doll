@@ -130,7 +130,7 @@ def event_loop():
 @pytest.fixture
 def backend_url():
     BACKEND_PORT = os.getenv("BACKEND_PORT")
-    return f"http://backend:{BACKEND_PORT}/api"
+    return f"ws://backend:{BACKEND_PORT}/api"
 
 
 @pytest.fixture(scope="session", autouse=True)

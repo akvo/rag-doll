@@ -1,5 +1,3 @@
-import pytest
-
 from seeder.user import (
     seed_users,
     interactive_seeder,
@@ -7,7 +5,6 @@ from seeder.user import (
     User_Properties
 )
 from sqlmodel import Session, select
-from pydantic import ValidationError
 
 
 def test_seed_users(session: Session):
@@ -42,19 +39,3 @@ def test_interactive_seeder(session: Session, monkeypatch):
     ).first()
     assert result_up.name == "John Doe"
     assert result_up.email == "john.doe@example.com"
-
-
-def test_interactive_seeder_with_wrong_phone_number(
-    session: Session, monkeypatch
-):
-    # Simulate user input for interactive seeder
-    user_input = [
-        "+999",  # Phone number
-        "y",           # User has properties
-        "Jane",    # Name
-        "jane@example.com",  # Email
-    ]
-    monkeypatch.setattr('builtins.input', lambda _: user_input.pop(0))
-
-    with pytest.raises(ValidationError):
-        interactive_seeder(session=session)

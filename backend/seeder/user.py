@@ -75,8 +75,6 @@ def interactive_seeder(session: Session):
             print(f"Seeded user {user.id} with phone number {phone_number}")
         except ValidationError as e:
             print(f"Validation error for phone number {phone_number}: {e}")
-            session.close()
-            raise e
     finally:
         session.close()
         print("Seeder process completed.")

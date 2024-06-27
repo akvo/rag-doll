@@ -39,14 +39,10 @@ async def chat_message(sid, msg):
     """Receive a chat message and send to all clients"""
     RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
     logger.info(f"Server received: {msg} {RABBITMQ_QUEUE_USER_CHATS}")
+    await sio_server.emit('chats', msg)
     await rabbitmq_client.producer(
         body=json.dumps(msg),
         routing_key=RABBITMQ_QUEUE_USER_CHATS)
-
-
-async def chats_callback(body: str):
-    logger.info(f"Server received chats_callback: {body}")
-    await sio_server.emit('chats', json.loads(body))
 
 
 async def chat_replies_callback(body: str):

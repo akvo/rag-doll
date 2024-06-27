@@ -11,7 +11,7 @@ pip -q install --cache-dir=.pip /lib/Akvo_rabbitmq_client
 BACKEND_PORT=${BACKEND_PORT}
 
 # Start the FastAPI server in the background and capture the process ID
-uvicorn your_fastapi_app:app --host 0.0.0.0 --port $BACKEND_PORT &
+uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT &
 FASTAPI_PID=$!
 
 # Give the server some time to start

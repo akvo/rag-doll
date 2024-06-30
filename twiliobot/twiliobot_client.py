@@ -15,7 +15,11 @@ class TwiliobotClient:
     def __init__(self):
         self.TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
         self.TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-        self.TWILIO_WHATSAPP_FROM = "whatsapp:+14155238886"
+        self.TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
+        if os.getenv("TESTING"):
+            # only for testing purpose
+            self.TWILIO_WHATSAPP_NUMBER = "+12345678911"
+        self.TWILIO_WHATSAPP_FROM = f"whatsapp:{self.TWILIO_WHATSAPP_NUMBER}"
 
         self.twilio_client = Client(
             self.TWILIO_ACCOUNT_SID,

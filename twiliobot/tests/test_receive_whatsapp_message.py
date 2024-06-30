@@ -1,4 +1,6 @@
 import pytest
+import os
+
 from quart.testing import QuartClient
 
 from main import app as quart_app
@@ -26,6 +28,7 @@ class MockTwilioBotClient:
 
 @pytest.fixture
 def app():
+    os.environ["TESTING"] = "1"
     quart_app.config["TESTING"] = True
     quart_app.rabbitmq_client = MockRabbitMQClient()
     quart_app.twiliobot_client = MockTwilioBotClient()
@@ -44,9 +47,9 @@ async def test_receive_whatsapp_message(app):
         # Sending a POST request to /whatsapp endpoint
         response = await test_client.post("/whatsapp", form=form_data)
         # Assertions
-        assert response.status_code == 200
+        assert response.status_code == 204
         response_json = await response.get_json()
-        assert response_json["message"] == "Message received and sent to queue"
+        assert response_json["message"] == "Ok"
 
 
 @pytest.mark.asyncio

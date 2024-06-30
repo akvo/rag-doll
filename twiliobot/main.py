@@ -65,7 +65,7 @@ async def receive_whatsapp_message():
             reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
         ))
         logger.info(f"Message sent to RabbitMQ: {body}")
-        return jsonify({"message": "Message received and sent to queue"}), 200
+        return jsonify({"message": "Ok"}), 204
 
     except Exception as e:
         logger.error(f"Error receiving Whatsapp message: {values}: {e}")

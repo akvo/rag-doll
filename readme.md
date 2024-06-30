@@ -39,6 +39,7 @@ system, notably the assistant. Incoming messages are forwarded to the
 | `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
 | `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
 | `TWILIO_BOT_PORT` | 3100 | Your Twilio authorisation token. |
+| `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
 
 
 ## Slack Bot

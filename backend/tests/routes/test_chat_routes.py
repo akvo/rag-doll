@@ -10,7 +10,7 @@ def test_get_chats(client: TestClient) -> None:
 
 
 def test_get_chats_authenticated(client: TestClient) -> None:
-    response = client.post("/login?phone_number=%2B999")
+    response = client.post("/login?phone_number=%2B12345678900")
     assert response.status_code == 200
     content = response.json()
     verification_uuid = content.split("/")[-1]

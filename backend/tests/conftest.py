@@ -27,12 +27,12 @@ def init_db(session: Session) -> None:
     truncate(session=session, table="user_properties")
     truncate(session=session, table="user")
     user = User(
-        phone_number="+999",
+        phone_number="+12345678900",
     )
     session.add(user)
     session.commit()
     client = Client(
-        phone_number="+998",
+        phone_number="+6281234567890",
     )
     session.add(client)
     session.commit()
@@ -48,7 +48,7 @@ def init_db(session: Session) -> None:
             "sender": Chat_Sender.CLIENT,
         },
         {
-            "message": "Hello, +998",
+            "message": "Hello, +62 812 3456 7890",
             "sender": Chat_Sender.USER,
         },
         {

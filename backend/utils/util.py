@@ -1,7 +1,8 @@
 import re
+from pydantic_extra_types.phone_numbers import PhoneNumber
 
 
-def sanitize_phone_number(phone_number):
+def sanitize_phone_number(phone_number: PhoneNumber):
     if isinstance(phone_number, int):
         return phone_number
     if not re.match(r'^\+\d+$', phone_number):

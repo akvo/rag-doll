@@ -4,7 +4,7 @@ import json
 import asyncio
 from datetime import datetime
 
-from quart import Quart, request, jsonify
+from quart import Quart, request, jsonify, make_response
 from Akvo_rabbitmq_client import rabbitmq_client
 from twiliobot_client import twiliobot_client
 
@@ -65,8 +65,8 @@ async def receive_whatsapp_message():
             reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
         ))
         logger.info(f"Message sent to RabbitMQ: {body}")
-        return jsonify({"message": "Ok"}), 204
+        return await make_response('', 204)
 
     except Exception as e:
         logger.error(f"Error receiving Whatsapp message: {values}: {e}")
-        return jsonify({"error": f"Internal error: {str(e)}"}), 500
+        return await make_response({"error": f"Internal error: {str(e)}"}, 500)

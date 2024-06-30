@@ -48,8 +48,6 @@ async def test_receive_whatsapp_message(app):
         response = await test_client.post("/whatsapp", form=form_data)
         # Assertions
         assert response.status_code == 204
-        response_json = await response.get_json()
-        assert response_json["message"] == "Ok"
 
 
 @pytest.mark.asyncio

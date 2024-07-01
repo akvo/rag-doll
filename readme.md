@@ -253,7 +253,7 @@ hosts the `twiliobot` Docker container.
 Slack needs to be able to connect to the `slackbot` container, on port
 `SLACK_BOT_PORT` (typically 3000). Set up a firewall rule with the name and
 network tag `allow-slack-bolt` that allows traffic to that port to connect and
-set the associated tag on the network configuration of your vistual machine that
+set the associated tag on the network configuration of your virtual machine that
 hosts the `slackbot` Docker container.
 
 ### Rag Doll using Docker Compose on a Virtual Machine

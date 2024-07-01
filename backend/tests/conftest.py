@@ -1,7 +1,6 @@
 import os
 import warnings
 import pytest
-import subprocess
 
 from collections.abc import Generator
 from alembic import command
@@ -12,8 +11,6 @@ from sqlmodel import create_engine, Session
 
 from core.database import get_db_url, get_session
 from models import User, Client, Chat_Session, Chat, Chat_Sender
-
-from core.socketio_config import sio_server
 
 
 def truncate(session: Session, table: str):
@@ -111,26 +108,3 @@ def client() -> Generator[TestClient, None, None]:
     app.dependency_overrides[get_session] = override_get_db
     with TestClient(app) as c:
         yield c
-
-
-# Deactivate monitoring task in python-socketio
-# to avoid errors during shutdown
-sio_server.eio.start_service_task = False
-
-
-@pytest.fixture
-def backend_url():
-    BACKEND_PORT = os.getenv("BACKEND_PORT")
-    return f"ws://backend:{BACKEND_PORT}/api"
-
-
-@pytest.fixture(scope="session", autouse=True)
-def run_app():
-    # Start the FastAPI server
-    BACKEND_PORT = os.getenv("BACKEND_PORT")
-    FASTAPI_COMMAND = [
-        "uvicorn", "main:app", "--host", "0.0.0.0", "--port", BACKEND_PORT]
-    process = subprocess.Popen(FASTAPI_COMMAND)
-    yield
-    # Terminate the FastAPI server
-    process.terminate()

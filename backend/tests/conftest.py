@@ -1,7 +1,6 @@
 import os
 import warnings
 import pytest
-import asyncio
 import subprocess
 
 from collections.abc import Generator
@@ -117,14 +116,6 @@ def client() -> Generator[TestClient, None, None]:
 # Deactivate monitoring task in python-socketio
 # to avoid errors during shutdown
 sio_server.eio.start_service_task = False
-
-
-@pytest.fixture
-def event_loop():
-    """Override the default event loop fixture to allow for async tests."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture

@@ -247,7 +247,7 @@ for the Slack API integration.
 Twilio needs to be able to connect to the `twiliobot` container, on port
 `TWILIO_BOT_PORT` (typically 3100). Set up a firewall rule with the name and
 network tag `allow-twilio` that allows traffic to that port to connect and set
-the associated tag on the network configuration of your vistual machine that
+the associated tag on the network configuration of your virtual machine that
 hosts the `twiliobot` Docker container.
 
 Slack needs to be able to connect to the `slackbot` container, on port

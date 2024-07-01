@@ -4,7 +4,7 @@ import json
 import asyncio
 from datetime import datetime
 
-from quart import Quart, request, jsonify, make_response
+from quart import Quart, request, make_response
 from Akvo_rabbitmq_client import rabbitmq_client
 from twiliobot_client import twiliobot_client
 

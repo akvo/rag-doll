@@ -31,6 +31,7 @@ const ChatWindow = () => {
 
   useEffect(() => {
     function onChats(value) {
+      console.log(value, "====");
       setChats((previous) => [...previous, value]);
     }
     socket.on("chats", onChats);
@@ -92,7 +93,7 @@ const ChatWindow = () => {
             <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
               <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
               <p>
-                {c?.message?.split("\n")?.map((line, index) => (
+                {c?.body?.split("\n")?.map((line, index) => (
                   <Fragment key={index}>
                     {line}
                     <br />
@@ -112,7 +113,7 @@ const ChatWindow = () => {
             <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
               <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
               <p>
-                {c?.reply?.split("\n")?.map((line, index) => (
+                {c?.body?.split("\n")?.map((line, index) => (
                   <Fragment key={index}>
                     {line}
                     <br />

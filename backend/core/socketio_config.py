@@ -45,15 +45,16 @@ async def chat_message(sid, msg):
 
 
 async def chat_replies_callback(body: str):
-    logger.info(f"Server received chat_replies_callback: {body}")
+    message = queue_message_util.create_queue_message(
+        message_id="use message id from queue",
+        conversation_id="use conversation id from queue",
+        client_phone_number="+6281234567890",
+        user_phone_number="+6282234567899",
+        sender="USER",
+        body=body,
+    )
+    logger.info(f"Server received chat_replies_callback: {message}")
     await sio_server.emit(
         'chats',
-        queue_message_util.create_queue_message(
-            message_id="use message id from queue",
-            conversation_id="use conversation id from queue",
-            client_phone_number="+6281234567890",
-            user_phone_number="+6282234567899",
-            sender="SYSTEM",
-            body="This is the original message text typed by the client.",
-        )
+        message
     )

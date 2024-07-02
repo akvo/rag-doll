@@ -3,6 +3,8 @@
 import { useRef, useState, useEffect, useLayoutEffect, Fragment } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket } from "@/lib";
+import { createQueueMessage } from "@/utils/formatter";
+import { v4 as uuidv4 } from "uuid";
 
 const ChatWindow = () => {
   const chatContext = useChatContext();
@@ -67,7 +69,14 @@ const ChatWindow = () => {
 
   const handleSend = () => {
     if (message.trim()) {
-      const chatPayload = { phone: "+628123456789", message };
+      const chatPayload = createQueueMessage({
+        messageId: uuidv4(),
+        conversationId: uuidv4(),
+        userPhoneNumber: "+628123456789",
+        clientPhoneNumber: "+628223456789",
+        sender: "CLIENT",
+        body: message,
+      });
       setChats((previous) => [...previous, chatPayload]);
       socket.timeout(5000).emit("chats", chatPayload);
       setMessage(""); // Clear the textarea after sending
@@ -77,7 +86,7 @@ const ChatWindow = () => {
 
   const renderChatMessages = () => {
     return chats.map((c, ci) => {
-      if (c?.message) {
+      if (c?.conversation_envelope?.sender === "CLIENT") {
         return (
           <div key={`chat-${ci}`} className="flex mb-4 justify-end">
             <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
@@ -97,7 +106,7 @@ const ChatWindow = () => {
           </div>
         );
       }
-      if (c?.reply) {
+      if (c?.conversation_envelope?.sender === "USER") {
         return (
           <div className="flex mb-4">
             <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">

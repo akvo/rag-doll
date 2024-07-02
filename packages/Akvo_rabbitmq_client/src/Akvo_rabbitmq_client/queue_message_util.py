@@ -9,6 +9,7 @@ class QueueMessageUtil:
         conversation_id: str,
         client_phone_number: str,
         user_phone_number: str,
+        sender: str,
         body: str,
         media: Optional[List[Dict[str, str]]] = None,
         context: Optional[List[Dict[str, str]]] = None,
@@ -26,7 +27,8 @@ class QueueMessageUtil:
                 "message_id": message_id,
                 "conversation_id": conversation_id,
                 "client_phone_number": client_phone_number,
-                "user_phone_number": user_phone_number
+                "user_phone_number": user_phone_number,
+                "sender": sender
             },
             "body": body,
             "media": media,

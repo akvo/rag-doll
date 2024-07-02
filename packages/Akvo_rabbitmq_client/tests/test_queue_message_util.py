@@ -11,6 +11,7 @@ class TestQueueMessageUtil(unittest.TestCase):
             conversation_id=str(uuid4()),
             client_phone_number="+6281234567890",
             user_phone_number="+6282234567899",
+            sender="USER",
             body="This is the original message text typed by the client."
         )
         self.assertEqual(
@@ -51,6 +52,7 @@ class TestQueueMessageUtil(unittest.TestCase):
             conversation_id=str(uuid4()),
             client_phone_number="+6281234567890",
             user_phone_number="+6282234567899",
+            sender="CLIENT",
             body="This is the original message text typed by the client.",
             media=media_items,
             context=context_items

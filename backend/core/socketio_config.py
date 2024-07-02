@@ -3,7 +3,7 @@ import socketio
 import logging
 import json
 
-from Akvo_rabbitmq_client import rabbitmq_client
+from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -48,8 +48,12 @@ async def chat_replies_callback(body: str):
     logger.info(f"Server received chat_replies_callback: {body}")
     await sio_server.emit(
         'chats',
-        {
-            "phone": "+628123456789",
-            "reply": body,
-        }
+        queue_message_util.create_queue_message(
+            message_id="use message id from queue",
+            conversation_id="use conversation id from queue",
+            client_phone_number="+6281234567890",
+            user_phone_number="+6282234567899",
+            sender="SYSTEM",
+            body="This is the original message text typed by the client.",
+        )
     )

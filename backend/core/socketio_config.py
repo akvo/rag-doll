@@ -25,20 +25,20 @@ sio_app = socketio.ASGIApp(
 @sio_server.on('connect')
 async def sio_connect(sid, environ):
     """Track user connection"""
-    logger.info('A user connected')
+    logger.info(f'A user sid[{sid}] connected')
 
 
 @sio_server.on('disconnect')
 async def sio_disconnect(sid):
     """Track user disconnection"""
-    logger.info('User disconnected')
+    logger.info(f'User sid[{sid}] disconnected')
 
 
 @sio_server.on('chats')
 async def chat_message(sid, msg):
     """Receive a chat message and send to all clients"""
     RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
-    logger.info(f"Server received: {msg} {RABBITMQ_QUEUE_USER_CHATS}")
+    logger.info(f"Server received: sid[{sid}] msg: {msg}")
     await rabbitmq_client.producer(
         body=json.dumps(msg),
         routing_key=RABBITMQ_QUEUE_USER_CHATS)

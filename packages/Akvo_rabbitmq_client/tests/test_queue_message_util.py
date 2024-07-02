@@ -1,5 +1,5 @@
 import unittest
-from uuid import UUID
+from uuid import UUID, uuid4
 from Akvo_rabbitmq_client import queue_message_util
 
 
@@ -7,14 +7,18 @@ class TestQueueMessageUtil(unittest.TestCase):
 
     def test_create_queue_message_with_minimal_data(self):
         message = queue_message_util.create_queue_message(
-            client_id="client_abc",
-            user_id="user_xyz",
+            message_id=str(uuid4()),
+            conversation_id=str(uuid4()),
+            client_phone_number="+6281234567890",
+            user_phone_number="+6282234567899",
             body="This is the original message text typed by the client."
         )
         self.assertEqual(
-            message["conversation_envelope"]["client_id"], "client_abc")
+            message["conversation_envelope"]["client_phone_number"],
+            "+6281234567890")
         self.assertEqual(
-            message["conversation_envelope"]["user_id"], "user_xyz")
+            message["conversation_envelope"]["user_phone_number"],
+            "+6282234567899")
         self.assertEqual(
             message["body"],
             "This is the original message text typed by the client.")
@@ -43,8 +47,10 @@ class TestQueueMessageUtil(unittest.TestCase):
             "description": "A description of the image."
         }]
         message = queue_message_util.create_queue_message(
-            client_id="client_abc",
-            user_id="user_xyz",
+            message_id=str(uuid4()),
+            conversation_id=str(uuid4()),
+            client_phone_number="+6281234567890",
+            user_phone_number="+6282234567899",
             body="This is the original message text typed by the client.",
             media=media_items,
             context=context_items

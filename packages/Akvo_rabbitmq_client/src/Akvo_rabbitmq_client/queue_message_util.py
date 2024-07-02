@@ -1,13 +1,14 @@
 from typing import List, Dict, Optional
-from uuid import uuid4
 
 
 class QueueMessageUtil:
 
     @staticmethod
     def create_queue_message(
-        client_id: str,
-        user_id: str,
+        message_id: str,
+        conversation_id: str,
+        client_phone_number: str,
+        user_phone_number: str,
         body: str,
         media: Optional[List[Dict[str, str]]] = None,
         context: Optional[List[Dict[str, str]]] = None,
@@ -22,10 +23,10 @@ class QueueMessageUtil:
 
         message = {
             "conversation_envelope": {
-                "message_id": str(uuid4()),
-                "conversation_id": str(uuid4()),
-                "client_id": client_id,
-                "user_id": user_id
+                "message_id": message_id,
+                "conversation_id": conversation_id,
+                "client_phone_number": client_phone_number,
+                "user_phone_number": user_phone_number
             },
             "body": body,
             "media": media,

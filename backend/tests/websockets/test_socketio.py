@@ -13,7 +13,6 @@ async def test_chat_simple() -> None:
     sio_client = socketio.AsyncClient(
         engineio_logger=True,
         logger=True,
-        ssl_verify=False
     )
     future = asyncio.get_running_loop().create_future()
 

@@ -25,11 +25,11 @@ const ChatWindow = () => {
       dignissim. Curabitur fringilla hendrerit dui, vitae consequat dolor
     </>,
   ]);
-  const [chats, setOnChats] = useState([]);
+  const [chats, setChats] = useState([]);
 
   useEffect(() => {
     function onChats(value) {
-      setOnChats((previous) => [...previous, value]);
+      setChats((previous) => [...previous, value]);
     }
     socket.on("chats", onChats);
 
@@ -45,7 +45,6 @@ const ChatWindow = () => {
     }
     // Trigger on chats change to scroll to the bottom
   }, [chats]);
-  console.log(chats);
 
   const handleInput = (event) => {
     const textarea = textareaRef.current;
@@ -68,7 +67,9 @@ const ChatWindow = () => {
 
   const handleSend = () => {
     if (message.trim()) {
-      socket.timeout(5000).emit("chats", { phone: "+628123456789", message });
+      const chatPayload = { phone: "+628123456789", message };
+      setChats((previous) => [...previous, chatPayload]);
+      socket.timeout(5000).emit("chats", chatPayload);
       // Implement your send message logic here
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending

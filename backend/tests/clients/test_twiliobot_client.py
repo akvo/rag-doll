@@ -44,7 +44,7 @@ def test_validate_and_format_phone_number_parse_error(twilio_client):
 def test_format_to_queue_message_valid(twilio_client):
     values = {
         'MessageSid': '1234567890',
-        'From': '+6281234567890',
+        'From': 'whatsapp:+6281234567890',
         'Body': 'Test message',
         'NumMedia': 1,
         'MediaUrl0': 'http://example.com/image.jpg'
@@ -62,7 +62,7 @@ def test_format_to_queue_message_valid(twilio_client):
 
 def test_format_to_queue_message_missing_fields(twilio_client):
     values = {
-        'From': '+6281234567890',
+        'From': 'whatsapp:+6281234567890',
         'Body': 'Test message',
     }
     with pytest.raises(KeyError):
@@ -72,7 +72,7 @@ def test_format_to_queue_message_missing_fields(twilio_client):
 def test_format_to_queue_message_invalid_phone_number(twilio_client):
     values = {
         'MessageSid': '1234567890',
-        'From': 'invalid_number',  # Invalid phone number format
+        'From': 'whatsapp:invalid_number',  # Invalid phone number format
         'Body': 'Test message',
         'NumMedia': 0,
     }

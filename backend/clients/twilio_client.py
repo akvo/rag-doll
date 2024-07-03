@@ -114,8 +114,9 @@ class TwilioClient:
         iso_timestamp = datetime.now().isoformat()
         try:
             # Validate and format the phone number
+            phone_number = values.get('From').split(':')[1]
             formatted_phone = self.validate_and_format_phone_number(
-                phone_number=values['From'])
+                phone_number=phone_number)
             queue_message = {
                 'id': values['MessageSid'],
                 'timestamp': iso_timestamp,
@@ -135,4 +136,4 @@ class TwilioClient:
             return json.dumps(queue_message)
         except ValueError as e:
             logger.error(f"Error formatting message: {e}")
-            raise
+            raise ValueError(f"Error formatting message: {e}")

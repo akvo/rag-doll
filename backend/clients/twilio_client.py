@@ -62,7 +62,6 @@ class TwilioClient:
         Consume messages from the RabbitMQ queue and send them via Twilio.
         """
         try:
-            logger.info(f"Message received: {body}")
             queue_message = json.loads(body)
             text = queue_message["text"]
             phone = queue_message["to"]["phone"]
@@ -70,8 +69,6 @@ class TwilioClient:
             chunks = self.chunk_text_by_paragraphs(text, 1500)
             logger.info(f"sending '{text}' to WhatsApp number {phone}")
             for chunk in chunks:
-                logger.info(f"sending '{chunk}' to WhatsApp")
-                logger.info(f"number {phone}")
                 response = self.twilio_client.messages.create(
                     from_=self.TWILIO_WHATSAPP_FROM,
                     body=chunk,

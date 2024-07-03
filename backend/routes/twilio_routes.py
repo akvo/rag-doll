@@ -38,7 +38,6 @@ async def receive_whatsapp_message(request: Request):
             routing_key=RABBITMQ_QUEUE_USER_CHATS,
             reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
         ))
-        logger.info(f"Message sent to RabbitMQ: {body}")
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except ValidationError as e:

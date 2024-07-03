@@ -1,8 +1,11 @@
+import os
 import logging
 
 from fastapi import APIRouter, Request
 from fastapi.security import HTTPBearer
 from clients.slack_client import SlackBotClient
+from Akvo_rabbitmq_client import rabbitmq_client
+
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -13,6 +16,9 @@ slack_app = slackbot_client.slack_app
 
 router = APIRouter()
 security = HTTPBearer()
+
+RABBITMQ_QUEUE_SLACKBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_SLACKBOT_REPLIES')
+RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
 
 
 @router.post("/slack/events")
@@ -59,11 +65,18 @@ def update_pin(event, client):
 
 
 @slack_app.event("message")
-def message(event, client):
+async def message(event, client):
     channel_id = event.get("channel")
     user_id = event.get("user")
     text = event.get("text")
+    queue_msg = slackbot_client.format_to_queue_message(event=event)
+    # Send message to RabbitMQ
+    await rabbitmq_client.producer(
+        body=queue_msg,
+        routing_key=RABBITMQ_QUEUE_USER_CHATS,
+        reply_to=RABBITMQ_QUEUE_SLACKBOT_REPLIES
+    )
     logger.info(
-        f"Message event in channel {channel_id} by user {user_id}: {text}")
+        f"Message event in channel {channel_id} by user {user_id}: {queue_msg}")
     if text and text.lower() == "start":
         slackbot_client.start_onboarding(user_id, channel_id, client)

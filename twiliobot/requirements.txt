@@ -1,8 +1,0 @@
-twilio==9.1.1
-quart==0.19.6
-pytest==8.2.2
-pytest-asyncio==0.23.7
-pytest-mock==3.14.0
-pydantic==2.8.0
-pydantic-extra-types==2.8.2
-phonenumbers==8.13.39

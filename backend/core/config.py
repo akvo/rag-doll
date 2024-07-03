@@ -2,17 +2,16 @@ import os
 import asyncio
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends
 from core.database import get_session
 from sqlmodel import Session, text
 
 # from sqlmodel import Session, select
 # from core.database import engine
 # from models import User
-from routes import user_routes, chat_routes, twilio_routes
+from routes import user_routes, chat_routes, twilio_routes, slack_routes
 from Akvo_rabbitmq_client import rabbitmq_client
 from clients.twilio_client import TwilioClient
-from clients.slack_client import slack_handler
 from core.socketio_config import sio_app, chat_replies_callback
 
 
@@ -69,6 +68,7 @@ app = FastAPI(
 
 app.include_router(user_routes.router, tags=["auth"])
 app.include_router(chat_routes.router, tags=["chat"])
+app.include_router(slack_routes.router, tags=["slack"])
 app.include_router(twilio_routes.router, tags=["twilio"])
 
 
@@ -77,11 +77,6 @@ def read_root(session: Session = Depends(get_session)):
     # Test select 1
     session.exec(text("SELECT 1"))
     return {"Hello": "World"}
-
-
-@app.post("/slack/events", tags=["dev"])
-async def endpoint(req: Request):
-    return await slack_handler.handle(req)
 
 
 app.mount('/', app=sio_app)

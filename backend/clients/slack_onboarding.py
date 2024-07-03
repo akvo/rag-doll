@@ -18,7 +18,7 @@ class OnboardingTutorial:
 
     def __init__(self, channel):
         self.channel = channel
-        self.username = "pythonboardingbot"
+        self.username = "wgprtm_slackbot"
         self.icon_emoji = ":robot_face:"
         self.timestamp = ""
         self.reaction_task_completed = False

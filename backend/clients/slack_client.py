@@ -3,8 +3,6 @@ import logging
 from slack_bolt import App as SlackApp
 from slack_bolt.adapter.fastapi import SlackRequestHandler
 from slack_sdk.web import WebClient
-from pydantic import BaseModel
-from typing import Any
 from .slack_onboarding import OnboardingTutorial
 
 # Initialize logging
@@ -29,6 +27,7 @@ onboarding_tutorials_sent = {}
 
 
 def start_onboarding(user_id: str, channel: str, client: WebClient):
+    logger.info(f"Starting onboarding for user {user_id} in channel {channel}")
     onboarding_tutorial = OnboardingTutorial(channel)
     message = onboarding_tutorial.get_message_payload()
     response = client.chat_postMessage(**message)
@@ -36,48 +35,5 @@ def start_onboarding(user_id: str, channel: str, client: WebClient):
     if channel not in onboarding_tutorials_sent:
         onboarding_tutorials_sent[channel] = {}
     onboarding_tutorials_sent[channel][user_id] = onboarding_tutorial
-
-
-@slack_app.event("team_join")
-def onboarding_message(event, client):
-    user_id = event.get("user", {}).get("id")
-    response = client.conversations_open(users=user_id)
-    channel = response["channel"]["id"]
-    start_onboarding(user_id, channel, client)
-
-
-@slack_app.event("reaction_added")
-def update_emoji(event, client):
-    channel_id = event.get("item", {}).get("channel")
-    user_id = event.get("user")
-    if channel_id not in onboarding_tutorials_sent:
-        return
-    onboarding_tutorial = onboarding_tutorials_sent[channel_id][user_id]
-    onboarding_tutorial.reaction_task_completed = True
-    message = onboarding_tutorial.get_message_payload()
-    client.chat_update(**message)
-
-
-@slack_app.event("pin_added")
-def update_pin(event, client):
-    channel_id = event.get("channel_id")
-    user_id = event.get("user")
-    onboarding_tutorial = onboarding_tutorials_sent[channel_id][user_id]
-    onboarding_tutorial.pin_task_completed = True
-    message = onboarding_tutorial.get_message_payload()
-    client.chat_update(**message)
-
-
-@slack_app.event("message")
-def message(event, client):
-    channel_id = event.get("channel")
-    user_id = event.get("user")
-    text = event.get("text")
-    if text and text.lower() == "start":
-        start_onboarding(user_id, channel_id, client)
-
-
-class SlackEvent(BaseModel):
-    event: dict
-    type: str
-    challenge: Any = None
+    logger.info(
+        f"Onboarding message sent to user {user_id} in channel {channel}")

@@ -1,5 +1,4 @@
 import os
-import asyncio
 import logging
 
 from fastapi import APIRouter, Request, HTTPException, Response, status
@@ -33,11 +32,12 @@ async def receive_whatsapp_message(request: Request):
         )
         body = TwilioClient().format_to_queue_message(data.model_dump())
         # Send message to RabbitMQ
-        asyncio.create_task(rabbitmq_client.producer(
+        await rabbitmq_client.initialize()
+        await rabbitmq_client.producer(
             body=body,
             routing_key=RABBITMQ_QUEUE_USER_CHATS,
             reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
-        ))
+        )
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except ValidationError as e:

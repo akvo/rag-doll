@@ -3,9 +3,9 @@ import json
 import logging
 
 from datetime import datetime, timezone
-from slack_bolt import App as SlackApp
-from slack_bolt.adapter.fastapi import SlackRequestHandler
-from slack_sdk.web import WebClient
+from slack_bolt.async_app import AsyncApp as SlackApp
+from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
+from slack_sdk.web.async_client import AsyncWebClient
 from slack_sdk.errors import SlackApiError
 from .slack_onboarding import OnboardingTutorial
 
@@ -26,18 +26,18 @@ class SlackBotClient:
             signing_secret=self.SLACK_SIGNING_SECRET
         )
         # Slack request handler
-        self.slack_handler = SlackRequestHandler(self.slack_app)
-        # Initialize the WebClient
-        self.client = WebClient(token=self.SLACK_BOT_TOKEN)
+        self.slack_handler = AsyncSlackRequestHandler(self.slack_app)
+        # Initialize the AsyncWebClient
+        self.client = AsyncWebClient(token=self.SLACK_BOT_TOKEN)
         # In-memory storage for onboarding tutorials
         self.onboarding_tutorials_sent = {}
 
-    def start_onboarding(self, user_id: str, channel: str, client: WebClient):
+    async def start_onboarding(self, user_id: str, channel: str):
         logger.info(
             f"Starting onboarding for user {user_id} in channel {channel}")
         onboarding_tutorial = OnboardingTutorial(channel)
         message = onboarding_tutorial.get_message_payload()
-        response = client.chat_postMessage(**message)
+        response = await self.client.chat_postMessage(**message)
         onboarding_tutorial.timestamp = response["ts"]
         if channel not in self.onboarding_tutorials_sent:
             self.onboarding_tutorials_sent[channel] = {}
@@ -61,13 +61,14 @@ class SlackBotClient:
         }
         return json.dumps(queue_message)
 
-    def send_message(self, body: str):
+    async def send_message(self, body: str):
         logger.warning(body)
         try:
             queue_message = json.loads(body)
             text = queue_message["text"]
             channel = queue_message["from"]["channel"]
-            response = self.client.chat_postMessage(channel=channel, text=text)
+            response = await self.client.chat_postMessage(
+                channel=channel, text=text)
             ts = response['ts']
             logger.info(
                 f"Message sent to channel {channel} with timestamp {ts}")

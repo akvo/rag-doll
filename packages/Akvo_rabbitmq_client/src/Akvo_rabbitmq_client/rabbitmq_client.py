@@ -77,8 +77,6 @@ class RabbitMQClient:
     ):
         try:
             await self.connect()
-            if reply_to:
-                routing_key = f"{routing_key}.{reply_to}"
             message = aio_pika.Message(
                 body=body.encode('utf-8'),
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
@@ -101,13 +99,13 @@ class RabbitMQClient:
         try:
             async with message.process():
                 body = message.body.decode()
-                reply_to = message.headers.get("reply_to")
+                headers = message.headers
                 log = f"Received {routing_key} message: {body}"
                 logger.info(
-                    f"{log}, Reply To: {reply_to}"
+                    f"{log}, headers: {headers}"
                 )
                 if callback:
-                    await callback(body=body)
+                    await callback(body=body, headers=headers)
         except Exception as e:
             logger.error(f"Error processing {routing_key} message: {e}")
 

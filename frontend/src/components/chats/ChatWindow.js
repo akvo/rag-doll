@@ -1,7 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useLayoutEffect, Fragment } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
+import { socket } from "@/lib";
+import { createQueueMessage } from "@/utils/formatter";
+import { v4 as uuidv4 } from "uuid";
 
 const ChatWindow = () => {
   const chatContext = useChatContext();
@@ -24,6 +27,27 @@ const ChatWindow = () => {
       dignissim. Curabitur fringilla hendrerit dui, vitae consequat dolor
     </>,
   ]);
+  const [chats, setChats] = useState([]);
+
+  useEffect(() => {
+    function onChats(value) {
+      console.log(value, "====");
+      setChats((previous) => [...previous, value]);
+    }
+    socket.on("chats", onChats);
+
+    return () => {
+      socket.off("chats", onChats);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const messagesContainer = document.getElementById("messagesContainer");
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    // Trigger on chats change to scroll to the bottom
+  }, [chats]);
 
   const handleInput = (event) => {
     const textarea = textareaRef.current;
@@ -46,10 +70,62 @@ const ChatWindow = () => {
 
   const handleSend = () => {
     if (message.trim()) {
-      // Implement your send message logic here
+      const chatPayload = createQueueMessage({
+        messageId: uuidv4(),
+        conversationId: uuidv4(),
+        userPhoneNumber: "+628123456789",
+        clientPhoneNumber: "+628223456789",
+        sender: "CLIENT",
+        body: message,
+      });
+      setChats((previous) => [...previous, chatPayload]);
+      socket.timeout(5000).emit("chats", chatPayload);
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending
     }
+  };
+
+  const renderChatMessages = () => {
+    return chats.map((c, ci) => {
+      if (c?.conversation_envelope?.sender === "CLIENT") {
+        return (
+          <div key={`chat-${ci}`} className="flex mb-4 justify-end">
+            <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+              <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+              <p>
+                {c?.body?.split("\n")?.map((line, index) => (
+                  <Fragment key={index}>
+                    {line}
+                    <br />
+                  </Fragment>
+                ))}
+              </p>
+              <p className="text-right text-xs text-gray-200 mt-2">
+                {`10.${ci + 10} AM`}
+              </p>
+            </div>
+          </div>
+        );
+      }
+      if (c?.conversation_envelope?.sender === "USER") {
+        return (
+          <div className="flex mb-4">
+            <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+              <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+              <p>
+                {c?.body?.split("\n")?.map((line, index) => (
+                  <Fragment key={index}>
+                    {line}
+                    <br />
+                  </Fragment>
+                ))}
+              </p>
+              <p className="text-right text-xs text-gray-400 mt-2">10:00 AM</p>
+            </div>
+          </div>
+        );
+      }
+    });
   };
 
   return (
@@ -89,7 +165,11 @@ const ChatWindow = () => {
       {/* Messages */}
       <div className="flex flex-col h-3/4">
         {/* User Messages */}
-        <div className="flex-1 p-4 overflow-auto border-b">
+        <div
+          id="messagesContainer"
+          className="flex-1 p-4 overflow-auto border-b"
+        >
+          {/* Reply message */}
           <div className="flex mb-4">
             <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
               <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
@@ -101,23 +181,11 @@ const ChatWindow = () => {
           <div className="flex mb-4 justify-end">
             <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
               <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis
-                eget sollicitudin augue. Curabitur quis risus ut nulla
-                consectetur gravida. Nunc sit amet turpis tempor, rutrum mi vel,
-                molestie purus. Lorem ipsum dolor sit amet, consectetur
-                adipiscing elit. In hac habitasse platea dictumst. Donec
-                dignissim mi ut eros elementum fringilla. Phasellus maximus
-                feugiat nunc. Aliquam erat volutpat. Cras dictum tortor bibendum
-                velit dapibus, in rutrum mi porttitor. In malesuada odio at
-                augue efficitur maximus. Nullam elementum est a sagittis
-                consectetur. Nullam ac sem dolor. Pellentesque quis sagittis
-                augue. Quisque lobortis sed eros ut dignissim. Curabitur
-                fringilla hendrerit dui, vitae consequat dolor.
-              </p>
+              <p>Lorem ipsum dolor sit amet.</p>
               <p className="text-right text-xs text-gray-200 mt-2">10:01 AM</p>
             </div>
           </div>
+          {renderChatMessages()}
         </div>
 
         {/* AI Messages */}

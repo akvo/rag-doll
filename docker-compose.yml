@@ -12,23 +12,23 @@ x-environments: &rabbitmq_client_env
   RABBITMQ_QUEUE_HISTORIES: ${RABBITMQ_QUEUE_HISTORIES}
 
 services:
-  twiliobot:
-    image: python:3.12.3
-    working_dir: /app
-    ports:
-      - ${TWILIO_BOT_PORT}:${TWILIO_BOT_PORT}
-    environment:
-      <<: *rabbitmq_client_env
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-      TWILIO_BOT_PORT: ${TWILIO_BOT_PORT}
-      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
-    depends_on:
-      - rabbitmq
-    command: ["./dev.sh"]
-    volumes:
-      - ./twiliobot:/app:delegated
-      - ./packages/Akvo_rabbitmq_client:/lib/Akvo_rabbitmq_client:delegated
+  # twiliobot:
+  #   image: python:3.12.3
+  #   working_dir: /app
+  #   ports:
+  #     - ${TWILIO_BOT_PORT}:${TWILIO_BOT_PORT}
+  #   environment:
+  #     <<: *rabbitmq_client_env
+  #     TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+  #     TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+  #     TWILIO_BOT_PORT: ${TWILIO_BOT_PORT}
+  #     TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
+  #   depends_on:
+  #     - rabbitmq
+  #   command: ["./dev.sh"]
+  #   volumes:
+  #     - ./twiliobot:/app:delegated
+  #     - ./packages/Akvo_rabbitmq_client:/lib/Akvo_rabbitmq_client:delegated
 
   slackbot:
     build: slackbot
@@ -127,6 +127,10 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       WEBDOMAIN: "http://localhost:${FRONTEND_PORT}"
       MAGIC_LINK_CHAT_TEMPLATE: ${MAGIC_LINK_CHAT_TEMPLATE}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_BOT_PORT: ${TWILIO_BOT_PORT}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated

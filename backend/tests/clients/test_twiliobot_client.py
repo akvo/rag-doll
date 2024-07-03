@@ -94,7 +94,7 @@ def test_send_whatsapp_message_success(
 
     mock_messages.create.return_value = MagicMock(error_code=None)
 
-    twilio_client.send_whatsapp_message(message_body)
+    twilio_client.send_whatsapp_message(body=message_body, headers={})
 
     assert twilio_client.TWILIO_WHATSAPP_FROM == "whatsapp:+12345678911"
     assert mock_messages.create.called
@@ -120,7 +120,7 @@ def test_send_whatsapp_message_twilio_error(
     mock_messages.create.side_effect = TwilioRestException(
         status=400, uri='http://test.uri', msg="Twilio error")
 
-    twilio_client.send_whatsapp_message(message_body)
+    twilio_client.send_whatsapp_message(body=message_body, headers={})
 
     assert mock_messages.create.called
     mock_messages.create.assert_called_with(
@@ -143,7 +143,7 @@ def test_send_whatsapp_message_json_decode_error(
 ):
     message_body = b"invalid json"
 
-    twilio_client.send_whatsapp_message(message_body)
+    twilio_client.send_whatsapp_message(body=message_body, headers={})
 
     assert not mock_messages.create.called
 
@@ -167,7 +167,7 @@ def test_send_whatsapp_message_unexpected_error(
 
     mock_messages.create.side_effect = Exception("Unexpected error")
 
-    twilio_client.send_whatsapp_message(message_body)
+    twilio_client.send_whatsapp_message(body=message_body, headers={})
 
     assert mock_messages.create.called
     mock_messages.create.assert_called_with(

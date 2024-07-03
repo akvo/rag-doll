@@ -17,30 +17,6 @@ as I could get). Containerising makes it easier to upgrade and improve
 individual componetns.
 
 
-## Twilio Bot
-
-Twilio acts as intermediary, so that we have a single gateway to handle multiple
-types of messaging platforms and media types. As it stands, we only support
-WhatsApp text messages.
-
-When started, the Twilio bot listens to incoming messages from Twilio using a
-web hook. This means the Twilio bot needs an open, external port. See
-[Firewall Rules](#firewall-rules) for configuration. In Twilio, configure the
-Sandbbox web hook URL to be the external URL for your `twiliobot` container, on
-the `TWILIO_BOT_PORT` port.
-
-The Twilio bot connects to the message queue to interact with the rest of the
-system, notably the assistant. Incoming messages are forwarded to the
-`RABBITMQ_QUEUE_USER_CHATS` queue. Replies coming from the
-`RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
-
-| `.env` | default | description |
-|---|---|---|
-| `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
-| `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
-| `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
-
-
 ## Slack Bot
 
 The Slack bot is one of the messaging platforms that can be used to chat with
@@ -167,6 +143,22 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `BACKEND_PORT` | 5000 | The external port used by the Backend |
 | `JWT_SECRET` | _CHANGEME_ | JWT-based auth secret key, used in the process of signing a token |
 | `MAGIC_LINK_CHAT_TEMPLATE` | _CHANGEME_ | A template for magic link message, e.g. "You can login into APP_NAME by clicking this link: {magic_link}" |
+
+
+#### Twilio
+
+In the backend, we handle Twilio's send and receive messages through a service called TwilioClient. Currently, we only support WhatsApp text messages.
+
+When started, TwilioClient listens to incoming messages from Twilio using a webhook. TwilioClient will use the frontend port proxy to point to the Twilio callback URL. In Twilio, configure the Sandbox webhook URL to be the external URL for your TwilioClient routes.
+
+The TwilioClient connects to the message queue to interact with the rest of the system, notably the assistant. Incoming messages are forwarded to the `RABBITMQ_QUEUE_USER_CHATS` queue with header `reply_to: RABBITMQ_QUEUE_TWILIOBOT_REPLIES`. Replies coming from the
+`RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
+
+| `.env` | default | description |
+|---|---|---|
+| `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
+| `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
+| `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
 
 ### Frontend (Next JS)
 

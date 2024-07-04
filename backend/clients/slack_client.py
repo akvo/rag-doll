@@ -33,17 +33,18 @@ class SlackBotClient:
         self.onboarding_tutorials_sent = {}
 
     async def start_onboarding(self, user_id: str, channel: str):
-        logger.info(
-            f"Starting onboarding for user {user_id} in channel {channel}")
         onboarding_tutorial = OnboardingTutorial(channel)
-        message = onboarding_tutorial.get_message_payload()
-        response = await self.client.chat_postMessage(**message)
-        onboarding_tutorial.timestamp = response["ts"]
         if channel not in self.onboarding_tutorials_sent:
             self.onboarding_tutorials_sent[channel] = {}
+        if user_id not in self.onboarding_tutorials_sent[channel]:
+            message = onboarding_tutorial.get_message_payload()
+            response = await self.client.chat_postMessage(**message)
+            onboarding_tutorial.timestamp = response["ts"]
+            logger.info(
+                f"Onboarding message sent to user {user_id} "
+                f" in channel {channel}"
+            )
         self.onboarding_tutorials_sent[channel][user_id] = onboarding_tutorial
-        logger.info(
-            f"Onboarding message sent to user {user_id} in channel {channel}")
 
     def format_to_queue_message(self, event: dict) -> str:
         timestamp = float(event.get("thread_ts", None) or event["ts"])

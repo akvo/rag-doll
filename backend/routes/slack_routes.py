@@ -26,61 +26,10 @@ async def endpoint(req: Request):
     return await slackbot_client.slack_handler.handle(req)
 
 
-@slack_app.event("team_join")
-async def onboarding_message(event, client):
-    user_id = event.get("user", {}).get("id")
-    logger.info(f"New team join event for user {user_id}")
-    try:
-        response = await client.conversations_open(users=user_id)
-        channel = response["channel"]["id"]
-        logger.info(f"Channel {channel} opened for user {user_id}")
-        await slackbot_client.start_onboarding(user_id, channel, client)
-    except Exception as e:
-        logger.error(f"Error handling team_join event: {e}")
-
-
-@slack_app.event("reaction_added")
-async def update_emoji(event, client):
-    channel_id = event.get("item", {}).get("channel")
-    user_id = event.get("user")
-    logger.info(
-        f"Reaction added event in channel {channel_id} by user {user_id}")
-    try:
-        if channel_id not in slackbot_client.onboarding_tutorials_sent:
-            logger.warning(
-                f"No onboarding tutorial found for channel {channel_id}")
-            return
-        onboarding_tutorial = slackbot_client.onboarding_tutorials_sent[
-            channel_id].get(user_id)
-        if onboarding_tutorial:
-            onboarding_tutorial.reaction_task_completed = True
-            message = onboarding_tutorial.get_message_payload()
-            await client.chat_update(**message)
-    except Exception as e:
-        logger.error(f"Error handling reaction_added event: {e}")
-
-
-@slack_app.event("pin_added")
-async def update_pin(event, client):
-    channel_id = event.get("channel_id")
-    user_id = event.get("user")
-    logger.info(f"Pin added event in channel {channel_id} by user {user_id}")
-    try:
-        onboarding_tutorial = slackbot_client.onboarding_tutorials_sent[
-            channel_id].get(user_id)
-        if onboarding_tutorial:
-            onboarding_tutorial.pin_task_completed = True
-            message = onboarding_tutorial.get_message_payload()
-            await client.chat_update(**message)
-    except Exception as e:
-        logger.error(f"Error handling pin_added event: {e}")
-
-
 @slack_app.event("message")
 async def message(event, client):
     channel_id = event.get("channel")
     user_id = event.get("user")
-    text = event.get("text")
     queue_msg = slackbot_client.format_to_queue_message(event=event)
     # Send message to RabbitMQ
     try:
@@ -92,7 +41,6 @@ async def message(event, client):
         )
         logger.info(
             f"Message in channel {channel_id} by user {user_id}: {queue_msg}")
-        if text and text.lower() == "start":
-            await slackbot_client.start_onboarding(user_id, channel_id)
+        await slackbot_client.start_onboarding(user_id, channel_id)
     except Exception as e:
         logger.error(f"Error handling message event: {e}")

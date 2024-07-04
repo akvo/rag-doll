@@ -60,41 +60,8 @@ class OnboardingTutorial:
             "username": self.username,
             "icon_emoji": self.icon_emoji,
             "blocks": [
+                self.DIVIDER_BLOCK,
                 *self.WELCOME_BLOCK,
                 self.DIVIDER_BLOCK,
-                *self._get_reaction_block(),
-                self.DIVIDER_BLOCK,
-                *self._get_pin_block(),
             ],
         }
-
-    def _get_reaction_block(self):
-        task_checkmark = self._get_checkmark(self.reaction_task_completed)
-        text = (
-            f"{task_checkmark} *Add an emoji reaction to this message*"
-            "You can quickly respond to any message on Slack with an emoji."
-            "Reactions can be used for any purposes."
-        )
-        return self._get_task_block(text)
-
-    def _get_pin_block(self):
-        task_checkmark = self._get_checkmark(self.pin_task_completed)
-        text = (
-            f"{task_checkmark} *Pin this message* :round_pushpin:\n"
-            "Important messages and files can be pinned to the details pane in "
-            "any channel or direct message, including group messages, "
-            "for easy reference."
-        )
-        return self._get_task_block(text)
-
-    @staticmethod
-    def _get_checkmark(task_completed: bool) -> str:
-        if task_completed:
-            return ":white_check_mark:"
-        return ":white_large_square:"
-
-    @staticmethod
-    def _get_task_block(text):
-        return [
-            {"type": "section", "text": {"type": "mrkdwn", "text": text}},
-        ]

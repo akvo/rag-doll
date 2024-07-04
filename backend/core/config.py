@@ -2,8 +2,7 @@ import os
 import asyncio
 
 from contextlib import asynccontextmanager
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi import Depends
 from core.database import get_session
 from sqlmodel import Session, text
@@ -11,14 +10,18 @@ from sqlmodel import Session, text
 # from sqlmodel import Session, select
 # from core.database import engine
 # from models import User
-from routes import user_routes, chat_routes
+from routes import user_routes, chat_routes, twilio_routes
 from Akvo_rabbitmq_client import rabbitmq_client
-from core.socketio_config import sio_app, chat_replies_callback
+from clients.twilio_client import TwilioClient
+from core.socketio_config import sio_app, user_chats_callback
 
 
 RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv('RABBITMQ_QUEUE_USER_CHAT_REPLIES')
 RABBITMQ_QUEUE_TWILIOBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
+
+
+twilio_client = TwilioClient()
 
 
 @asynccontextmanager
@@ -28,11 +31,21 @@ async def lifespan(app: FastAPI):
     loop.create_task(rabbitmq_client.consume(
         queue_name=RABBITMQ_QUEUE_USER_CHATS,
         routing_key=RABBITMQ_QUEUE_USER_CHATS,
+        callback=user_chats_callback
     ))
     loop.create_task(rabbitmq_client.consume(
         queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
         routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-        callback=chat_replies_callback
+    ))
+    loop.create_task(rabbitmq_client.consume(
+        queue_name=RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
+        routing_key=f"*.{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
+        callback=twilio_client.send_whatsapp_message
+    ))
+    loop.create_task(rabbitmq_client.consume(
+        queue_name=RABBITMQ_QUEUE_TWILIOBOT_REPLIES,
+        routing_key=f"*.{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}",
+        callback=twilio_client.send_whatsapp_message
     ))
     yield
     await rabbitmq_client.disconnect()
@@ -56,33 +69,7 @@ app = FastAPI(
 
 app.include_router(user_routes.router, tags=["auth"])
 app.include_router(chat_routes.router, tags=["chat"])
-
-
-@app.post("/test-rabbitmq-send-message", tags=["dev"])
-async def send_message(message: str):
-    if not message:
-        raise HTTPException(
-            status_code=400,
-            detail="Must be a non-empty string.")
-    await rabbitmq_client.producer(
-        body=message,
-        routing_key=RABBITMQ_QUEUE_USER_CHATS
-    )
-    return {"status": "Message sent"}
-
-
-@app.post("/test-rabbitmq-send-magic-link", tags=["dev"])
-async def send_magic_link(message: str):
-    if not message:
-        raise HTTPException(
-            status_code=400,
-            detail="Must be a non-empty string.")
-    await rabbitmq_client.producer(
-            body=message,
-            routing_key=RABBITMQ_QUEUE_USER_CHATS,
-            reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
-        )
-    return {"status": "Message sent"}
+app.include_router(twilio_routes.router, tags=["twilio"])
 
 
 @app.get("/health-check", tags=["dev"])

@@ -151,8 +151,7 @@ In the backend, we handle Twilio's send and receive messages through a service c
 
 When started, TwilioClient listens to incoming messages from Twilio using a webhook. TwilioClient will use the frontend port proxy to point to the Twilio callback URL. In Twilio, configure the Sandbox webhook URL to be the external URL for your TwilioClient routes.
 
-The TwilioClient connects to the message queue to interact with the rest of the system, notably the assistant. Incoming messages are forwarded to the `RABBITMQ_QUEUE_USER_CHATS` queue with header `reply_to: RABBITMQ_QUEUE_TWILIOBOT_REPLIES`. Replies coming from the
-`RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
+The TwilioClient connects to the message queue to interact with the rest of the system, notably the assistant. Incoming messages are forwarded to the `RABBITMQ_QUEUE_USER_CHATS` queue and replies coming from the `RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
 
 | `.env` | default | description |
 |---|---|---|

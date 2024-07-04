@@ -17,31 +17,6 @@ as I could get). Containerising makes it easier to upgrade and improve
 individual componetns.
 
 
-## Twilio Bot
-
-Twilio acts as intermediary, so that we have a single gateway to handle multiple
-types of messaging platforms and media types. As it stands, we only support
-WhatsApp text messages.
-
-When started, the Twilio bot listens to incoming messages from Twilio using a
-web hook. This means the Twilio bot needs an open, external port. See
-[Firewall Rules](#firewall-rules) for configuration. In Twilio, configure the
-Sandbbox web hook URL to be the external URL for your `twiliobot` container, on
-the `TWILIO_BOT_PORT` port.
-
-The Twilio bot connects to the message queue to interact with the rest of the
-system, notably the assistant. Incoming messages are forwarded to the
-`RABBITMQ_QUEUE_USER_CHATS` queue. Replies coming from the
-`RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
-
-| `.env` | default | description |
-|---|---|---|
-| `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
-| `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
-| `TWILIO_BOT_PORT` | 3100 | The port that use by twiliobot container. |
-| `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
-
-
 ## Slack Bot
 
 The Slack bot is one of the messaging platforms that can be used to chat with
@@ -259,12 +234,6 @@ an internal IP address for Ollama, but you still need the external IP address
 for the Slack API integration.
 
 ### Firewall Rules
-
-Twilio needs to be able to connect to the `twiliobot` container, on port
-`TWILIO_BOT_PORT` (typically 3100). Set up a firewall rule with the name and
-network tag `allow-twilio` that allows traffic to that port to connect and set
-the associated tag on the network configuration of your virtual machine that
-hosts the `twiliobot` Docker container.
 
 Slack needs to be able to connect to the `slackbot` container, on port
 `SLACK_BOT_PORT` (typically 3000). Set up a firewall rule with the name and

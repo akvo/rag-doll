@@ -6,12 +6,15 @@ from Akvo_rabbitmq_client import queue_message_util
 class TestQueueMessageUtil(unittest.TestCase):
 
     def test_create_queue_message_with_minimal_data(self):
+        headers = {"reply_to": "twilio"}
         message = queue_message_util.create_queue_message(
             message_id=str(uuid4()),
             conversation_id=str(uuid4()),
             client_phone_number="+6281234567890",
             user_phone_number="+6282234567899",
             sender="USER",
+            platform="WHATSAPP",
+            headers=headers,
             body="This is the original message text typed by the client."
         )
         self.assertEqual(
@@ -20,6 +23,12 @@ class TestQueueMessageUtil(unittest.TestCase):
         self.assertEqual(
             message["conversation_envelope"]["user_phone_number"],
             "+6282234567899")
+        self.assertEqual(
+            message["conversation_envelope"]["sender"], "USER")
+        self.assertEqual(
+            message["conversation_envelope"]["platform"], "WHATSAPP")
+        self.assertEqual(
+            message["conversation_envelope"]["headers"], headers)
         self.assertEqual(
             message["body"],
             "This is the original message text typed by the client.")
@@ -53,6 +62,7 @@ class TestQueueMessageUtil(unittest.TestCase):
             client_phone_number="+6281234567890",
             user_phone_number="+6282234567899",
             sender="CLIENT",
+            platform="WEB",
             body="This is the original message text typed by the client.",
             media=media_items,
             context=context_items

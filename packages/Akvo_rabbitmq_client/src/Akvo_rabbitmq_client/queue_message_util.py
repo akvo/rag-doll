@@ -10,7 +10,9 @@ class QueueMessageUtil:
         client_phone_number: str,
         user_phone_number: str,
         sender: str,
+        platform: str,
         body: str,
+        headers: Optional[dict] = {},
         media: Optional[List[Dict[str, str]]] = None,
         context: Optional[List[Dict[str, str]]] = None,
         transformation_log: Optional[List[str]] = None
@@ -28,7 +30,9 @@ class QueueMessageUtil:
                 "conversation_id": conversation_id,
                 "client_phone_number": client_phone_number,
                 "user_phone_number": user_phone_number,
-                "sender": sender
+                "sender": sender,
+                "platform": platform,
+                "headers": headers
             },
             "body": body,
             "media": media,

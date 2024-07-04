@@ -5,7 +5,7 @@ from Akvo_rabbitmq_client import queue_message_util
 from enum import Enum
 
 
-class ChatSenderEnum(Enum):
+class ChatRoleEnum(Enum):
     USER = "user"
     CLIENT = "client"
     ASSISTANT = "assistant"
@@ -19,21 +19,21 @@ class PlatformEnum(Enum):
 
 class TestQueueMessageUtil(unittest.TestCase):
 
-    def test_create_queue_message_invalid_sender(self):
+    def test_create_queue_message_invalid_sender_role(self):
         with self.assertRaises(ValueError) as context:
             queue_message_util.create_queue_message(
                 message_id="123",
                 conversation_id="456",
                 client_phone_number="9876543210",
                 user_phone_number="1234567890",
-                sender="invalid_sender",
-                sender_enum=ChatSenderEnum,
+                sender_role="invalid_sender_role",
+                sender_role_enum=ChatRoleEnum,
                 platform=PlatformEnum.SLACK,
                 platform_enum=PlatformEnum,
                 body="Hello, world!"
             )
         self.assertTrue(
-            "Invalid sender value: invalid_sender. Must be one of:"
+            "Invalid sender_role value: invalid_sender_role. Must be one of:"
             in str(context.exception))
 
     def test_create_queue_message_invalid_platform(self):
@@ -43,8 +43,8 @@ class TestQueueMessageUtil(unittest.TestCase):
                 conversation_id="456",
                 client_phone_number="9876543210",
                 user_phone_number="1234567890",
-                sender=ChatSenderEnum.SYSTEM,
-                sender_enum=ChatSenderEnum,
+                sender_role=ChatRoleEnum.SYSTEM,
+                sender_role_enum=ChatRoleEnum,
                 platform="invalid_platform",
                 platform_enum=PlatformEnum,
                 body="Hello, world!"
@@ -59,8 +59,8 @@ class TestQueueMessageUtil(unittest.TestCase):
             conversation_id=str(uuid4()),
             client_phone_number="+6281234567890",
             user_phone_number="+6282234567899",
-            sender=ChatSenderEnum.USER,
-            sender_enum=ChatSenderEnum,
+            sender_role=ChatRoleEnum.USER,
+            sender_role_enum=ChatRoleEnum,
             platform=PlatformEnum.WHATSAPP,
             platform_enum=PlatformEnum,
             body="This is the original message text typed by the client."
@@ -72,7 +72,7 @@ class TestQueueMessageUtil(unittest.TestCase):
             message["conversation_envelope"]["user_phone_number"],
             "+6282234567899")
         self.assertEqual(
-            message["conversation_envelope"]["sender"], ChatSenderEnum.USER)
+            message["conversation_envelope"]["sender_role"], ChatRoleEnum.USER)
         self.assertEqual(
             message["conversation_envelope"]["platform"], PlatformEnum.WHATSAPP)
         self.assertEqual(
@@ -107,8 +107,8 @@ class TestQueueMessageUtil(unittest.TestCase):
             conversation_id=str(uuid4()),
             client_phone_number="+6281234567890",
             user_phone_number="+6282234567899",
-            sender=ChatSenderEnum.USER,
-            sender_enum=ChatSenderEnum,
+            sender_role=ChatRoleEnum.USER,
+            sender_role_enum=ChatRoleEnum,
             platform=PlatformEnum.WHATSAPP,
             platform_enum=PlatformEnum,
             body="This is the original message text typed by the client.",

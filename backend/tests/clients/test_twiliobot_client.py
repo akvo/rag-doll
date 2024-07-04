@@ -52,12 +52,20 @@ def test_format_to_queue_message_valid(twilio_client):
     formatted_message = twilio_client.format_to_queue_message(values)
     assert isinstance(formatted_message, str)
     queue_message = json.loads(formatted_message)
-    assert queue_message['id'] == '1234567890'
-    assert queue_message['from']['phone'] == '+6281234567890'
-    assert queue_message['text'] == 'Test message'
-    assert queue_message['media'] == ['http://example.com/image.jpg']
-    assert 'timestamp' in queue_message
-    assert 'platform' in queue_message
+    assert queue_message == {
+        'conversation_envelope': {
+            'message_id': '1234567890',
+            'conversation_id': '__CHANGEME__',
+            'client_phone_number': '+6281234567890',
+            'user_phone_number': None,
+            'sender_role': 'client',
+            'platform': 'WHATSAPP'
+        },
+        'body': 'Test message',
+        'media': ['http://example.com/image.jpg'],
+        'context': [],
+        'transformation_log': ['Test message']
+    }
 
 
 def test_format_to_queue_message_missing_fields(twilio_client):

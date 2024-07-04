@@ -4,12 +4,14 @@ import logging
 import time
 import phonenumbers
 
-from datetime import datetime
+# from datetime import datetime
 from json.decoder import JSONDecodeError
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 from pydantic import BaseModel, ValidationError
 from pydantic_extra_types.phone_numbers import PhoneNumber
+from Akvo_rabbitmq_client import queue_message_util
+from models.chat import Chat_Sender, PlatformEnum
 
 
 logging.basicConfig(level=logging.INFO)
@@ -112,29 +114,30 @@ class TwilioClient:
         """
         Consume messages from Twilio then format into queue message.
         """
-        iso_timestamp = datetime.now().isoformat()
+        # iso_timestamp = datetime.now().isoformat()
         try:
             # Validate and format the phone number
             phone_number = values.get('From').split(':')[1]
             formatted_phone = self.validate_and_format_phone_number(
                 phone_number=phone_number)
-            # TODO :: Use queue_message_util here
-            queue_message = {
-                'id': values['MessageSid'],
-                'timestamp': iso_timestamp,
-                'platform': 'WHATSAPP',
-                'from': {
-                    'phone': formatted_phone,
-                },
-                'text': values['Body'],
-                'media': []
-            }
             # Add media files if present
+            media = []
             num_media = values.get('NumMedia', 0)
             for i in range(num_media):
                 media_url = values.get(f'MediaUrl{i}', '')
                 if media_url:
-                    queue_message['media'].append(media_url)
+                    media.append(media_url)
+            queue_message = queue_message_util.create_queue_message(
+                message_id=values["MessageSid"],
+                conversation_id="__CHANGEME__",
+                client_phone_number=formatted_phone,
+                sender_role=Chat_Sender.CLIENT,
+                sender_role_enum=Chat_Sender,
+                platform=PlatformEnum.WHATSAPP,
+                platform_enum=PlatformEnum,
+                body=values["Body"],
+                media=media
+            )
             return json.dumps(queue_message)
         except ValueError as e:
             logger.error(f"Error formatting message: {e}")

@@ -3,17 +3,46 @@ class OnboardingTutorial:
     Constructs the onboarding message and stores the
     state of which tasks were completed.
     """
-    WELCOME_BLOCK = {
-        "type": "section",
-        "text": {
-            "type": "mrkdwn",
-            "text": (
-                "Welcome to Slack! :wave: We're so glad you're here. :blush:"
-                "\n\n"
-                "*Get started by completing the steps below:*"
-            ),
+    WELCOME_BLOCK = [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*Welcome to AgriKnowledge Hub!*"
+            },
         },
-    }
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    "Get reliable farming information, learn new techniques,"
+                    "and connect with experts for quick tips. Our goal is to"
+                    "help you achieve higher productivity and incomes."
+                ),
+            },
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    "To get started, please tell us:"
+                    "\n• Your name"
+                    "\n• Your country"
+                    "\n• The crops you grow"
+                ),
+            },
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "Together, we can enhance your farming success!",
+            },
+        },
+    ]
+
     DIVIDER_BLOCK = {"type": "divider"}
 
     def __init__(self, channel):
@@ -31,7 +60,7 @@ class OnboardingTutorial:
             "username": self.username,
             "icon_emoji": self.icon_emoji,
             "blocks": [
-                self.WELCOME_BLOCK,
+                *self.WELCOME_BLOCK,
                 self.DIVIDER_BLOCK,
                 *self._get_reaction_block(),
                 self.DIVIDER_BLOCK,
@@ -46,12 +75,7 @@ class OnboardingTutorial:
             "You can quickly respond to any message on Slack with an emoji."
             "Reactions can be used for any purposes."
         )
-        information = (
-            ":information_source:"
-            "*<https://get.slack.help/hc/en-us/articles/"
-            "206870317-Emoji-reactions|Learn How to Use Emoji Reactions>*"
-        )
-        return self._get_task_block(text, information)
+        return self._get_task_block(text)
 
     def _get_pin_block(self):
         task_checkmark = self._get_checkmark(self.pin_task_completed)
@@ -61,13 +85,7 @@ class OnboardingTutorial:
             "any channel or direct message, including group messages, "
             "for easy reference."
         )
-        information = (
-            ":information_source: "
-            "*<https://get.slack.help/hc/en-us/articles/"
-            "205239997-Pinning-messages-and-files"
-            "|Learn How to Pin a Message>*"
-        )
-        return self._get_task_block(text, information)
+        return self._get_task_block(text)
 
     @staticmethod
     def _get_checkmark(task_completed: bool) -> str:
@@ -76,9 +94,7 @@ class OnboardingTutorial:
         return ":white_large_square:"
 
     @staticmethod
-    def _get_task_block(text, information):
+    def _get_task_block(text):
         return [
             {"type": "section", "text": {"type": "mrkdwn", "text": text}},
-            {"type": "context", "elements": [
-                {"type": "mrkdwn", "text": information}]},
         ]

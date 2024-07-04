@@ -83,7 +83,7 @@ app.include_router(twilio_routes.router, tags=["twilio"])
 def read_root(session: Session = Depends(get_session)):
     # Test select 1
     session.exec(text("SELECT 1"))
-    return {"Hello": "World"}
+    return {"status": "ok"}
 
 
 app.mount("/", app=sio_app)

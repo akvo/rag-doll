@@ -37,6 +37,7 @@ services:
     volumes:
       - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
       - ./librarian:/app:delegated
+    restart: no
 
   chromadb:
     image: chromadb/chroma

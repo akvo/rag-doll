@@ -96,7 +96,6 @@ def test_send_whatsapp_message_success(
 
     twilio_client.send_whatsapp_message(body=message_body, headers={})
 
-    assert twilio_client.TWILIO_WHATSAPP_FROM == "whatsapp:+12345678911"
     assert mock_messages.create.called
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,

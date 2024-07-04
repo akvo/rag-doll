@@ -15,6 +15,8 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+MAX_WHATSAPP_MESSAGE_LENGTH = 1500
+
 
 class IncomingMessage(BaseModel):
     MessageSid: str
@@ -66,7 +68,8 @@ class TwilioClient:
             text = queue_message["text"]
             phone = queue_message["to"]["phone"]
 
-            chunks = self.chunk_text_by_paragraphs(text, 1500)
+            chunks = self.chunk_text_by_paragraphs(
+                text, MAX_WHATSAPP_MESSAGE_LENGTH)
             logger.info(f"sending '{text}' to WhatsApp number {phone}")
             for chunk in chunks:
                 response = self.twilio_client.messages.create(

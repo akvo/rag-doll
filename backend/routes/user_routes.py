@@ -8,18 +8,16 @@ from datetime import timedelta
 
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from models import User
+from models.chat import Chat_Sender, PlatformEnum
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
-from Akvo_rabbitmq_client import rabbitmq_client
+from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
 
 
 router = APIRouter()
 webdomain = environ.get("WEBDOMAIN")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = environ.get(
     "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
-)
-RABBITMQ_QUEUE_TWILIOBOT_REPLIES = environ.get(
-    "RABBITMQ_QUEUE_TWILIOBOT_REPLIES"
 )
 MAGIC_LINK_CHAT_TEMPLATE = environ.get("MAGIC_LINK_CHAT_TEMPLATE")
 
@@ -38,7 +36,7 @@ async def send_login_link(
     login_code_uuid = uuid4()
     user.login_code = str(login_code_uuid)
     session.commit()
-    await send_whatsapp_message(phone_number, user.login_code)
+    await send_to_twilio(phone_number, user.login_code)
     # return {"message": "Login link sent via WhatsApp"}
     return f"{webdomain}/verify/{user.login_code}"
 
@@ -61,17 +59,19 @@ async def verify_login_code(
     return {"token": login_token}
 
 
-async def send_whatsapp_message(phone_number: int, login_token: str):
+async def send_to_twilio(phone_number: int, login_token: str):
     link = f"{webdomain}/verify/{login_token}"
-    message_body = {
-        "to": {
-            # need phone number with country code
-            "phone": phone_number,
-        },
-        "text": str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link),
-    }
+    message_body = queue_message_util.create_queue_message(
+        message_id="__CHANGEME__",
+        conversation_id="__CHANGEME__",
+        user_phone_number=phone_number,
+        sender_role=Chat_Sender.SYSTEM,
+        sender_role_enum=Chat_Sender,
+        platform=PlatformEnum.WHATSAPP,
+        platform_enum=PlatformEnum,
+        body=str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link),
+    )
     routing_key = f"{RABBITMQ_QUEUE_USER_CHAT_REPLIES}"
-    routing_key += f".{RABBITMQ_QUEUE_TWILIOBOT_REPLIES}"
     await rabbitmq_client.producer(
         body=json.dumps(message_body), routing_key=routing_key
     )

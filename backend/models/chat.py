@@ -14,6 +14,11 @@ class Chat_Sender(enum.Enum):
     SYSTEM = "system"
 
 
+class PlatformEnum(enum.Enum):
+    WHATSAPP = "WHATSAPP"
+    SLACK = "SLACK"
+
+
 class Chat_Session(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")

@@ -50,6 +50,7 @@ class SlackBotClient:
         timestamp = float(event.get("thread_ts", None) or event["ts"])
         iso_timestamp = datetime.fromtimestamp(
             timestamp, tz=timezone.utc).isoformat()
+        # TODO :: Use queue_message_util here
         queue_message = {
             'id': event.get('client_msg_id'),
             'timestamp': iso_timestamp,
@@ -66,8 +67,10 @@ class SlackBotClient:
         logger.warning(body)
         try:
             queue_message = json.loads(body)
-            text = queue_message["text"]
-            channel = queue_message["from"]["channel"]
+            conversation_envelope = queue_message.get(
+                "conversation_envelope", {})
+            text = queue_message.get("body")
+            channel = conversation_envelope.get("conversation_id")
             response = await self.client.chat_postMessage(
                 channel=channel, text=text)
             ts = response['ts']

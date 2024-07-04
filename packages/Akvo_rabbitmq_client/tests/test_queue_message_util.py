@@ -72,9 +72,11 @@ class TestQueueMessageUtil(unittest.TestCase):
             message["conversation_envelope"]["user_phone_number"],
             "+6282234567899")
         self.assertEqual(
-            message["conversation_envelope"]["sender_role"], ChatRoleEnum.USER)
+            message["conversation_envelope"]["sender_role"],
+            ChatRoleEnum.USER.value)
         self.assertEqual(
-            message["conversation_envelope"]["platform"], PlatformEnum.WHATSAPP)
+            message["conversation_envelope"]["platform"],
+            PlatformEnum.WHATSAPP.value)
         self.assertEqual(
             message["body"],
             "This is the original message text typed by the client.")

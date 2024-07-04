@@ -62,8 +62,12 @@ class TwilioClient:
         """
         try:
             queue_message = json.loads(body)
-            text = queue_message["text"]
-            phone = queue_message["to"]["phone"]
+            text = queue_message.get("body")
+            conversation_envelope = queue_message.get(
+                "conversation_envelope", {})
+            phone = conversation_envelope.get("client_phone_number")
+            if not phone:
+                phone = conversation_envelope.get("user_phone_number")
 
             chunks = self.chunk_text_by_paragraphs(
                 text, MAX_WHATSAPP_MESSAGE_LENGTH)
@@ -114,6 +118,7 @@ class TwilioClient:
             phone_number = values.get('From').split(':')[1]
             formatted_phone = self.validate_and_format_phone_number(
                 phone_number=phone_number)
+            # TODO :: Use queue_message_util here
             queue_message = {
                 'id': values['MessageSid'],
                 'timestamp': iso_timestamp,

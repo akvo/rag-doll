@@ -88,8 +88,18 @@ def test_send_whatsapp_message_success(
     twilio_client
 ):
     message_body = json.dumps({
-        "text": "Hello, this is a test message.",
-        "to": {"phone": "+1234567890"}
+        "conversation_envelope": {
+            "message_id": "message_id",
+            "conversation_id": "conversation_id",
+            "client_phone_number": None,
+            "user_phone_number": "+1234567890",
+            "sender_role": "system",
+            "platform": "WHATSAPP",
+        },
+        "body": "Hello, this is a test message.",
+        "media": [],
+        "context": [],
+        "transformation_log": ["Hello, this is a test message."]
     }).encode()
 
     mock_messages.create.return_value = MagicMock(error_code=None)
@@ -112,8 +122,18 @@ def test_send_whatsapp_message_twilio_error(
     twilio_client
 ):
     message_body = json.dumps({
-        "text": "Hello, this is a test message.",
-        "to": {"phone": "+1234567890"}
+        "conversation_envelope": {
+            "message_id": "message_id",
+            "conversation_id": "conversation_id",
+            "client_phone_number": "+1234567899",
+            "user_phone_number": "+1234567890",
+            "sender_role": "system",
+            "platform": "WHATSAPP",
+        },
+        "body": "Hello, this is a test message.",
+        "media": [],
+        "context": [],
+        "transformation_log": ["Hello, this is a test message."]
     }).encode()
 
     mock_messages.create.side_effect = TwilioRestException(
@@ -125,7 +145,7 @@ def test_send_whatsapp_message_twilio_error(
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,
         body="Hello, this is a test message.",
-        to="whatsapp:+1234567890",
+        to="whatsapp:+1234567899",
     )
 
     # Check that the error was logged
@@ -160,8 +180,18 @@ def test_send_whatsapp_message_unexpected_error(
     twilio_client
 ):
     message_body = json.dumps({
-        "text": "Hello, this is a test message.",
-        "to": {"phone": "+1234567890"}
+        "conversation_envelope": {
+            "message_id": "message_id",
+            "conversation_id": "conversation_id",
+            "client_phone_number": "+1234567899",
+            "user_phone_number": "+1234567890",
+            "sender_role": "system",
+            "platform": "WHATSAPP",
+        },
+        "body": "Hello, this is a test message.",
+        "media": [],
+        "context": [],
+        "transformation_log": ["Hello, this is a test message."]
     }).encode()
 
     mock_messages.create.side_effect = Exception("Unexpected error")
@@ -172,7 +202,7 @@ def test_send_whatsapp_message_unexpected_error(
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,
         body="Hello, this is a test message.",
-        to="whatsapp:+1234567890",
+        to="whatsapp:+1234567899",
     )
 
     # Check that the error was logged

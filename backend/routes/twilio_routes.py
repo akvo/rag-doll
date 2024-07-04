@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 security = HTTPBearer()
 
-RABBITMQ_QUEUE_TWILIOBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_TWILIOBOT_REPLIES')
 RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
 
 
@@ -36,7 +35,6 @@ async def receive_whatsapp_message(request: Request):
         await rabbitmq_client.producer(
             body=body,
             routing_key=RABBITMQ_QUEUE_USER_CHATS,
-            reply_to=RABBITMQ_QUEUE_TWILIOBOT_REPLIES
         )
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 

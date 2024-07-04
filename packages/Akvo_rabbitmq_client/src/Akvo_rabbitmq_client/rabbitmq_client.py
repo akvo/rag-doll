@@ -105,7 +105,7 @@ class RabbitMQClient:
                     f"{log}, headers: {headers}"
                 )
                 if callback:
-                    await callback(body=body, headers=headers)
+                    await callback(body=body)
         except Exception as e:
             logger.error(f"Error processing {routing_key} message: {e}")
 

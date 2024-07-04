@@ -56,7 +56,7 @@ class TwilioClient:
                     chunks.append(chunk)
         return chunks
 
-    def send_whatsapp_message(self, body: str, headers: dict) -> None:
+    def send_whatsapp_message(self, body: str) -> None:
         """
         Consume messages from the RabbitMQ queue and send them via Twilio.
         """

@@ -61,7 +61,7 @@ class SlackBotClient:
         }
         return json.dumps(queue_message)
 
-    async def send_message(self, body: str, headers: dict):
+    async def send_message(self, body: str):
         logger.warning(body)
         try:
             queue_message = json.loads(body)

@@ -14,16 +14,16 @@ services:
     depends_on:
       - rabbitmq
 
-  librarian:
-    build: librarian
+  eppo-librarian:
+    build: eppo-librarian
     environment:
+      EPPO_SQLITE_DATABASE_ZIP: ${EPPO_SQLITE_DATABASE_ZIP}
+      EPPO_COUNTRIES: ${EPPO_COUNTRIES}
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
-      CHROMADB_COLLECTION: ${LIBRARIAN_COLLECTION}
+      CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
     depends_on:
       - chromadb
-    volumes:
-      - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
     restart: no
 
   chromadb:

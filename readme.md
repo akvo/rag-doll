@@ -39,16 +39,28 @@ because the openai library automatically reads it from the environment variables
 when `openai.OpenAI()` is instantiated.
 
 
-## Librarian
+## EPPO Librarian
 
-The librarian is responsible for getting the knowledge base data into the vector
-database. It runs at startup, recreating the data set that is to be used for the
-retrieval part of the system.
+The EPPO librarian is responsible for getting the EPPO Global Database data
+sheet data into the vector database. It runs at startup, recreating the data set
+that is to be used for the retrieval part of the system.
+
+The [EPPO Global Database](https://gd.eppo.int/) is a collection of technical
+resources that researchers can use in their work. As quoted from their website:
+*EPPO Global Database is maintained by the Secretariat of the European and
+Mediterranean Plant Protection Organization (EPPO). The aim of the database is
+to provide all pest-specific information that has been produced or collected by
+EPPO. The database contents are constantly being updated by the EPPO
+Secretariat.*
 
 | `.env` | default | description |
 |---|---|---|
-| `LIBRARIAN_CORPUS` | _CHANGEME_ | The full path to a gzipped Apache Parquet file with corpus data. |
-| `LIBRARIAN_COLLECTION` | knowledge-base | The name of the ChromaDB collection where the corpus will be stored. |
+| `EPPO_LIBRARIAN_COLLECTION` | EPPO-datasheets | The name of the ChromaDB collection where the EPPO datasheets will be stored. |
+| `EPPO_SQLITE_DATABASE_ZIP` | https://data.eppo.int/files/sqlite_all.zip | The full URL of the EPPO code registry database in SQLite 3 format. |
+| `EPPO_COUNTRIES` | _CHANGEME_ | A comma-separated list of ISO 3166-1 alpha-2 country codes of countries that you are interested in. |
+
+
+**license** adherence and citation...
 
 
 ## ChromaDB Vector Database

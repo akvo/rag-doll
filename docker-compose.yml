@@ -24,19 +24,20 @@ services:
     volumes:
       - ./assistant:/app:delegated
 
-  librarian:
+  eppo-librarian:
     image: python:3.12.3
     working_dir: /app
     environment:
+      EPPO_SQLITE_DATABASE_ZIP: ${EPPO_SQLITE_DATABASE_ZIP}
+      EPPO_COUNTRIES: ${EPPO_COUNTRIES}
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
-      CHROMADB_COLLECTION: ${LIBRARIAN_COLLECTION}
+      CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
     depends_on:
       - chromadb
     command: ["./run.sh"]
     volumes:
-      - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
-      - ./librarian:/app:delegated
+      - ./eppo-librarian:/app:delegated
     restart: no
 
   chromadb:

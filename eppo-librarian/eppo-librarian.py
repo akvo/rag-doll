@@ -1,36 +1,74 @@
 import os
+import io
 import time
+import zipfile
+import sqlite3
+import requests
 import chromadb
-import pandas as pd
-ROW=1
+from tempfile import TemporaryDirectory
+from typing import List, Tuple, Optional
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
-CORPUS_PARQUET_GZ="/data-sets/corpus.parquet.gz"
-
-COL_FILENAME = 'file name'
-COL_TEXT_AS_WRITTEN = 'text as written'
-COL_LANGUAGE = 'language'
-COL_LEMMATISED_TEXT = 'lemmatised text'
-COL_COUNT_TEXT = 'written word count'
-COL_COUNT_LEMMATISED = 'lemmatised word count'
-
-COL_COUNTRY = 'country (ISO-3166)'
-ISO_3166_KENYA = 'KEN'
-ISO_3166_BURKINA_FASO = 'BFA'
+EPPO_SQLITE_DATABASE_ZIP = os.getenv('EPPO_SQLITE_DATABASE_ZIP')
+EPPO_COUNTRIES = os.getenv('EPPO_COUNTRIES').replace(' ', '').split(',')
 
 # Here we define the granularity of the chunks, as well as overlap and metadata.
 # Our data sets are tiny, so just a few sentences will have to do. Based on gut
 # feel, we start with 5 sentences per chunk, with one sentence overlap. We will
 # have to fine tune that over time. We simply use all other columns as metadata.
 
-CHUNK_SIZE=5
+CHUNK_SIZE=5 # XXX move to .env
 OVERLAP_SIZE=1
 
 CHROMADB_HOST = os.getenv('CHROMADB_HOST')
 CHROMADB_PORT = os.getenv('CHROMADB_PORT')
 CHROMADB_COLLECTION = os.getenv('CHROMADB_COLLECTION')
+
+
+# The EPPO codes registry is available asa zipped SQLite 3 database. Download
+# that ZIP file, but keep it in memory. We don't need persistence since we want
+# to use the latest version every time.
+
+def download_zip_to_memory(url: str) -> io.BytesIO:
+    """Download a ZIP file from a URL and keep it in memory."""
+    response = requests.get(url)
+    response.raise_for_status()
+    return io.BytesIO(response.content)
+
+
+
+# Find the actual database file in the ZIP archive and extract that. Here we
+# store it as a temporary file, because SQLite expects an actual database file.
+
+def extract_sqlite_and_connect(zip_bytes: io.BytesIO) -> sqlite3.Connection:
+    with TemporaryDirectory() as tmpdir:
+        with zipfile.ZipFile(zip_bytes) as zip_ref:
+            for file in zip_ref.namelist():
+                if file.endswith('.sqlite'):
+                    zip_ref.extract(file, tmpdir)
+                    db_path = os.path.join(tmpdir, file)
+                    return sqlite3.connect(db_path)
+        raise FileNotFoundError("SQLite database file not found in the ZIP archive")
+
+
+# Filter the full list of country codes down to the ones that are interesting to our users.
+
+def fetch_eppocode_relevant_to_countries(eppo_db: sqlite3.Connection, country_codes: List[str]) -> List[Tuple[str, str]]:
+    countries = "', '".join(country_codes)
+    query = f"""
+        SELECT tc.eppocode, tn.isocountry
+        FROM t_codes tc
+        JOIN t_names tn ON tc.codeid = tn.codeid
+        WHERE tc.dtcode IN ('GAF', 'GAI', 'PFL')
+          AND tn.isocountry IN ('{countries}');
+    """ # XXX this query is not correct
+    cursor = eppo_db.cursor()
+    cursor.execute(query)
+    results = cursor.fetchall()
+    return results
+
 
 # Connect to ChromaDB. ChromaDB takes a second or so to start, so we have a
 # crude retry loop. Once connected. we clear the collection and recreate it from
@@ -42,7 +80,7 @@ knowledgebase_id = 0
 while chromadb_client == None:
     try:
         logging.info(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}/{CHROMADB_COLLECTION}...")
-        chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
+        chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT, settings=chromadb.Settings(anonymized_telemetry=False))
         collections = chromadb_client.list_collections()
         for coll in collections:
             if CHROMADB_COLLECTION == coll.name:
@@ -91,10 +129,17 @@ def build_chunks_from_sentences(row):
         add_chunk_to_chroma(next_chunk, row[COL_COUNTRY])
 
 
-corpus = pd.read_parquet(CORPUS_PARQUET_GZ)
-logging.info(corpus.info())
+zip_bytes = download_zip_to_memory(EPPO_SQLITE_DATABASE_ZIP)
+logging.info(f"Downloaded {len(zip_bytes.getvalue())} bytes from {EPPO_SQLITE_DATABASE_ZIP}")
 
-corpus.apply(build_chunks_from_sentences, axis=ROW)
+eppo_db = extract_sqlite_and_connect(zip_bytes)
+eppocodes = fetch_eppocode_relevant_to_countries(eppo_db, EPPO_COUNTRIES)
+logging.info(f"Found {len(eppocodes)} EPPO codes relevant to {EPPO_COUNTRIES}")
+
+for code in eppocodes:
+    logging.info(code)
+
+
 
 # And with that, the librarian is done. The searchable text has been updated and
 # is ready to be queried.

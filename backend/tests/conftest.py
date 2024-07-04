@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.sql import text
 from sqlmodel import create_engine, Session
 
+from core.config import app
 from core.database import get_db_url, get_session
 from models import User, Client, Chat_Session, Chat, Chat_Sender
 
@@ -108,3 +109,28 @@ def client() -> Generator[TestClient, None, None]:
     app.dependency_overrides[get_session] = override_get_db
     with TestClient(app) as c:
         yield c
+
+
+class MockRabbitMQClient:
+    async def initialize(self):
+        pass
+
+    async def disconnect(self):
+        pass
+
+    async def consume(self, queue_name, routing_key, callback):
+        pass
+
+    async def producer(self, body, routing_key, reply_to):
+        pass
+
+
+class MockTwilioBotClient:
+    async def send_whatsapp_message(self, message):
+        pass
+
+
+@pytest.fixture
+def run_app():
+    app.dependency_overrides[MockRabbitMQClient] = MockRabbitMQClient()
+    app.dependency_overrides[MockTwilioBotClient] = MockTwilioBotClient()

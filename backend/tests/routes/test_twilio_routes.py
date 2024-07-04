@@ -1,31 +1,4 @@
-import pytest
-from core.config import app
 from fastapi.testclient import TestClient
-
-
-class MockRabbitMQClient:
-    async def initialize(self):
-        pass
-
-    async def disconnect(self):
-        pass
-
-    async def consume(self, queue_name, routing_key, callback):
-        pass
-
-    async def producer(self, body, routing_key, reply_to):
-        pass
-
-
-class MockTwilioBotClient:
-    async def send_whatsapp_message(self, message):
-        pass
-
-
-@pytest.fixture
-def run_app():
-    app.dependency_overrides[MockRabbitMQClient] = MockRabbitMQClient()
-    app.dependency_overrides[MockTwilioBotClient] = MockTwilioBotClient()
 
 
 def test_receive_whatsapp_message_from_wrong_phone_number(

@@ -1,9 +1,8 @@
-class OnboardingTutorial:
-    """
-    Constructs the onboarding message and stores the
-    state of which tasks were completed.
-    """
-    WELCOME_BLOCK = [
+from clients.slack_onboarding import OnboardingTutorial
+
+
+def test_welcome_block():
+    assert OnboardingTutorial.WELCOME_BLOCK == [
         {
             "type": "section",
             "text": {
@@ -43,19 +42,26 @@ class OnboardingTutorial:
         },
     ]
 
-    DIVIDER_BLOCK = {"type": "divider"}
 
-    def __init__(self, channel):
-        self.channel = channel
-        self.timestamp = ""
+def test_divider_block():
+    assert OnboardingTutorial.DIVIDER_BLOCK == {"type": "divider"}
 
-    def get_message_payload(self):
-        return {
-            "ts": self.timestamp,
-            "channel": self.channel,
-            "blocks": [
-                self.DIVIDER_BLOCK,
-                *self.WELCOME_BLOCK,
-                self.DIVIDER_BLOCK,
-            ],
-        }
+
+def test_init():
+    channel = "test_channel"
+    onboarding_tutorial = OnboardingTutorial(channel)
+    assert onboarding_tutorial.channel == channel
+    assert onboarding_tutorial.timestamp == ""
+
+
+def test_get_message_payload():
+    channel = "test_channel"
+    onboarding_tutorial = OnboardingTutorial(channel)
+    payload = onboarding_tutorial.get_message_payload()
+    assert payload["ts"] == ""
+    assert payload["channel"] == channel
+    assert payload["blocks"] == [
+        {"type": "divider"},
+        *OnboardingTutorial.WELCOME_BLOCK,
+        {"type": "divider"},
+    ]

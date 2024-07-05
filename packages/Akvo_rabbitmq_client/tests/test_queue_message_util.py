@@ -3,6 +3,7 @@ import unittest
 from uuid import UUID, uuid4
 from Akvo_rabbitmq_client import queue_message_util
 from enum import Enum
+from datetime import datetime
 
 
 class ChatRoleEnum(Enum):
@@ -30,7 +31,7 @@ class TestQueueMessageUtil(unittest.TestCase):
                 sender_role_enum=ChatRoleEnum,
                 platform=PlatformEnum.SLACK,
                 platform_enum=PlatformEnum,
-                body="Hello, world!"
+                body="Hello, world!",
             )
         self.assertTrue(
             "Invalid sender_role value: invalid_sender_role. Must be one of:"
@@ -54,6 +55,8 @@ class TestQueueMessageUtil(unittest.TestCase):
             in str(context.exception))
 
     def test_create_queue_message_with_minimal_data(self):
+        timestamp = datetime.now().isoformat()
+
         message = queue_message_util.create_queue_message(
             message_id=str(uuid4()),
             conversation_id=str(uuid4()),
@@ -63,7 +66,8 @@ class TestQueueMessageUtil(unittest.TestCase):
             sender_role_enum=ChatRoleEnum,
             platform=PlatformEnum.WHATSAPP,
             platform_enum=PlatformEnum,
-            body="This is the original message text typed by the client."
+            body="This is the original message text typed by the client.",
+            timestamp=timestamp
         )
         self.assertEqual(
             message["conversation_envelope"]["client_phone_number"],
@@ -77,6 +81,9 @@ class TestQueueMessageUtil(unittest.TestCase):
         self.assertEqual(
             message["conversation_envelope"]["platform"],
             PlatformEnum.WHATSAPP.value)
+        self.assertEqual(
+            message["conversation_envelope"]["timestamp"],
+            timestamp)
         self.assertEqual(
             message["body"],
             "This is the original message text typed by the client.")

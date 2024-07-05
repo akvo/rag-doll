@@ -52,6 +52,7 @@ def test_format_to_queue_message_valid(twilio_client):
     formatted_message = twilio_client.format_to_queue_message(values)
     assert isinstance(formatted_message, str)
     queue_message = json.loads(formatted_message)
+    timestamp = queue_message.get('conversation_envelope', {}).get('timestamp')
     assert queue_message == {
         'conversation_envelope': {
             'message_id': '1234567890',
@@ -59,7 +60,8 @@ def test_format_to_queue_message_valid(twilio_client):
             'client_phone_number': '+6281234567890',
             'user_phone_number': None,
             'sender_role': 'client',
-            'platform': 'WHATSAPP'
+            'platform': 'WHATSAPP',
+            'timestamp': timestamp,
         },
         'body': 'Test message',
         'media': ['http://example.com/image.jpg'],

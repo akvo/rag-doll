@@ -8,6 +8,8 @@ from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from slack_sdk.web.async_client import AsyncWebClient
 from slack_sdk.errors import SlackApiError
 from .slack_onboarding import OnboardingTutorial
+from Akvo_rabbitmq_client import queue_message_util
+from models.chat import PlatformEnum, Chat_Sender
 
 
 # Initialize logging
@@ -50,21 +52,20 @@ class SlackBotClient:
         timestamp = float(event.get("thread_ts", None) or event["ts"])
         iso_timestamp = datetime.fromtimestamp(
             timestamp, tz=timezone.utc).isoformat()
-        # TODO :: Use queue_message_util here
-        queue_message = {
-            'id': event.get('client_msg_id'),
-            'timestamp': iso_timestamp,
-            'platform': 'SLACK',
-            'from': {
-                'user': event.get('user'),
-                'channel': event.get('channel')
-            },
-            'text': event['text']
-        }
+        queue_message = queue_message_util.create_queue_message(
+            message_id=event.get('client_msg_id'),
+            conversation_id=event.get('channel'),
+            client_phone_number=event.get('user'),
+            sender_role=Chat_Sender.CLIENT,
+            sender_role_enum=Chat_Sender,
+            platform=PlatformEnum.SLACK,
+            platform_enum=PlatformEnum,
+            body=event.get('text'),
+            timestamp=iso_timestamp
+        )
         return json.dumps(queue_message)
 
     async def send_message(self, body: str):
-        logger.warning(body)
         try:
             queue_message = json.loads(body)
             conversation_envelope = queue_message.get(

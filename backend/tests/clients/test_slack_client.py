@@ -33,11 +33,19 @@ def test_format_to_queue_message(slack_bot_client):
     queue_message = slack_bot_client.format_to_queue_message(event)
     res = json.loads(queue_message)
     assert res == {
-        'id': 'client_msg_id',
-        'timestamp': res.get('timestamp'),
-        'platform': 'SLACK',
-        'from': {'user': 'user', 'channel': 'channel'},
-        'text': 'text'
+        "conversation_envelope": {
+            "message_id": "client_msg_id",
+            "conversation_id": "channel",
+            "client_phone_number": "user",
+            "user_phone_number": None,
+            "sender_role": "client",
+            "platform": "SLACK",
+            "timestamp": "2022-02-01T13:50:00+00:00",
+        },
+        "body": "text",
+        "media": [],
+        "context": [],
+        "transformation_log": ["text"],
     }
 
 

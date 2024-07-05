@@ -4,7 +4,7 @@ import logging
 import time
 import phonenumbers
 
-# from datetime import datetime
+from datetime import datetime
 from json.decoder import JSONDecodeError
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
@@ -114,8 +114,8 @@ class TwilioClient:
         """
         Consume messages from Twilio then format into queue message.
         """
-        # iso_timestamp = datetime.now().isoformat()
         try:
+            iso_timestamp = datetime.now().isoformat()
             # Validate and format the phone number
             phone_number = values.get('From').split(':')[1]
             formatted_phone = self.validate_and_format_phone_number(
@@ -136,7 +136,8 @@ class TwilioClient:
                 platform=PlatformEnum.WHATSAPP,
                 platform_enum=PlatformEnum,
                 body=values["Body"],
-                media=media
+                media=media,
+                timestamp=iso_timestamp
             )
             return json.dumps(queue_message)
         except ValueError as e:

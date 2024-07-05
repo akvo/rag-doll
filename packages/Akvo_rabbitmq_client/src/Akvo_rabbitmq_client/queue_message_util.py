@@ -13,6 +13,7 @@ class QueueMessageUtil:
         platform: str,
         platform_enum: Type[Enum],
         body: str,
+        timestamp: Optional[str] = None,
         user_phone_number: Optional[str] = None,
         client_phone_number: Optional[str] = None,
         media: Optional[List[Dict[str, str]]] = None,
@@ -43,6 +44,7 @@ class QueueMessageUtil:
                 "user_phone_number": user_phone_number,
                 "sender_role": sender_role.value,
                 "platform": platform.value,
+                "timestamp": timestamp
             },
             "body": body,
             "media": media,

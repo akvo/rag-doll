@@ -17,36 +17,6 @@ as I could get). Containerising makes it easier to upgrade and improve
 individual componetns.
 
 
-## Slack Bot
-
-The Slack bot is one of the messaging platforms that can be used to chat with
-Rag Doll. Most of the Slack interface code was taken from
-[Getting started with Bolt for Python](https://seratch.github.io/bolt-python/tutorial/getting-started).
-
-The Slack bot listens to incoming messages using a web hook, which is handled
-nicely by the Bolt framework. It does mean that the Slack bot has to have an
-externally accessible port. This is documented below under
-[Firewall Rules](#firewall-rules).
-
-| `.env` | default | description |
-|---|---|---|
-| `SLACK_BOT_PORT` | 3000 | The external port used by the Bolt framework. This is where Slack's servers connect to, so open it on the firewall. |
-| `SLACK_BOT_TOKEN` | _CHANGEME_ | The token for your Slack bot. |
-| `SLACK_SIGNING_SECRET` | _CHANGEME_ | The signing secret for your Slack bot. |
-
-When installing the Slack Bot, you can use `slackbot/app-manifest.yml` as a
-template. Before using it, change the following values:
-
-| `slackbot/app-manifest.yml` | default | description |
-|---|---|---|
-| `description` | _CHANGEME_ | A brief description of the purpose of the bot. |
-| `background_color` | _CHANGEME_ | The 6-digit hex colour code for the Slack bot background. |
-| `display_name` | _CHANGEME_ | The display name of the Slack bot. This is wat people in your workspace will see. |
-| `request_url` | `http://`_CHANGEME_`/slack/events` | The external URL that Slack's servers will use to call the Slack bot component. Replace _CHANGEME_ with the external IP address you reserved for your Google Cloud VM running the components. |
-
-You will also want to upload a nice avatar image to go with your bot.
-
-
 ## Assistant
 
 The assistant handles queries to the RAG for us. It awaits messages from the
@@ -125,8 +95,9 @@ platform WhatsApp format... E.164 numbers
 |---|---|---|
 | `RABBITMQ_USER` | rabbit | The user name for RabbitMQ. |
 | `RABBITMQ_PASS` | _CHANGEME_ | The default password for accessing queues. Use a generated string. |
-| `RABBITMQ_QUEUE_USER_CHATS` | user-chats | The queue for chat messages that the user typed. |
-| `RABBITMQ_QUEUE_USER_CHAT_REPLIES` | user-chat-replies | The queue for chat messages that the assisant got from the LLM. |
+| `RABBITMQ_QUEUE_USER_CHATS` | user_chats | The queue for chat messages that the user typed. |
+| `RABBITMQ_QUEUE_USER_CHAT_REPLIES` | user_chat_replies | The queue for chat messages that the assisant got from the LLM. |
+| `RABBITMQ_EXCHANGE_USER_CHATS` | user_chats_exchange | The topic exchange that routes messages to queues. |
 | `RABBITMQ_HOST` | rabbitmq | The host that RabbitMQ runs on. |
 | `RABBITMQ_PORT` | 5672 | The AMQP port of RabbitMQ. |
 | `RABBITMQ_MANAGEMENT_PORT` | 15672 | The HTTP port for the management web UI of RabbitMQ. |
@@ -158,6 +129,29 @@ The TwilioClient connects to the message queue to interact with the rest of the 
 | `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
 | `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
 | `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
+
+
+## Slack Bot
+
+The Slack bot is one of the messaging platforms that can be used to chat with Rag Doll. Most of the Slack interface code was taken from [Getting started with Bolt for Python](https://seratch.github.io/bolt-python/tutorial/getting-started).
+
+The Slack bot listens to incoming messages using a web hook, which is handled nicely by the Bolt framework.
+
+| `.env` | default | description |
+|---|---|---|
+| `SLACK_BOT_TOKEN` | _CHANGEME_ | The token for your Slack bot. |
+| `SLACK_SIGNING_SECRET` | _CHANGEME_ | The signing secret for your Slack bot. |
+
+When installing the Slack Bot, you can use `backend/slackbot-app-manifest.yml` as a template. Before using it, change the following values:
+
+| `slackbot/app-manifest.ymlbackend/slackbot-app-manifest.yml` | default | description |
+|---|---|---|
+| `description` | _CHANGEME_ | A brief description of the purpose of the bot. |
+| `background_color` | _CHANGEME_ | The 6-digit hex colour code for the Slack bot background. |
+| `display_name` | _CHANGEME_ | The display name of the Slack bot. This is wat people in your workspace will see. |
+| `request_url` | `http://`_CHANGEME_`/slack/events` | The external URL that Slack's servers will use to call the Slack bot component. Replace _CHANGEME_ with the external IP address you reserved for your Google Cloud VM running the components. |
+
+You will also want to upload a nice avatar image to go with your bot.
 
 ### Frontend (Next JS)
 
@@ -231,14 +225,6 @@ don't need to edit `.env` each time something has rebooted.
 if you choose to run everything on the same machine, you don't need to reserve
 an internal IP address for Ollama, but you still need the external IP address
 for the Slack API integration.
-
-### Firewall Rules
-
-Slack needs to be able to connect to the `slackbot` container, on port
-`SLACK_BOT_PORT` (typically 3000). Set up a firewall rule with the name and
-network tag `allow-slack-bolt` that allows traffic to that port to connect and
-set the associated tag on the network configuration of your virtual machine that
-hosts the `slackbot` Docker container.
 
 ### Rag Doll using Docker Compose on a Virtual Machine
 

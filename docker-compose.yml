@@ -10,18 +10,6 @@ x-environments: &rabbitmq_client_env
   RABBITMQ_QUEUE_HISTORIES: ${RABBITMQ_QUEUE_HISTORIES}
 
 services:
-  # slackbot:
-  #   build: slackbot
-  #   ports:
-  #     - ${SLACK_BOT_PORT}:${SLACK_BOT_PORT}
-  #   environment:
-  #     <<: *rabbitmq_client_env
-  #     SLACK_BOT_PORT: ${SLACK_BOT_PORT}
-  #     SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
-  #     SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
-  #   depends_on:
-  #     - rabbitmq
-
   assistant:
     image: python:3.12.3
     working_dir: /app

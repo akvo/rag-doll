@@ -17,7 +17,7 @@ services:
   eppo-librarian:
     build: eppo-librarian
     environment:
-      EPPO_SQLITE_DATABASE_ZIP: ${EPPO_SQLITE_DATABASE_ZIP}
+      EPPO_COUNTRY_ORGANISM_URL: ${EPPO_COUNTRY_ORGANISM_URL}
       EPPO_COUNTRIES: ${EPPO_COUNTRIES}
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}

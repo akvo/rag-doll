@@ -56,7 +56,7 @@ Secretariat.*
 | `.env` | default | description |
 |---|---|---|
 | `EPPO_LIBRARIAN_COLLECTION` | EPPO-datasheets | The name of the ChromaDB collection where the EPPO datasheets will be stored. |
-| `EPPO_SQLITE_DATABASE_ZIP` | https://data.eppo.int/files/sqlite_all.zip | The full URL of the EPPO code registry database in SQLite 3 format. |
+| `EPPO_COUNTRY_ORGANISM_URL` | https://gd.eppo.int/country/{country}/organisms.csv | The URL to the per-country organism list on the EPPO database. Use `{country}` as placeholder for the country to query for. |
 | `EPPO_COUNTRIES` | _CHANGEME_ | A comma-separated list of ISO 3166-1 alpha-2 country codes of countries that you are interested in. |
 
 

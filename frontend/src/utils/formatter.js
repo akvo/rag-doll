@@ -1,13 +1,15 @@
 export const createQueueMessage = ({
-  messageId,
-  conversationId,
-  clientPhoneNumber,
-  userPhoneNumber,
-  sender,
+  message_id,
+  conversation_id,
+  sender_role,
+  platform,
   body,
+  client_phone_number = null,
+  user_phone_number = null,
+  timestamp = null,
   media = null,
   context = null,
-  transformationLog = null,
+  transformation_log = null,
 }) => {
   if (media === null) {
     media = [];
@@ -15,22 +17,24 @@ export const createQueueMessage = ({
   if (context === null) {
     context = [];
   }
-  if (transformationLog === null) {
-    transformationLog = [body];
+  if (transformation_log === null) {
+    transformation_log = [body];
   }
 
   const message = {
     conversation_envelope: {
-      message_id: messageId,
-      conversation_id: conversationId,
-      client_phone_number: clientPhoneNumber,
-      user_phone_number: userPhoneNumber,
-      sender: sender,
+      message_id: message_id,
+      conversation_id: conversation_id,
+      client_phone_number: client_phone_number,
+      user_phone_number: user_phone_number,
+      sender_role: sender_role,
+      platform: platform,
+      timestamp: timestamp,
     },
     body: body,
     media: media,
     context: context,
-    transformation_log: transformationLog,
+    transformation_log: transformation_log,
   };
 
   return message;

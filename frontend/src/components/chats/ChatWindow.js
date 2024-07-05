@@ -70,14 +70,28 @@ const ChatWindow = () => {
 
   const handleSend = () => {
     if (message.trim()) {
+      let chatBreakdown = {};
+      const lastChat = chats.slice(-1)[0];
+      if (lastChat && lastChat?.conversation_envelope) {
+        chatBreakdown = {
+          ...lastChat,
+          ...lastChat.conversation_envelope,
+        };
+      } else {
+        chatBreakdown = {
+          message_id: uuidv4(),
+          conversation_id: uuidv4(),
+          platform: "WHATSAPP",
+        };
+      }
       const chatPayload = createQueueMessage({
-        messageId: uuidv4(),
-        conversationId: uuidv4(),
-        userPhoneNumber: "+628123456789",
-        clientPhoneNumber: "+628223456789",
-        sender: "user",
+        ...chatBreakdown,
+        client_phone_number: "_CHANGEME_", // change to your phone number to test
+        sender_role: "user",
         body: message,
+        transformation_log: null,
       });
+      console.log(chatPayload, "chatPayload");
       setChats((previous) => [...previous, chatPayload]);
       socket.timeout(5000).emit("chats", chatPayload);
       setMessage(""); // Clear the textarea after sending

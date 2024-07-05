@@ -43,10 +43,6 @@ class TwilioClient:
             self.TWILIO_AUTH_TOKEN)
 
     def chunk_text_by_paragraphs(self, text: str, max_length: int) -> list[str]:
-        """
-        Split text into chunks by paragraphs,
-        ensuring each chunk is within the max_length.
-        """
         paragraphs = text.split("\n\n")
         chunks = []
         for paragraph in paragraphs:
@@ -59,9 +55,6 @@ class TwilioClient:
         return chunks
 
     def send_whatsapp_message(self, body: str) -> None:
-        """
-        Consume messages from the RabbitMQ queue and send them via Twilio.
-        """
         try:
             queue_message = json.loads(body)
             text = queue_message.get("body")
@@ -111,9 +104,6 @@ class TwilioClient:
             raise ValidationError(f"Phone number validation error: {e}")
 
     def format_to_queue_message(self, values: dict) -> str:
-        """
-        Consume messages from Twilio then format into queue message.
-        """
         try:
             iso_timestamp = datetime.now().isoformat()
             # Validate and format the phone number

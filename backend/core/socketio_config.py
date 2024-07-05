@@ -24,13 +24,11 @@ sio_app = socketio.ASGIApp(
 
 @sio_server.on('connect')
 async def sio_connect(sid, environ):
-    """Track user connection"""
     logger.info(f'A user sid[{sid}] connected')
 
 
 @sio_server.on('disconnect')
 async def sio_disconnect(sid):
-    """Track user disconnection"""
     logger.info(f'User sid[{sid}] disconnected')
 
 
@@ -45,7 +43,7 @@ async def chat_message(sid, msg):
 
 
 async def user_chats_callback(body: str):
-    """Listen message from clients and send to socket"""
+    """Listen client messages from queue and send to socket"""
     message = json.loads(body)
     logger.info(f"Send user_chats_callback into socket: {message}")
     await sio_server.emit('chats', message)

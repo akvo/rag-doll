@@ -1,8 +1,4 @@
 class OnboardingTutorial:
-    """
-    Constructs the onboarding message and stores the
-    state of which tasks were completed.
-    """
     WELCOME_BLOCK = [
         {
             "type": "section",

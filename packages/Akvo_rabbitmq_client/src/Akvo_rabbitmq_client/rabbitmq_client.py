@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class MissingEnvironmentVariableError(Exception):
-    """Custom exception for missing environment variables."""
     def __init__(self, variable_name):
         self.variable_name = variable_name
         self.message = f"Missing required environment variable: {variable_name}"

@@ -19,19 +19,14 @@ logger = logging.getLogger(__name__)
 
 class SlackBotClient:
     def __init__(self):
-        # Environment variables for Slack
         self.SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
         self.SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
-        # Initialize the Slack app
         self.slack_app = SlackApp(
             token=self.SLACK_BOT_TOKEN,
             signing_secret=self.SLACK_SIGNING_SECRET
         )
-        # Slack request handler
         self.slack_handler = AsyncSlackRequestHandler(self.slack_app)
-        # Initialize the AsyncWebClient
         self.client = AsyncWebClient(token=self.SLACK_BOT_TOKEN)
-        # In-memory storage for onboarding tutorials
         self.onboarding_tutorials_sent = {}
 
     async def start_onboarding(self, user_id: str, channel: str):
@@ -79,7 +74,9 @@ class SlackBotClient:
                 f"Message sent to channel {channel} with timestamp {ts}")
             return response
         except SlackApiError as e:
-            logger.error(f"Error sending message: {e.response['error']}")
-            raise RuntimeError(
-                f"Error sending message to channel {channel}: {e.response[
-                    'error']}") from e
+            error = (
+                f"Error sending message to channel {channel}:"
+                f" {e.response['error']}"
+            )
+            logger.error(error)
+            raise RuntimeError(error) from e

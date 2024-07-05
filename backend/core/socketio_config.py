@@ -34,7 +34,7 @@ async def sio_disconnect(sid):
 
 @sio_server.on('chats')
 async def chat_message(sid, msg):
-    """Receive a chat message from FE as a reply"""
+    """Receive a user chat message from FE and put in chat replies queue"""
     logger.info(f"Server received: sid[{sid}] msg: {msg}")
     await rabbitmq_client.producer(
         body=json.dumps(msg),
@@ -43,7 +43,7 @@ async def chat_message(sid, msg):
 
 
 async def user_chats_callback(body: str):
-    """Listen client messages from queue and send to socket"""
+    """Listen client messages from queue and send to socket io"""
     message = json.loads(body)
     logger.info(f"Send user_chats_callback into socket: {message}")
     await sio_server.emit('chats', message)

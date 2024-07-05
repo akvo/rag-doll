@@ -98,11 +98,7 @@ class RabbitMQClient:
         try:
             async with message.process():
                 body = message.body.decode()
-                headers = message.headers
-                log = f"Received {routing_key} message: {body}"
-                logger.info(
-                    f"{log}, headers: {headers}"
-                )
+                logger.info(f"Received message from {routing_key}: {body}")
                 if callback:
                     await callback(body=body)
         except Exception as e:

@@ -40,7 +40,9 @@ async def message(event, client):
             reply_to=RABBITMQ_QUEUE_SLACKBOT_REPLIES
         )
         logger.info(
-            f"Message in channel {channel_id} by user {user_id}: {queue_msg}")
+            f"Receive message in channel[{channel_id}] "
+            f"by user[{user_id}]: {queue_msg}"
+        )
         await slackbot_client.start_onboarding(user_id, channel_id)
     except Exception as e:
         logger.error(f"Error handling message event: {e}")

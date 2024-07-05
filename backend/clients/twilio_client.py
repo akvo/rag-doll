@@ -66,7 +66,6 @@ class TwilioClient:
 
             chunks = self.chunk_text_by_paragraphs(
                 text, MAX_WHATSAPP_MESSAGE_LENGTH)
-            logger.info(f"sending '{text}' to WhatsApp number {phone}")
             for chunk in chunks:
                 response = self.twilio_client.messages.create(
                     from_=self.TWILIO_WHATSAPP_FROM,
@@ -78,7 +77,8 @@ class TwilioClient:
                         f"Failed to send message to WhatsApp number "
                         f"{phone}: {response.error_message}"
                     )
-                time.sleep(0.5)  # 500ms delay
+                time.sleep(0.5)
+            logger.info(f"Message sent to WhatsApp: {text}")
 
         except JSONDecodeError as e:
             logger.error(f"Error decoding JSON message: {e}")
@@ -92,10 +92,8 @@ class TwilioClient:
             parsed_number = phonenumbers.parse(phone_number)
             if not phonenumbers.is_valid_number(parsed_number):
                 raise ValueError(f"Invalid phone number: {phone_number}")
-            # Format the phone number
             formatted_number = phonenumbers.format_number(
                 parsed_number, phonenumbers.PhoneNumberFormat.E164)
-            # Validate the formatted phone number using the Pydantic model
             PhoneValidationModel(phone=formatted_number)
             return formatted_number
         except phonenumbers.phonenumberutil.NumberParseException as e:

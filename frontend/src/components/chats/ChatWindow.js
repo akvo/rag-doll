@@ -86,7 +86,6 @@ const ChatWindow = () => {
       }
       const chatPayload = createQueueMessage({
         ...chatBreakdown,
-        client_phone_number: "_CHANGEME_", // change to your phone number to test
         sender_role: "user",
         body: message,
         transformation_log: null,

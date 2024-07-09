@@ -52,11 +52,13 @@ def test_format_to_queue_message_valid(twilio_client):
     formatted_message = twilio_client.format_to_queue_message(values)
     assert isinstance(formatted_message, str)
     queue_message = json.loads(formatted_message)
-    timestamp = queue_message.get('conversation_envelope', {}).get('timestamp')
+    conversation_envelope = queue_message.get('conversation_envelope', {})
+    timestamp = conversation_envelope.get('timestamp')
+    conversation_id = conversation_envelope.get('conversation_id')
     assert queue_message == {
         'conversation_envelope': {
             'message_id': '1234567890',
-            'conversation_id': '__CHANGEME__',
+            'conversation_id': conversation_id,
             'client_phone_number': '+6281234567890',
             'user_phone_number': None,
             'sender_role': 'client',

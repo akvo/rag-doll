@@ -4,7 +4,7 @@ import logging
 import time
 import phonenumbers
 
-from datetime import datetime
+from datetime import datetime, timezone
 from json.decoder import JSONDecodeError
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
@@ -103,7 +103,7 @@ class TwilioClient:
 
     def format_to_queue_message(self, values: dict) -> str:
         try:
-            iso_timestamp = datetime.now().isoformat()
+            iso_timestamp = datetime.now(timezone.utc).isoformat()
             # Validate and format the phone number
             phone_number = values.get('From').split(':')[1]
             formatted_phone = self.validate_and_format_phone_number(

@@ -3,7 +3,7 @@ import unittest
 from uuid import UUID, uuid4
 from Akvo_rabbitmq_client import queue_message_util
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ChatRoleEnum(Enum):
@@ -55,7 +55,7 @@ class TestQueueMessageUtil(unittest.TestCase):
             in str(context.exception))
 
     def test_create_queue_message_with_minimal_data(self):
-        timestamp = datetime.now().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
 
         message = queue_message_util.create_queue_message(
             message_id=str(uuid4()),

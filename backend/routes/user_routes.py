@@ -62,14 +62,14 @@ async def verify_login_code(
 async def send_to_twilio(phone_number: int, login_token: str):
     link = f"{webdomain}/verify/{login_token}"
     message_body = queue_message_util.create_queue_message(
-        message_id="__CHANGEME__",
-        conversation_id="__CHANGEME__",
+        message_id=str(uuid4()),
+        conversation_id=str(uuid4()),
         user_phone_number=phone_number,
         sender_role=Chat_Sender.SYSTEM,
         sender_role_enum=Chat_Sender,
         platform=PlatformEnum.WHATSAPP,
         platform_enum=PlatformEnum,
-        body=str(MAGIC_LINK_CHAT_TEMPLATE).format(magic_link=link),
+        body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
     )
     routing_key = f"{RABBITMQ_QUEUE_USER_CHAT_REPLIES}"
     await rabbitmq_client.producer(

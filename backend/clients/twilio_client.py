@@ -63,9 +63,8 @@ class TwilioClient:
                 "conversation_envelope", {}
             )
             phone = conversation_envelope.get(
-                "client_phone_number",
-                conversation_envelope.get("user_phone_number"),
-            )
+                "client_phone_number"
+            ) or conversation_envelope.get("user_phone_number")
             chunks = self.chunk_text_by_paragraphs(
                 text, MAX_WHATSAPP_MESSAGE_LENGTH
             )

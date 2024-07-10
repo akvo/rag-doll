@@ -39,8 +39,8 @@ class TwilioClient:
         self.TWILIO_WHATSAPP_FROM = f"whatsapp:{self.TWILIO_WHATSAPP_NUMBER}"
 
         self.twilio_client = Client(
-            self.TWILIO_ACCOUNT_SID,
-            self.TWILIO_AUTH_TOKEN)
+            self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN
+        )
 
     def chunk_text_by_paragraphs(self, text: str, max_length: int) -> list[str]:
         paragraphs = text.split("\n\n")
@@ -96,7 +96,8 @@ class TwilioClient:
             if not phonenumbers.is_valid_number(parsed_number):
                 raise ValueError(f"Invalid phone number: {phone_number}")
             formatted_number = phonenumbers.format_number(
-                parsed_number, phonenumbers.PhoneNumberFormat.E164)
+                parsed_number, phonenumbers.PhoneNumberFormat.E164
+            )
             PhoneValidationModel(phone=formatted_number)
             return formatted_number
         except phonenumbers.phonenumberutil.NumberParseException as e:
@@ -108,14 +109,15 @@ class TwilioClient:
         try:
             iso_timestamp = datetime.now(timezone.utc).isoformat()
             # Validate and format the phone number
-            phone_number = values.get('From').split(':')[1]
+            phone_number = values.get("From").split(":")[1]
             formatted_phone = self.validate_and_format_phone_number(
-                phone_number=phone_number)
+                phone_number=phone_number
+            )
             # Add media files if present
             media = []
-            num_media = values.get('NumMedia', 0)
+            num_media = values.get("NumMedia", 0)
             for i in range(num_media):
-                media_url = values.get(f'MediaUrl{i}', '')
+                media_url = values.get(f"MediaUrl{i}", "")
                 if media_url:
                     media.append(media_url)
             queue_message = queue_message_util.create_queue_message(
@@ -128,7 +130,7 @@ class TwilioClient:
                 platform_enum=PlatformEnum,
                 body=values["Body"],
                 media=media,
-                timestamp=iso_timestamp
+                timestamp=iso_timestamp,
             )
             return json.dumps(queue_message)
         except ValueError as e:

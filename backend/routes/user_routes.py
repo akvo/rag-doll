@@ -36,7 +36,7 @@ async def send_login_link(
     login_code_uuid = uuid4()
     user.login_code = str(login_code_uuid)
     session.commit()
-    await send_to_twilio(phone_number, user.login_code)
+    await send_auth_link_to_whatsapp(phone_number, user.login_code)
     # return {"message": "Login link sent via WhatsApp"}
     return f"{webdomain}/verify/{user.login_code}"
 
@@ -59,7 +59,7 @@ async def verify_login_code(
     return {"token": login_token}
 
 
-async def send_to_twilio(phone_number: int, login_token: str):
+async def send_auth_link_to_whatsapp(phone_number: int, login_token: str):
     link = f"{webdomain}/verify/{login_token}"
     message_body = queue_message_util.create_queue_message(
         message_id=str(uuid4()),

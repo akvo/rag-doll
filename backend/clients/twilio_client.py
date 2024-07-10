@@ -49,8 +49,9 @@ class TwilioClient:
             if len(paragraph) <= max_length:
                 chunks.append(paragraph)
             else:
-                for i in range(0, len(paragraph), max_length):
-                    chunk = paragraph[i:i + max_length]
+                for start_index in range(0, len(paragraph), max_length):
+                    end_index = start_index + max_length
+                    chunk = paragraph[start_index:end_index]
                     chunks.append(chunk)
         return chunks
 
@@ -59,13 +60,15 @@ class TwilioClient:
             queue_message = json.loads(body)
             text = queue_message.get("body")
             conversation_envelope = queue_message.get(
-                "conversation_envelope", {})
-            phone = conversation_envelope.get("client_phone_number")
-            if not phone:
-                phone = conversation_envelope.get("user_phone_number")
-
+                "conversation_envelope", {}
+            )
+            phone = conversation_envelope.get(
+                "client_phone_number",
+                conversation_envelope.get("user_phone_number"),
+            )
             chunks = self.chunk_text_by_paragraphs(
-                text, MAX_WHATSAPP_MESSAGE_LENGTH)
+                text, MAX_WHATSAPP_MESSAGE_LENGTH
+            )
             for chunk in chunks:
                 response = self.twilio_client.messages.create(
                     from_=self.TWILIO_WHATSAPP_FROM,

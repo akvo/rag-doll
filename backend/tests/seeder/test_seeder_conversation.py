@@ -7,7 +7,7 @@ from seeder.conversation import (
     Client,
     Chat,
     Chat_Session,
-    Chat_Sender
+    Chat_Sender,
 )
 from sqlmodel import Session, select
 
@@ -38,7 +38,8 @@ def test_seed_chat_data(session: Session, conversation_data):
 
     # Verify chat sessions after seeding
     chat_session = session.exec(
-        select(Chat_Session).order_by(Chat_Session.id.desc())).first()
+        select(Chat_Session).order_by(Chat_Session.id.desc())
+    ).first()
 
     # Find the chat session ID for the created session
     chat_session_id = chat_session.id if chat_session else None
@@ -46,11 +47,14 @@ def test_seed_chat_data(session: Session, conversation_data):
 
     # Verify that chat messages are seeded correctly
     chat_messages = session.exec(
-        select(Chat).where(Chat.chat_session_id == chat_session_id)).all()
+        select(Chat).where(Chat.chat_session_id == chat_session_id)
+    ).all()
     assert len(chat_messages) == len(conversation_data)
 
     # Check sender and message content
     for i, chat_message in enumerate(chat_messages):
-        assert chat_message.sender == Chat_Sender[
-            conversation_data[i]["sender"].upper()]
+        assert (
+            chat_message.sender
+            == Chat_Sender[conversation_data[i]["sender"].upper()]
+        )
         assert chat_message.message == conversation_data[i]["message"]

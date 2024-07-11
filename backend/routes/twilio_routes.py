@@ -22,7 +22,6 @@ async def receive_whatsapp_message(request: Request):
     try:
         form_data = await request.form()
         values = {key: form_data[key] for key in form_data}
-        # Validate the incoming data using the Pydantic model
         data = IncomingMessage(
             MessageSid=values.get("MessageSid"),
             From=values.get("From"),
@@ -30,7 +29,7 @@ async def receive_whatsapp_message(request: Request):
             NumMedia=int(values.get("NumMedia", 0)),
         )
         body = TwilioClient().format_to_queue_message(data.model_dump())
-        # Send message to RabbitMQ
+        # Send incoming whatsapp message to RabbitMQ queue
         await rabbitmq_client.initialize()
         await rabbitmq_client.producer(
             body=body,

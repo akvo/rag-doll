@@ -12,7 +12,6 @@ from Akvo_rabbitmq_client import queue_message_util
 from models.chat import PlatformEnum, Chat_Sender
 
 
-# Initialize logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

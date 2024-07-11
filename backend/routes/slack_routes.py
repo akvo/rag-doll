@@ -7,7 +7,6 @@ from clients.slack_client import SlackBotClient
 from Akvo_rabbitmq_client import rabbitmq_client
 
 
-# Initialize logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ async def message(event, client):
     channel_id = event.get("channel")
     user_id = event.get("user")
     queue_msg = slackbot_client.format_to_queue_message(event=event)
-    # Send message to RabbitMQ
+    # Send incoming message from slack to RabbitMQ queue
     try:
         await rabbitmq_client.initialize()
         await rabbitmq_client.producer(

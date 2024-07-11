@@ -103,8 +103,6 @@ class RabbitMQClient:
     async def consume(
         self, queue_name: str, routing_key: str, callback: Callable = None
     ):
-        if callback and not callable(callback):
-            raise TypeError(f"The argument {callback} is not callable")
         try:
             await self.connect()
             queue = await self.channel.declare_queue(queue_name, durable=True)

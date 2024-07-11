@@ -36,7 +36,22 @@ async def send_login_link(
     login_code_uuid = uuid4()
     user.login_code = str(login_code_uuid)
     session.commit()
-    await send_auth_link_to_whatsapp(phone_number, user.login_code)
+    # send login link into queue
+    link = f"{webdomain}/verify/{user.login_code}"
+    message_body = queue_message_util.create_queue_message(
+        message_id=str(uuid4()),
+        conversation_id=str(uuid4()),
+        user_phone_number=phone_number,
+        sender_role=Chat_Sender.SYSTEM,
+        sender_role_enum=Chat_Sender,
+        platform=PlatformEnum.WHATSAPP,
+        platform_enum=PlatformEnum,
+        body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
+    )
+    await rabbitmq_client.producer(
+        body=json.dumps(message_body),
+        routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES
+    )
     # return {"message": "Login link sent via WhatsApp"}
     return f"{webdomain}/verify/{user.login_code}"
 
@@ -57,21 +72,3 @@ async def verify_login_code(
     user.login_code = None
     session.commit()
     return {"token": login_token}
-
-
-async def send_auth_link_to_whatsapp(phone_number: int, login_token: str):
-    link = f"{webdomain}/verify/{login_token}"
-    message_body = queue_message_util.create_queue_message(
-        message_id=str(uuid4()),
-        conversation_id=str(uuid4()),
-        user_phone_number=phone_number,
-        sender_role=Chat_Sender.SYSTEM,
-        sender_role_enum=Chat_Sender,
-        platform=PlatformEnum.WHATSAPP,
-        platform_enum=PlatformEnum,
-        body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
-    )
-    routing_key = f"{RABBITMQ_QUEUE_USER_CHAT_REPLIES}"
-    await rabbitmq_client.producer(
-        body=json.dumps(message_body), routing_key=routing_key
-    )

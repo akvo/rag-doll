@@ -21,7 +21,7 @@ async def test_start_onboarding(mock_async_web_client, slack_bot_client):
         key="value"
     )
     assert (
-        slack_bot_client.onboarding_tutorials_sent["channel"][
+        slack_bot_client.onboarding_message_sent["channel"][
             "user_id"
         ].timestamp
         == "1234567890"

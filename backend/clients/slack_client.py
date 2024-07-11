@@ -27,13 +27,17 @@ class SlackBotClient:
         )
         self.slack_handler = AsyncSlackRequestHandler(self.slack_app)
         self.client = AsyncWebClient(token=self.SLACK_BOT_TOKEN)
-        self.onboarding_tutorials_sent = {}
+        # TODO ::
+        # How do we want to handle onboarding message logs?
+        # For now, we use an in-memory log to check whether the onboarding
+        # message has been sent to a Slack user.
+        self.onboarding_message_sent = {}
 
     async def start_onboarding(self, user_id: str, channel: str):
         onboarding_tutorial = OnboardingTutorial(channel)
-        if channel not in self.onboarding_tutorials_sent:
-            self.onboarding_tutorials_sent[channel] = {}
-        if user_id not in self.onboarding_tutorials_sent[channel]:
+        if channel not in self.onboarding_message_sent:
+            self.onboarding_message_sent[channel] = {}
+        if user_id not in self.onboarding_message_sent[channel]:
             message = onboarding_tutorial.get_message_payload()
             response = await self.client.chat_postMessage(**message)
             onboarding_tutorial.timestamp = response["ts"]
@@ -41,7 +45,7 @@ class SlackBotClient:
                 f"Onboarding message sent to user {user_id} "
                 f" in channel {channel}"
             )
-        self.onboarding_tutorials_sent[channel][user_id] = onboarding_tutorial
+        self.onboarding_message_sent[channel][user_id] = onboarding_tutorial
 
     def format_to_queue_message(self, event: dict) -> str:
         timestamp = float(event.get("thread_ts", None) or event["ts"])

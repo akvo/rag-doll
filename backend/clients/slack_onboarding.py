@@ -1,4 +1,4 @@
-class OnboardingTutorial:
+class OnboardingMessage:
     WELCOME_BLOCK = [
         {
             "type": "section",

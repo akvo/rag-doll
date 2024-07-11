@@ -7,7 +7,7 @@ from slack_bolt.async_app import AsyncApp as SlackApp
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from slack_sdk.web.async_client import AsyncWebClient
 from slack_sdk.errors import SlackApiError
-from .slack_onboarding import OnboardingTutorial
+from .slack_onboarding import OnboardingMessage
 from Akvo_rabbitmq_client import queue_message_util
 from models.chat import PlatformEnum, Chat_Sender
 
@@ -34,18 +34,18 @@ class SlackBotClient:
         self.onboarding_message_sent = {}
 
     async def start_onboarding(self, user_id: str, channel: str):
-        onboarding_tutorial = OnboardingTutorial(channel)
+        onboarding_message = OnboardingMessage(channel)
         if channel not in self.onboarding_message_sent:
             self.onboarding_message_sent[channel] = {}
         if user_id not in self.onboarding_message_sent[channel]:
-            message = onboarding_tutorial.get_message_payload()
+            message = onboarding_message.get_message_payload()
             response = await self.client.chat_postMessage(**message)
-            onboarding_tutorial.timestamp = response["ts"]
+            onboarding_message.timestamp = response["ts"]
             logger.info(
                 f"Onboarding message sent to user {user_id} "
                 f" in channel {channel}"
             )
-        self.onboarding_message_sent[channel][user_id] = onboarding_tutorial
+        self.onboarding_message_sent[channel][user_id] = onboarding_message
 
     def format_to_queue_message(self, event: dict) -> str:
         timestamp = float(event.get("thread_ts", None) or event["ts"])

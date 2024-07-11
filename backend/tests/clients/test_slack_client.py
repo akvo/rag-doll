@@ -2,7 +2,7 @@ import json
 import pytest
 
 from unittest.mock import patch
-from clients.slack_client import SlackBotClient, OnboardingTutorial
+from clients.slack_client import SlackBotClient, OnboardingMessage
 from slack_sdk.errors import SlackApiError
 
 
@@ -14,8 +14,8 @@ def slack_bot_client():
 @patch("slack_sdk.web.async_client.AsyncWebClient")
 async def test_start_onboarding(mock_async_web_client, slack_bot_client):
     mock_async_web_client.chat_postMessage.return_value = {"ts": "1234567890"}
-    onboarding_tutorial = OnboardingTutorial("channel")
-    onboarding_tutorial.get_message_payload.return_value = {"key": "value"}
+    onboarding_message = OnboardingMessage("channel")
+    onboarding_message.get_message_payload.return_value = {"key": "value"}
     await slack_bot_client.start_onboarding("user_id", "channel")
     mock_async_web_client.chat_postMessage.assert_awaited_once_with(
         key="value"

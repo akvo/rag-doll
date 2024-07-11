@@ -1,8 +1,8 @@
-from clients.slack_onboarding import OnboardingTutorial
+from clients.slack_onboarding import OnboardingMessage
 
 
 def test_welcome_block():
-    assert OnboardingTutorial.WELCOME_BLOCK == [
+    assert OnboardingMessage.WELCOME_BLOCK == [
         {
             "type": "section",
             "text": {
@@ -44,24 +44,24 @@ def test_welcome_block():
 
 
 def test_divider_block():
-    assert OnboardingTutorial.DIVIDER_BLOCK == {"type": "divider"}
+    assert OnboardingMessage.DIVIDER_BLOCK == {"type": "divider"}
 
 
 def test_init():
     channel = "test_channel"
-    onboarding_tutorial = OnboardingTutorial(channel)
-    assert onboarding_tutorial.channel == channel
-    assert onboarding_tutorial.timestamp == ""
+    onboarding_message = OnboardingMessage(channel)
+    assert onboarding_message.channel == channel
+    assert onboarding_message.timestamp == ""
 
 
 def test_get_message_payload():
     channel = "test_channel"
-    onboarding_tutorial = OnboardingTutorial(channel)
-    payload = onboarding_tutorial.get_message_payload()
+    onboarding_message = OnboardingMessage(channel)
+    payload = onboarding_message.get_message_payload()
     assert payload["ts"] == ""
     assert payload["channel"] == channel
     assert payload["blocks"] == [
         {"type": "divider"},
-        *OnboardingTutorial.WELCOME_BLOCK,
+        *OnboardingMessage.WELCOME_BLOCK,
         {"type": "divider"},
     ]

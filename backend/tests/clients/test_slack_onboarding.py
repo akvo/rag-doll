@@ -7,7 +7,7 @@ def test_welcome_block():
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "*Welcome to AgriKnowledge Hub!*"
+                "text": "*Welcome to AgriKnowledge Hub!*",
             },
         },
         {

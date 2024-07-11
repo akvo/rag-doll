@@ -7,7 +7,7 @@ from routes.slack_routes import slackbot_client, rabbitmq_client
 
 @pytest.fixture
 def mock_slack_client(mocker):
-    mocker.patch.object(slackbot_client, 'slack_handler', AsyncMock())
+    mocker.patch.object(slackbot_client, "slack_handler", AsyncMock())
     # Mock slack_app and its event handlers
     slack_app_mock = AsyncMock()
     mock_event_handler = AsyncMock()
@@ -17,32 +17,28 @@ def mock_slack_client(mocker):
         slackbot_client.format_to_queue_message(event=event)
         await rabbitmq_client.initialize()
         await rabbitmq_client.producer(
-            body='mock_queue_message',
-            routing_key='mock_queue_chats',
-            reply_to='mock_queue_replies')
-        await slackbot_client.start_onboarding('U67890', 'C12345')
+            body="mock_queue_message",
+            routing_key="mock_queue_chats",
+            reply_to="mock_queue_replies",
+        )
+        await slackbot_client.start_onboarding("U67890", "C12345")
 
     mock_event_handler.side_effect = mock_message_event_handler
     slack_app_mock.event_handlers = {"message": [mock_event_handler]}
 
-    mocker.patch.object(slackbot_client, 'slack_app', slack_app_mock)
+    mocker.patch.object(slackbot_client, "slack_app", slack_app_mock)
     mocker.patch.object(
         slackbot_client,
-        'format_to_queue_message',
-        return_value='mock_queue_message')
-    mocker.patch.object(slackbot_client, 'start_onboarding', AsyncMock())
+        "format_to_queue_message",
+        return_value="mock_queue_message",
+    )
+    mocker.patch.object(slackbot_client, "start_onboarding", AsyncMock())
 
 
-async def test_slack_events_endpoint(
-    mock_slack_client,
-    client: TestClient
-):
+async def test_slack_events_endpoint(mock_slack_client, client: TestClient):
     response = await client.post(
         "/slack/events",
-        json={
-            "type": "event_callback",
-            "event": {"type": "message"}
-        }
+        json={"type": "event_callback", "event": {"type": "message"}},
     )
     assert response.status_code == 200
 
@@ -54,8 +50,12 @@ async def test_message_event(
 ):
     event = {"channel": "C12345", "user": "U67890"}
     await slackbot_client.slack_app.event_handlers["message"][0](
-        event, client=AsyncMock())
+        event, client=AsyncMock()
+    )
 
-    slackbot_client.format_to_queue_message.assert_called_once_with(event=event)
+    slackbot_client.format_to_queue_message.assert_called_once_with(
+        event=event
+    )
     slackbot_client.start_onboarding.assert_awaited_once_with(
-        'U67890', 'C12345')
+        "U67890", "C12345"
+    )

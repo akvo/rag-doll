@@ -42,7 +42,9 @@ class TwilioClient:
             self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN
         )
 
-    def chunk_text_by_paragraphs(self, text: str, max_length: int) -> list[str]:
+    def chunk_text_by_paragraphs(
+        self, text: str, max_length: int
+    ) -> list[str]:
         paragraphs = text.split("\n\n")
         chunks = []
         for paragraph in paragraphs:

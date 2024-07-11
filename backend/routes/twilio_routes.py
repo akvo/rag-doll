@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 security = HTTPBearer()
 
-RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
+RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 
 
 @router.post("/whatsapp")
@@ -24,10 +24,10 @@ async def receive_whatsapp_message(request: Request):
         values = {key: form_data[key] for key in form_data}
         # Validate the incoming data using the Pydantic model
         data = IncomingMessage(
-            MessageSid=values.get('MessageSid'),
-            From=values.get('From'),
-            Body=values.get('Body'),
-            NumMedia=int(values.get('NumMedia', 0))
+            MessageSid=values.get("MessageSid"),
+            From=values.get("From"),
+            Body=values.get("Body"),
+            NumMedia=int(values.get("NumMedia", 0)),
         )
         body = TwilioClient().format_to_queue_message(data.model_dump())
         # Send message to RabbitMQ
@@ -42,19 +42,19 @@ async def receive_whatsapp_message(request: Request):
         logger.error(f"Validation error: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Validation error: {e}"
+            detail=f"Validation error: {e}",
         )
 
     except ValueError as e:
         logger.error(f"Invalid phone number or message format: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid phone number or message format: {e}"
+            detail=f"Invalid phone number or message format: {e}",
         )
 
     except Exception as e:
         logger.error(f"Error receiving Whatsapp message: {values}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error: {str(e)}"
+            detail=f"Internal error: {str(e)}",
         )

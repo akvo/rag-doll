@@ -17,8 +17,10 @@ from clients.slack_client import SlackBotClient
 from core.socketio_config import sio_app, user_chats_callback
 
 
-RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv('RABBITMQ_QUEUE_USER_CHAT_REPLIES')
+RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
+    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
+)
 
 
 twilio_client = TwilioClient()
@@ -39,16 +41,20 @@ async def user_chat_replies_callback(body: str):
 async def lifespan(app: FastAPI):
     await rabbitmq_client.initialize()
     loop = asyncio.get_running_loop()
-    loop.create_task(rabbitmq_client.consume(
-        queue_name=RABBITMQ_QUEUE_USER_CHATS,
-        routing_key=RABBITMQ_QUEUE_USER_CHATS,
-        callback=user_chats_callback
-    ))
-    loop.create_task(rabbitmq_client.consume(
-        queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-        routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-        callback=user_chat_replies_callback
-    ))
+    loop.create_task(
+        rabbitmq_client.consume(
+            queue_name=RABBITMQ_QUEUE_USER_CHATS,
+            routing_key=RABBITMQ_QUEUE_USER_CHATS,
+            callback=user_chats_callback,
+        )
+    )
+    loop.create_task(
+        rabbitmq_client.consume(
+            queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            callback=user_chat_replies_callback,
+        )
+    )
     yield
     await rabbitmq_client.disconnect()
 
@@ -66,7 +72,7 @@ app = FastAPI(
         "name": "MIT",
         "url": "https://opensource.org/licenses/MIT",
     },
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 app.include_router(user_routes.router, tags=["auth"])
@@ -82,4 +88,4 @@ def read_root(session: Session = Depends(get_session)):
     return {"Hello": "World"}
 
 
-app.mount('/', app=sio_app)
+app.mount("/", app=sio_app)

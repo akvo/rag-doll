@@ -17,8 +17,8 @@ slack_app = slackbot_client.slack_app
 router = APIRouter()
 security = HTTPBearer()
 
-RABBITMQ_QUEUE_SLACKBOT_REPLIES = os.getenv('RABBITMQ_QUEUE_SLACKBOT_REPLIES')
-RABBITMQ_QUEUE_USER_CHATS = os.getenv('RABBITMQ_QUEUE_USER_CHATS')
+RABBITMQ_QUEUE_SLACKBOT_REPLIES = os.getenv("RABBITMQ_QUEUE_SLACKBOT_REPLIES")
+RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 
 
 @router.post("/slack/events")
@@ -37,7 +37,7 @@ async def message(event, client):
         await rabbitmq_client.producer(
             body=queue_msg,
             routing_key=RABBITMQ_QUEUE_USER_CHATS,
-            reply_to=RABBITMQ_QUEUE_SLACKBOT_REPLIES
+            reply_to=RABBITMQ_QUEUE_SLACKBOT_REPLIES,
         )
         logger.info(
             f"Receive message in channel[{channel_id}] "

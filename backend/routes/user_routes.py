@@ -27,7 +27,9 @@ async def send_login_link(
     phone_number: PhoneNumber, session: Session = Depends(get_session)
 ):
     phone_number = phonenumbers.parse(phone_number)
-    phone_number = f"+{phone_number.country_code}{phone_number.national_number}"
+    phone_number = (
+        f"+{phone_number.country_code}{phone_number.national_number}"
+    )
     user = session.exec(
         select(User).where(User.phone_number == phone_number)
     ).first()
@@ -50,7 +52,7 @@ async def send_login_link(
     )
     await rabbitmq_client.producer(
         body=json.dumps(message_body),
-        routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES
+        routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
     )
     # return {"message": "Login link sent via WhatsApp"}
     return f"{webdomain}/verify/{user.login_code}"
@@ -64,7 +66,9 @@ async def verify_login_code(
         select(User).where(User.login_code == login_code)
     ).first()
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid verification UUID")
+        raise HTTPException(
+            status_code=400, detail="Invalid verification UUID"
+        )
     login_token = create_jwt_token(
         {"sub": str(user.login_code), "uid": user.id},
         expires_delta=timedelta(hours=2),

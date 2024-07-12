@@ -70,7 +70,11 @@ async def verify_login_code(
             status_code=400, detail="Invalid verification UUID"
         )
     login_token = create_jwt_token(
-        {"sub": str(user.login_code), "uid": user.id},
+        {
+            "sub": str(user.login_code),
+            "uid": user.id,
+            "uphone_number": user.phone_number,
+        },
         expires_delta=timedelta(hours=2),
     )
     user.login_code = None

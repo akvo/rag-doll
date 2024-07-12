@@ -4,6 +4,8 @@ import logging
 import json
 
 from Akvo_rabbitmq_client import rabbitmq_client
+from http.cookies import SimpleCookie
+from utils.jwt_handler import verify_jwt_token
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,10 +23,17 @@ sio_app = socketio.ASGIApp(
     socketio_server=sio_server, socketio_path=SOCKETIO_PATH
 )
 
+cookie = SimpleCookie()
+
 
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
-    logger.info(f"A user sid[{sid}] connected")
+    # TODO :: We can use AUTH_TOKEN in websocket
+    # should we implement this?
+    cookie.load(environ["HTTP_COOKIE"])
+    auth_token = cookie["AUTH_TOKEN"].value
+    user_phone_number = verify_jwt_token(auth_token).get("uphone_number")
+    logger.info(f"A user sid[{sid}] connected, {user_phone_number}")
 
 
 @sio_server.on("disconnect")

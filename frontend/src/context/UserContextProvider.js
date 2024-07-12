@@ -18,6 +18,7 @@ const userReducer = (state, action) => {
         id: action.payload.id,
         name: action.payload.name,
         email: action.payload.email,
+        phone_number: action.payload.phone_number,
       };
     case "DELETE":
       return initalUserState;

@@ -75,4 +75,10 @@ async def verify_login_code(
     )
     user.login_code = None
     session.commit()
-    return {"token": login_token}
+    res = user.serialize()
+    res.update(
+        {
+            "token": login_token,
+        }
+    )
+    return res

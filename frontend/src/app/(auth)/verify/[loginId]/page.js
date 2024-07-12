@@ -18,22 +18,25 @@ const VerifyLogin = ({ params }) => {
       const res = await api.get(`verify/${params.loginId}`);
       const resData = await res.json();
       if (resData && resData?.token) {
-        setCookie("AUTH_TOKEN", resData.token);
+        const { token, phone_number, name, email, id: userID } = resData;
+        setCookie("AUTH_TOKEN", token);
+        sessionStorage.setItem("user_phone_number", phone_number);
         api.setToken(resData.token);
         setTimeout(() => {
           authDispatch({
             type: "UPDATE",
             payload: {
-              token: resData.token,
+              token,
               isLogin: true,
             },
           });
           userDispatch({
             type: "UPDATE",
             payload: {
-              id: 1,
-              name: "Test user",
-              email: "test@test.com  ",
+              id: userID,
+              name,
+              email,
+              phone_number,
             },
           });
           route.replace("/chats");

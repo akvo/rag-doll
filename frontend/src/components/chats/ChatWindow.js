@@ -6,6 +6,13 @@ import { socket } from "@/lib";
 import { createQueueMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 
+const SenderRoleEnum = {
+  USER: "user",
+  CLIENT: "client",
+  ASSISTANT: "assistant",
+  SYSTEM: "system",
+};
+
 const ChatWindow = () => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
@@ -31,7 +38,7 @@ const ChatWindow = () => {
 
   useEffect(() => {
     function onChats(value) {
-      console.log(value, "====");
+      console.log(value, "socket chats");
       setChats((previous) => [...previous, value]);
     }
     socket.on("chats", onChats);
@@ -70,14 +77,27 @@ const ChatWindow = () => {
 
   const handleSend = () => {
     if (message.trim()) {
+      let chatBreakdown = {};
+      const lastChat = chats.slice(-1)[0];
+      if (lastChat && lastChat?.conversation_envelope) {
+        chatBreakdown = {
+          ...lastChat,
+          ...lastChat.conversation_envelope,
+        };
+      } else {
+        chatBreakdown = {
+          message_id: uuidv4(),
+          conversation_id: uuidv4(),
+          platform: "WHATSAPP",
+        };
+      }
       const chatPayload = createQueueMessage({
-        messageId: uuidv4(),
-        conversationId: uuidv4(),
-        userPhoneNumber: "+628123456789",
-        clientPhoneNumber: "+628223456789",
-        sender: "CLIENT",
+        ...chatBreakdown,
+        sender_role: "user",
         body: message,
+        transformation_log: null,
       });
+      console.log(chatPayload, "chatPayload");
       setChats((previous) => [...previous, chatPayload]);
       socket.timeout(5000).emit("chats", chatPayload);
       setMessage(""); // Clear the textarea after sending
@@ -87,7 +107,7 @@ const ChatWindow = () => {
 
   const renderChatMessages = () => {
     return chats.map((c, ci) => {
-      if (c?.conversation_envelope?.sender === "CLIENT") {
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
         return (
           <div key={`chat-${ci}`} className="flex mb-4 justify-end">
             <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
@@ -107,7 +127,7 @@ const ChatWindow = () => {
           </div>
         );
       }
-      if (c?.conversation_envelope?.sender === "USER") {
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
         return (
           <div className="flex mb-4">
             <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">

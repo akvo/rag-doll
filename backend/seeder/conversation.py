@@ -2,7 +2,7 @@ import json
 from faker import Faker
 from models.user import User
 from models.client import Client, Client_Properties
-from models.chat import Chat, Chat_Sender, Chat_Session
+from models.chat import Chat, Sender_Role_Enum, Chat_Session
 from sqlalchemy.exc import IntegrityError
 from core.database import engine
 from sqlmodel import Session, select
@@ -20,7 +20,8 @@ def create_client(session: Session):
     # Generate a random phone number for the client
     phone_number = faker.phone_number()
     client = Client(
-        phone_number=int("".join(filter(str.isdigit, phone_number))))
+        phone_number=int("".join(filter(str.isdigit, phone_number)))
+    )
 
     try:
         session.add(client)
@@ -28,7 +29,8 @@ def create_client(session: Session):
 
         # Create Client_Properties with the generated client.id
         client_properties = Client_Properties(
-            client_id=client.id, name=faker.name())
+            client_id=client.id, name=faker.name()
+        )
         session.add(client_properties)
 
         session.commit()
@@ -56,17 +58,17 @@ def seed_chat_data(session: Session, user_id: int, client_id: int):
 
         # Determine sender type
         if sender == "user":
-            chat_sender = Chat_Sender.USER
+            sender_role = Sender_Role_Enum.USER
         elif sender == "client":
-            chat_sender = Chat_Sender.CLIENT
+            sender_role = Sender_Role_Enum.CLIENT
         elif sender == "system":
-            chat_sender = Chat_Sender.SYSTEM
+            sender_role = Sender_Role_Enum.SYSTEM
 
         # Create Chat object
         chat = Chat(
             chat_session_id=chat_session.id,
             message=message,
-            sender=chat_sender,
+            sender_role=sender_role,
         )
         session.add(chat)
 

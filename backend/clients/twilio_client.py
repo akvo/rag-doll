@@ -4,12 +4,14 @@ import logging
 import time
 import phonenumbers
 
-from datetime import datetime
+from datetime import datetime, timezone
 from json.decoder import JSONDecodeError
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 from pydantic import BaseModel, ValidationError
 from pydantic_extra_types.phone_numbers import PhoneNumber
+from Akvo_rabbitmq_client import queue_message_util
+from models.chat import Sender_Role_Enum, Platform_Enum
 
 
 logging.basicConfig(level=logging.INFO)
@@ -37,37 +39,37 @@ class TwilioClient:
         self.TWILIO_WHATSAPP_FROM = f"whatsapp:{self.TWILIO_WHATSAPP_NUMBER}"
 
         self.twilio_client = Client(
-            self.TWILIO_ACCOUNT_SID,
-            self.TWILIO_AUTH_TOKEN)
+            self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN
+        )
 
-    def chunk_text_by_paragraphs(self, text: str, max_length: int) -> list[str]:
-        """
-        Split text into chunks by paragraphs,
-        ensuring each chunk is within the max_length.
-        """
+    def chunk_text_by_paragraphs(
+        self, text: str, max_length: int
+    ) -> list[str]:
         paragraphs = text.split("\n\n")
         chunks = []
         for paragraph in paragraphs:
             if len(paragraph) <= max_length:
                 chunks.append(paragraph)
             else:
-                for i in range(0, len(paragraph), max_length):
-                    chunk = paragraph[i:i + max_length]
+                for start_index in range(0, len(paragraph), max_length):
+                    end_index = start_index + max_length
+                    chunk = paragraph[start_index:end_index]
                     chunks.append(chunk)
         return chunks
 
     def send_whatsapp_message(self, body: str) -> None:
-        """
-        Consume messages from the RabbitMQ queue and send them via Twilio.
-        """
         try:
             queue_message = json.loads(body)
-            text = queue_message["text"]
-            phone = queue_message["to"]["phone"]
-
+            text = queue_message.get("body")
+            conversation_envelope = queue_message.get(
+                "conversation_envelope", {}
+            )
+            phone = conversation_envelope.get(
+                "client_phone_number"
+            ) or conversation_envelope.get("user_phone_number")
             chunks = self.chunk_text_by_paragraphs(
-                text, MAX_WHATSAPP_MESSAGE_LENGTH)
-            logger.info(f"sending '{text}' to WhatsApp number {phone}")
+                text, MAX_WHATSAPP_MESSAGE_LENGTH
+            )
             for chunk in chunks:
                 response = self.twilio_client.messages.create(
                     from_=self.TWILIO_WHATSAPP_FROM,
@@ -79,7 +81,8 @@ class TwilioClient:
                         f"Failed to send message to WhatsApp number "
                         f"{phone}: {response.error_message}"
                     )
-                time.sleep(0.5)  # 500ms delay
+                time.sleep(0.5)
+            logger.info(f"Message sent to WhatsApp: {text}")
 
         except JSONDecodeError as e:
             logger.error(f"Error decoding JSON message: {e}")
@@ -93,10 +96,9 @@ class TwilioClient:
             parsed_number = phonenumbers.parse(phone_number)
             if not phonenumbers.is_valid_number(parsed_number):
                 raise ValueError(f"Invalid phone number: {phone_number}")
-            # Format the phone number
             formatted_number = phonenumbers.format_number(
-                parsed_number, phonenumbers.PhoneNumberFormat.E164)
-            # Validate the formatted phone number using the Pydantic model
+                parsed_number, phonenumbers.PhoneNumberFormat.E164
+            )
             PhoneValidationModel(phone=formatted_number)
             return formatted_number
         except phonenumbers.phonenumberutil.NumberParseException as e:
@@ -105,31 +107,32 @@ class TwilioClient:
             raise ValidationError(f"Phone number validation error: {e}")
 
     def format_to_queue_message(self, values: dict) -> str:
-        """
-        Consume messages from Twilio then format into queue message.
-        """
-        iso_timestamp = datetime.now().isoformat()
         try:
+            iso_timestamp = datetime.now(timezone.utc).isoformat()
             # Validate and format the phone number
-            phone_number = values.get('From').split(':')[1]
+            phone_number = values.get("From").split(":")[1]
             formatted_phone = self.validate_and_format_phone_number(
-                phone_number=phone_number)
-            queue_message = {
-                'id': values['MessageSid'],
-                'timestamp': iso_timestamp,
-                'platform': 'WHATSAPP',
-                'from': {
-                    'phone': formatted_phone,
-                },
-                'text': values['Body'],
-                'media': []
-            }
+                phone_number=phone_number
+            )
             # Add media files if present
-            num_media = values.get('NumMedia', 0)
+            media = []
+            num_media = values.get("NumMedia", 0)
             for i in range(num_media):
-                media_url = values.get(f'MediaUrl{i}', '')
+                media_url = values.get(f"MediaUrl{i}", "")
                 if media_url:
-                    queue_message['media'].append(media_url)
+                    media.append(media_url)
+            queue_message = queue_message_util.create_queue_message(
+                message_id=values["MessageSid"],
+                conversation_id="__CHANGEME__",
+                client_phone_number=formatted_phone,
+                sender_role=Sender_Role_Enum.CLIENT,
+                sender_role_enum=Sender_Role_Enum,
+                platform=Platform_Enum.WHATSAPP,
+                platform_enum=Platform_Enum,
+                body=values["Body"],
+                media=media,
+                timestamp=iso_timestamp,
+            )
             return json.dumps(queue_message)
         except ValueError as e:
             logger.error(f"Error formatting message: {e}")

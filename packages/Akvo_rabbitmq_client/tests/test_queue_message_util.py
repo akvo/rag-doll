@@ -3,6 +3,7 @@ import unittest
 from uuid import UUID, uuid4
 from Akvo_rabbitmq_client import queue_message_util
 from enum import Enum
+from datetime import datetime, timezone
 
 
 class ChatRoleEnum(Enum):
@@ -12,7 +13,7 @@ class ChatRoleEnum(Enum):
     SYSTEM = "system"
 
 
-class PlatformEnum(Enum):
+class Platform_Enum(Enum):
     WHATSAPP = "WHATSAPP"
     SLACK = "SLACK"
 
@@ -28,13 +29,14 @@ class TestQueueMessageUtil(unittest.TestCase):
                 user_phone_number="1234567890",
                 sender_role="invalid_sender_role",
                 sender_role_enum=ChatRoleEnum,
-                platform=PlatformEnum.SLACK,
-                platform_enum=PlatformEnum,
-                body="Hello, world!"
+                platform=Platform_Enum.SLACK,
+                platform_enum=Platform_Enum,
+                body="Hello, world!",
             )
         self.assertTrue(
             "Invalid sender_role value: invalid_sender_role. Must be one of:"
-            in str(context.exception))
+            in str(context.exception)
+        )
 
     def test_create_queue_message_invalid_platform(self):
         with self.assertRaises(ValueError) as context:
@@ -46,14 +48,17 @@ class TestQueueMessageUtil(unittest.TestCase):
                 sender_role=ChatRoleEnum.SYSTEM,
                 sender_role_enum=ChatRoleEnum,
                 platform="invalid_platform",
-                platform_enum=PlatformEnum,
-                body="Hello, world!"
+                platform_enum=Platform_Enum,
+                body="Hello, world!",
             )
         self.assertTrue(
             "Invalid platform value: invalid_platform. Must be one of:"
-            in str(context.exception))
+            in str(context.exception)
+        )
 
     def test_create_queue_message_with_minimal_data(self):
+        timestamp = datetime.now(timezone.utc).isoformat()
+
         message = queue_message_util.create_queue_message(
             message_id=str(uuid4()),
             conversation_id=str(uuid4()),
@@ -61,47 +66,64 @@ class TestQueueMessageUtil(unittest.TestCase):
             user_phone_number="+6282234567899",
             sender_role=ChatRoleEnum.USER,
             sender_role_enum=ChatRoleEnum,
-            platform=PlatformEnum.WHATSAPP,
-            platform_enum=PlatformEnum,
-            body="This is the original message text typed by the client."
+            platform=Platform_Enum.WHATSAPP,
+            platform_enum=Platform_Enum,
+            body="This is the original message text typed by the client.",
+            timestamp=timestamp,
         )
         self.assertEqual(
             message["conversation_envelope"]["client_phone_number"],
-            "+6281234567890")
+            "+6281234567890",
+        )
         self.assertEqual(
             message["conversation_envelope"]["user_phone_number"],
-            "+6282234567899")
+            "+6282234567899",
+        )
         self.assertEqual(
-            message["conversation_envelope"]["sender_role"], ChatRoleEnum.USER)
+            message["conversation_envelope"]["sender_role"],
+            ChatRoleEnum.USER.value,
+        )
         self.assertEqual(
-            message["conversation_envelope"]["platform"], PlatformEnum.WHATSAPP)
+            message["conversation_envelope"]["platform"],
+            Platform_Enum.WHATSAPP.value,
+        )
+        self.assertEqual(
+            message["conversation_envelope"]["timestamp"], timestamp
+        )
         self.assertEqual(
             message["body"],
-            "This is the original message text typed by the client.")
+            "This is the original message text typed by the client.",
+        )
         self.assertEqual(message["media"], [])
         self.assertEqual(message["context"], [])
         self.assertEqual(
             message["transformation_log"],
-            ["This is the original message text typed by the client."])
+            ["This is the original message text typed by the client."],
+        )
 
         # Check UUIDs
+        self.assertTrue(UUID(message["conversation_envelope"]["message_id"]))
         self.assertTrue(
-            UUID(message["conversation_envelope"]["message_id"]))
-        self.assertTrue(
-            UUID(message["conversation_envelope"]["conversation_id"]))
+            UUID(message["conversation_envelope"]["conversation_id"])
+        )
 
     def test_create_queue_message_with_media_and_context(self):
-        media_items = [{
-            "type": "image",
-            "url": "https://storage.service/path/to/image.jpg"
-        }, {
-            "type": "voice",
-            "url": "https://storage.service/path/to/voice.mp3"
-        }]
-        context_items = [{
-            "type": "image_description",
-            "description": "A description of the image."
-        }]
+        media_items = [
+            {
+                "type": "image",
+                "url": "https://storage.service/path/to/image.jpg",
+            },
+            {
+                "type": "voice",
+                "url": "https://storage.service/path/to/voice.mp3",
+            },
+        ]
+        context_items = [
+            {
+                "type": "image_description",
+                "description": "A description of the image.",
+            }
+        ]
         message = queue_message_util.create_queue_message(
             message_id=str(uuid4()),
             conversation_id=str(uuid4()),
@@ -109,21 +131,23 @@ class TestQueueMessageUtil(unittest.TestCase):
             user_phone_number="+6282234567899",
             sender_role=ChatRoleEnum.USER,
             sender_role_enum=ChatRoleEnum,
-            platform=PlatformEnum.WHATSAPP,
-            platform_enum=PlatformEnum,
+            platform=Platform_Enum.WHATSAPP,
+            platform_enum=Platform_Enum,
             body="This is the original message text typed by the client.",
             media=media_items,
-            context=context_items
+            context=context_items,
         )
         self.assertEqual(len(message["media"]), 2)
         self.assertEqual(len(message["context"]), 1)
         self.assertEqual(message["media"][0]["type"], "image")
         self.assertEqual(
             message["media"][0]["url"],
-            "https://storage.service/path/to/image.jpg")
+            "https://storage.service/path/to/image.jpg",
+        )
         self.assertEqual(message["context"][0]["type"], "image_description")
         self.assertEqual(
-            message["context"][0]["description"], "A description of the image.")
+            message["context"][0]["description"], "A description of the image."
+        )
 
 
 if __name__ == "__main__":

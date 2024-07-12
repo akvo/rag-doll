@@ -11,5 +11,5 @@ class TestRabbitMQClientEnv(unittest.TestCase):
         self.assertTrue(rabbitmq_client.RABBITMQ_EXCHANGE_USER_CHATS)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

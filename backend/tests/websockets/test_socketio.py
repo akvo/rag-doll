@@ -8,8 +8,6 @@ from core.socketio_config import SOCKETIO_PATH
 
 @pytest.mark.asyncio
 async def test_chat_simple() -> None:
-    """A simple websocket test using a mocked sio_client"""
-
     sio_client = socketio.AsyncClient(
         engineio_logger=True,
         logger=True,

@@ -1,6 +1,6 @@
 import unittest
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock
 from Akvo_rabbitmq_client import rabbitmq_client
 
 
@@ -14,25 +14,25 @@ class TestRabbitMQClient(unittest.TestCase):
     def tearDown(self):
         async def cleanup():
             await self.client.disconnect()
+
         self.loop.run_until_complete(cleanup())
         self.loop.close()
 
     def test_producer_and_consumer(self):
         async def test():
             await self.client.initialize()
-            # Create a MagicMock object to mock the callback
-            callback_mock = MagicMock()
+            callback_mock = AsyncMock()
             await self.client.consume(
                 queue_name="test_queue",
                 routing_key="test_queue",
-                callback=callback_mock
+                callback=callback_mock,
             )
             await self.client.producer(
-                body="Test producer and consumer",
-                routing_key="test_queue"
+                body="Test producer and consumer", routing_key="test_queue"
             )
-            await asyncio.sleep(1)  # Allow some time for message consumption
+            await asyncio.sleep(1)
             callback_mock.assert_called_once()
+
         self.loop.run_until_complete(test())
 
 

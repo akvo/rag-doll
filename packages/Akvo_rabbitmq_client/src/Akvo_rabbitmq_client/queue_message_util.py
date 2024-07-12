@@ -8,13 +8,14 @@ class QueueMessageUtil:
     def create_queue_message(
         message_id: str,
         conversation_id: str,
-        client_phone_number: str,
-        user_phone_number: str,
         sender_role: str,
         sender_role_enum: Type[Enum],
         platform: str,
         platform_enum: Type[Enum],
         body: str,
+        timestamp: Optional[str] = None,
+        user_phone_number: Optional[str] = None,
+        client_phone_number: Optional[str] = None,
         media: Optional[List[Dict[str, str]]] = None,
         context: Optional[List[Dict[str, str]]] = None,
         transformation_log: Optional[List[str]] = None
@@ -41,8 +42,9 @@ class QueueMessageUtil:
                 "conversation_id": conversation_id,
                 "client_phone_number": client_phone_number,
                 "user_phone_number": user_phone_number,
-                "sender_role": sender_role,
-                "platform": platform,
+                "sender_role": sender_role.value,
+                "platform": platform.value,
+                "timestamp": timestamp
             },
             "body": body,
             "media": media,

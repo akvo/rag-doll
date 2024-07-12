@@ -19,7 +19,6 @@ def mock_slack_client(mocker):
         await rabbitmq_client.producer(
             body="mock_queue_message",
             routing_key="mock_queue_chats",
-            reply_to="mock_queue_replies",
         )
         await slackbot_client.start_onboarding("U67890", "C12345")
 

@@ -71,14 +71,15 @@ class RabbitMQClient:
             logger.error(f"Error initializing RabbitMQ client: {e}")
 
     async def producer(
-        self, body: str, routing_key: str, reply_to: str = None
+        self,
+        body: str,
+        routing_key: str,
     ):
         try:
             await self.connect()
             message = aio_pika.Message(
                 body=body.encode("utf-8"),
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-                headers={"reply_to": reply_to},
             )
             await self.exchange.publish(message, routing_key=routing_key)
             logger.info(f"Message sent: {body}, routing_key: {routing_key}")

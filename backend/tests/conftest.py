@@ -121,7 +121,7 @@ class MockRabbitMQClient:
     async def consume(self, queue_name, routing_key, callback):
         pass
 
-    async def producer(self, body, routing_key, reply_to):
+    async def producer(self, body, routing_key):
         pass
 
 

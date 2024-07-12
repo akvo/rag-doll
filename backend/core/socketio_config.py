@@ -39,7 +39,6 @@ async def chat_message(sid, msg):
     await rabbitmq_client.producer(
         body=json.dumps(msg),
         routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-        reply_to=None,
     )
 
 

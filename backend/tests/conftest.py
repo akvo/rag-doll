@@ -11,7 +11,7 @@ from sqlmodel import create_engine, Session
 
 from core.config import app
 from core.database import get_db_url, get_session
-from models import User, Client, Chat_Session, Chat, Chat_Sender
+from models import User, Client, Chat_Session, Chat, Sender_Role_Enum
 
 
 def truncate(session: Session, table: str):
@@ -46,26 +46,26 @@ def init_db(session: Session) -> None:
     messages = [
         {
             "message": "Hello Admin!",
-            "sender": Chat_Sender.CLIENT,
+            "sender": Sender_Role_Enum.CLIENT,
         },
         {
             "message": "Hello, +62 812 3456 7890",
-            "sender": Chat_Sender.USER,
+            "sender": Sender_Role_Enum.USER,
         },
         {
             "message": "Is there anything I can help you with?",
-            "sender": Chat_Sender.USER,
+            "sender": Sender_Role_Enum.USER,
         },
         {
             "message": "Yes, I need help with something.",
-            "sender": Chat_Sender.CLIENT,
+            "sender": Sender_Role_Enum.CLIENT,
         },
     ]
     for message in messages:
         chat = Chat(
             chat_session_id=chat_session.id,
             message=message["message"],
-            sender=message["sender"],
+            sender_role=message["sender"],
         )
         session.add(chat)
         session.commit()
@@ -121,7 +121,7 @@ class MockRabbitMQClient:
     async def consume(self, queue_name, routing_key, callback):
         pass
 
-    async def producer(self, body, routing_key, reply_to):
+    async def producer(self, body, routing_key):
         pass
 
 

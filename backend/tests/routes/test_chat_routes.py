@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from models import Chat_Sender
+from models import Sender_Role_Enum
 
 
 def test_get_chats(client: TestClient) -> None:
@@ -28,8 +28,8 @@ def test_get_chats_authenticated(client: TestClient) -> None:
     chat_session = content[0].get("chat_session")
     assert chat_session.get("last_read")
     last_chat_message = content[0].get("last_message")
-    sender = content[0].get("last_message").get("sender")
-    assert sender == Chat_Sender.CLIENT.value
+    sender = content[0].get("last_message").get("sender_role")
+    assert sender == Sender_Role_Enum.CLIENT.value
     assert (
         last_chat_message.get("message") == "Yes, I need help with something."
     )

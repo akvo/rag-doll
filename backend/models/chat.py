@@ -7,14 +7,14 @@ from typing import Optional
 tz = timezone.utc
 
 
-class Chat_Sender(enum.Enum):
+class Sender_Role_Enum(enum.Enum):
     USER = "user"
     CLIENT = "client"
     ASSISTANT = "assistant"
     SYSTEM = "system"
 
 
-class PlatformEnum(enum.Enum):
+class Platform_Enum(enum.Enum):
     WHATSAPP = "WHATSAPP"
     SLACK = "SLACK"
 
@@ -38,8 +38,8 @@ class Chat(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     chat_session_id: int = Field(foreign_key="chat_session.id")
     message: str
-    sender: Chat_Sender = Field(
-        sa_column=Column(Enum(Chat_Sender), nullable=False)
+    sender_role: Sender_Role_Enum = Field(
+        sa_column=Column(Enum(Sender_Role_Enum), nullable=False)
     )
     created_at: datetime = Field(
         sa_column=Column(

@@ -7,9 +7,7 @@ from fastapi import FastAPI, Depends
 from core.database import get_session
 from sqlmodel import Session, text
 
-# from sqlmodel import Session, select
-# from core.database import engine
-from models.chat import PlatformEnum
+from models.chat import Platform_Enum
 from routes import user_routes, chat_routes, twilio_routes, slack_routes
 from Akvo_rabbitmq_client import rabbitmq_client
 from clients.twilio_client import TwilioClient
@@ -31,9 +29,9 @@ async def user_chat_replies_callback(body: str):
     queue_message = json.loads(body)
     conversation_envelope = queue_message.get("conversation_envelope", {})
     platform = conversation_envelope.get("platform")
-    if platform == PlatformEnum.WHATSAPP.value:
+    if platform == Platform_Enum.WHATSAPP.value:
         await twilio_client.send_whatsapp_message(body=body)
-    if platform == PlatformEnum.SLACK.value:
+    if platform == Platform_Enum.SLACK.value:
         await slackbot_client.send_message(body=body)
 
 

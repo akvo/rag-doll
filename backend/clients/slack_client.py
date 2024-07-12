@@ -9,7 +9,7 @@ from slack_sdk.web.async_client import AsyncWebClient
 from slack_sdk.errors import SlackApiError
 from .slack_onboarding import OnboardingMessage
 from Akvo_rabbitmq_client import queue_message_util
-from models.chat import PlatformEnum, Chat_Sender
+from models.chat import Platform_Enum, Sender_Role_Enum
 
 
 logging.basicConfig(level=logging.INFO)
@@ -55,10 +55,10 @@ class SlackBotClient:
             message_id=event.get("client_msg_id"),
             conversation_id=event.get("channel"),
             client_phone_number=event.get("user"),
-            sender_role=Chat_Sender.CLIENT,
-            sender_role_enum=Chat_Sender,
-            platform=PlatformEnum.SLACK,
-            platform_enum=PlatformEnum,
+            sender_role=Sender_Role_Enum.CLIENT,
+            sender_role_enum=Sender_Role_Enum,
+            platform=Platform_Enum.SLACK,
+            platform_enum=Platform_Enum,
             body=event.get("text"),
             timestamp=iso_timestamp,
         )

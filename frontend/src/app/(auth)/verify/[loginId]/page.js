@@ -20,7 +20,6 @@ const VerifyLogin = ({ params }) => {
       if (resData && resData?.token) {
         const { token, phone_number, name, email, id: userID } = resData;
         setCookie("AUTH_TOKEN", token);
-        sessionStorage.setItem("user_phone_number", phone_number);
         api.setToken(resData.token);
         setTimeout(() => {
           authDispatch({

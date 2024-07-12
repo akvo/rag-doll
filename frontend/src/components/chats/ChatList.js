@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useChatDispatch } from "@/context/ChatContextProvider";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
-import { getCookie } from "@/app/(auth)/verify/[loginId]/util";
 
 function formatChatTime(timeString) {
   const date = new Date(timeString);
@@ -76,20 +75,16 @@ const ChatList = () => {
     setPage((prevPage) => prevPage + 1);
   };
 
-  const fetchData = useCallback(async () => {}, []);
-
   useEffect(() => {
     const fetchData = async () => {
-      const token = await getCookie("AUTH_TOKEN");
-      api.setToken(token);
       const res = await api.get("chat-list");
       const resData = await res.json();
-      setChatItems(resData);
+      if (res.status === 200) {
+        setChatItems(resData);
+      }
     };
     fetchData();
-  }, [fetchData]);
-
-  console.log(chatItems);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {

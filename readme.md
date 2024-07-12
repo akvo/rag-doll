@@ -113,6 +113,7 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 |---|---|---|
 | `BACKEND_PORT` | 5000 | The external port used by the Backend |
 | `JWT_SECRET` | _CHANGEME_ | JWT-based auth secret key, used in the process of signing a token |
+| `WEBDOMAIN` | "http://localhost" | The base URL of the web application |
 | `MAGIC_LINK_CHAT_TEMPLATE` | _CHANGEME_ | A template for magic link message, e.g. "You can login into APP_NAME by clicking this link: {magic_link}" |
 
 

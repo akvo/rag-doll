@@ -11,7 +11,7 @@ from twilio.rest import Client
 from pydantic import BaseModel, ValidationError
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from Akvo_rabbitmq_client import queue_message_util
-from models.chat import Chat_Sender, PlatformEnum
+from models.chat import Sender_Role_Enum, Platform_Enum
 
 
 logging.basicConfig(level=logging.INFO)
@@ -125,10 +125,10 @@ class TwilioClient:
                 message_id=values["MessageSid"],
                 conversation_id="__CHANGEME__",
                 client_phone_number=formatted_phone,
-                sender_role=Chat_Sender.CLIENT,
-                sender_role_enum=Chat_Sender,
-                platform=PlatformEnum.WHATSAPP,
-                platform_enum=PlatformEnum,
+                sender_role=Sender_Role_Enum.CLIENT,
+                sender_role_enum=Sender_Role_Enum,
+                platform=Platform_Enum.WHATSAPP,
+                platform_enum=Platform_Enum,
                 body=values["Body"],
                 media=media,
                 timestamp=iso_timestamp,

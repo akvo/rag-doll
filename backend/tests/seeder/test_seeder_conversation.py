@@ -7,7 +7,7 @@ from seeder.conversation import (
     Client,
     Chat,
     Chat_Session,
-    Chat_Sender,
+    Sender_Role_Enum,
 )
 from sqlmodel import Session, select
 
@@ -54,7 +54,7 @@ def test_seed_chat_data(session: Session, conversation_data):
     # Check sender and message content
     for i, chat_message in enumerate(chat_messages):
         assert (
-            chat_message.sender
-            == Chat_Sender[conversation_data[i]["sender"].upper()]
+            chat_message.sender_role
+            == Sender_Role_Enum[conversation_data[i]["sender"].upper()]
         )
         assert chat_message.message == conversation_data[i]["message"]

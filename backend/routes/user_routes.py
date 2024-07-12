@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from models import User
-from models.chat import Chat_Sender, PlatformEnum
+from models.chat import Sender_Role_Enum, Platform_Enum
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
 from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
@@ -44,10 +44,10 @@ async def send_login_link(
         message_id=str(uuid4()),
         conversation_id=str(uuid4()),
         user_phone_number=phone_number,
-        sender_role=Chat_Sender.SYSTEM,
-        sender_role_enum=Chat_Sender,
-        platform=PlatformEnum.WHATSAPP,
-        platform_enum=PlatformEnum,
+        sender_role=Sender_Role_Enum.SYSTEM,
+        sender_role_enum=Sender_Role_Enum,
+        platform=Platform_Enum.WHATSAPP,
+        platform_enum=Platform_Enum,
         body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
     )
     await rabbitmq_client.producer(

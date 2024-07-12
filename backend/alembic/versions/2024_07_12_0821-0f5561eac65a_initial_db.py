@@ -1,8 +1,8 @@
-"""initial_db
+"""initial db
 
-Revision ID: 90f9f35c14d5
+Revision ID: 0f5561eac65a
 Revises:
-Create Date: 2024-06-12 08:05:27.079019
+Create Date: 2024-07-12 08:21:24.996181
 
 """
 
@@ -14,7 +14,7 @@ import sqlmodel  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "90f9f35c14d5"
+revision: str = "0f5561eac65a"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,17 +25,19 @@ def upgrade() -> None:
     op.create_table(
         "client",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("phone_number", sa.BigInteger(), nullable=False),
+        sa.Column("phone_number", sa.BigInteger(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("phone_number"),
     )
     op.create_table(
         "user",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("phone_number", sa.BigInteger(), nullable=False),
+        sa.Column("phone_number", sa.BigInteger(), nullable=True),
         sa.Column(
             "login_code", sqlmodel.sql.sqltypes.AutoString(), nullable=True
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("phone_number"),
     )
     op.create_table(
         "chat_session",
@@ -87,9 +89,13 @@ def upgrade() -> None:
             "message", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
         sa.Column(
-            "sender",
+            "sender_role",
             sa.Enum(
-                "USER", "CLIENT", "ASSISTANT", "SYSTEM", name="chat_sender"
+                "USER",
+                "CLIENT",
+                "ASSISTANT",
+                "SYSTEM",
+                name="sender_role_enum",
             ),
             nullable=False,
         ),

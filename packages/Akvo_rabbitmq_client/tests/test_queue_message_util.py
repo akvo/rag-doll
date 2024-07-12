@@ -13,7 +13,7 @@ class ChatRoleEnum(Enum):
     SYSTEM = "system"
 
 
-class PlatformEnum(Enum):
+class Platform_Enum(Enum):
     WHATSAPP = "WHATSAPP"
     SLACK = "SLACK"
 
@@ -29,8 +29,8 @@ class TestQueueMessageUtil(unittest.TestCase):
                 user_phone_number="1234567890",
                 sender_role="invalid_sender_role",
                 sender_role_enum=ChatRoleEnum,
-                platform=PlatformEnum.SLACK,
-                platform_enum=PlatformEnum,
+                platform=Platform_Enum.SLACK,
+                platform_enum=Platform_Enum,
                 body="Hello, world!",
             )
         self.assertTrue(
@@ -48,7 +48,7 @@ class TestQueueMessageUtil(unittest.TestCase):
                 sender_role=ChatRoleEnum.SYSTEM,
                 sender_role_enum=ChatRoleEnum,
                 platform="invalid_platform",
-                platform_enum=PlatformEnum,
+                platform_enum=Platform_Enum,
                 body="Hello, world!",
             )
         self.assertTrue(
@@ -66,8 +66,8 @@ class TestQueueMessageUtil(unittest.TestCase):
             user_phone_number="+6282234567899",
             sender_role=ChatRoleEnum.USER,
             sender_role_enum=ChatRoleEnum,
-            platform=PlatformEnum.WHATSAPP,
-            platform_enum=PlatformEnum,
+            platform=Platform_Enum.WHATSAPP,
+            platform_enum=Platform_Enum,
             body="This is the original message text typed by the client.",
             timestamp=timestamp,
         )
@@ -85,7 +85,7 @@ class TestQueueMessageUtil(unittest.TestCase):
         )
         self.assertEqual(
             message["conversation_envelope"]["platform"],
-            PlatformEnum.WHATSAPP.value,
+            Platform_Enum.WHATSAPP.value,
         )
         self.assertEqual(
             message["conversation_envelope"]["timestamp"], timestamp
@@ -131,8 +131,8 @@ class TestQueueMessageUtil(unittest.TestCase):
             user_phone_number="+6282234567899",
             sender_role=ChatRoleEnum.USER,
             sender_role_enum=ChatRoleEnum,
-            platform=PlatformEnum.WHATSAPP,
-            platform_enum=PlatformEnum,
+            platform=Platform_Enum.WHATSAPP,
+            platform_enum=Platform_Enum,
             body="This is the original message text typed by the client.",
             media=media_items,
             context=context_items,

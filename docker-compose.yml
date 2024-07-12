@@ -16,9 +16,8 @@ services:
     environment:
       <<: *rabbitmq_client_env
       ASSISTANT_ROLE: ${ASSISTANT_ROLE}
-      OLLAMA_HOST: ${OLLAMA_HOST}
-      OLLAMA_PORT: ${OLLAMA_PORT}
-      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL}
     depends_on:
       - rabbitmq
     command: ["./run.sh"]

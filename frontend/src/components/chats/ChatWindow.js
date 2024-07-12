@@ -6,6 +6,13 @@ import { socket } from "@/lib";
 import { createQueueMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 
+const SenderRoleEnum = {
+  USER: "user",
+  CLIENT: "client",
+  ASSISTANT: "assistant",
+  SYSTEM: "system",
+};
+
 const ChatWindow = () => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
@@ -100,7 +107,7 @@ const ChatWindow = () => {
 
   const renderChatMessages = () => {
     return chats.map((c, ci) => {
-      if (c?.conversation_envelope?.sender_role === "user") {
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
         return (
           <div key={`chat-${ci}`} className="flex mb-4 justify-end">
             <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
@@ -120,7 +127,7 @@ const ChatWindow = () => {
           </div>
         );
       }
-      if (c?.conversation_envelope?.sender_role === "client") {
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
         return (
           <div className="flex mb-4">
             <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">

@@ -15,6 +15,7 @@ async def get_chats(
     session: Session = Depends(get_session),
     auth: credentials = Depends(security),
 ):
+    # TODO :: Support pagination
     user = verify_user(session, auth)
     chats = session.exec(
         select(Chat_Session)

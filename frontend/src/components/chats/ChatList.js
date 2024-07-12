@@ -1,16 +1,55 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useChatDispatch } from "@/context/ChatContextProvider";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib";
+import { getCookie } from "@/app/(auth)/verify/[loginId]/util";
+
+function formatChatTime(timeString) {
+  const date = new Date(timeString);
+  const now = new Date();
+
+  const diffInMilliseconds = now.getTime() - date.getTime();
+  const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
+
+  // Define thresholds in seconds for different chat time formats
+  const minute = 60;
+  const hour = minute * 60;
+  const day = hour * 24;
+
+  if (diffInSeconds < 5) {
+    return "Just now";
+  } else if (diffInSeconds < minute) {
+    return `${diffInSeconds} seconds ago`;
+  } else if (diffInSeconds < hour) {
+    const minutes = Math.floor(diffInSeconds / minute);
+    return `${minutes} minutes ago`;
+  } else if (now.getDate() === date.getDate()) {
+    // Show time in HH:mm format if it's today
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  } else if (diffInSeconds < day * 2 && now.getDate() !== date.getDate()) {
+    return "Yesterday";
+  } else {
+    // Use Intl.DateTimeFormat for localized date format
+    const formatter = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    });
+    return formatter.format(date);
+  }
+}
 
 const ChatList = () => {
   const router = useRouter();
   const chatDispatch = useChatDispatch();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [chatItems, setChatItems] = useState(
-    Array.from({ length: 10 }, (_, index) => index + 1)
-  );
+  const [chatItems, setChatItems] = useState([]);
   const [page, setPage] = useState(1);
   const chatListRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -19,11 +58,11 @@ const ChatList = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleOnClickChat = (id) => {
+  const handleOnClickChat = ({ client_id }) => {
     chatDispatch({
       type: "UPDATE",
       payload: {
-        clientId: id,
+        clientId: client_id,
       },
     });
   };
@@ -33,12 +72,24 @@ const ChatList = () => {
   };
 
   const loadMoreChats = () => {
-    setChatItems((prevChats) => [
-      ...prevChats,
-      ...Array.from({ length: 10 }, (_, index) => index + 1 + prevChats.length),
-    ]);
+    setChatItems((prevChats) => [...prevChats]);
     setPage((prevPage) => prevPage + 1);
   };
+
+  const fetchData = useCallback(async () => {}, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = await getCookie("AUTH_TOKEN");
+      api.setToken(token);
+      const res = await api.get("chat-list");
+      const resData = await res.json();
+      setChatItems(resData);
+    };
+    fetchData();
+  }, [fetchData]);
+
+  console.log(chatItems);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -131,11 +182,11 @@ const ChatList = () => {
       <div className="pt-2 pb-20 w-full">
         {/* Chat List */}
         <div className="bg-white overflow-hidden">
-          {chatItems.map((x) => (
+          {chatItems.map(({ chat_session, last_message }) => (
             <div
-              key={x}
+              key={chat_session.id}
               className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
-              onClick={() => handleOnClickChat(x)}
+              onClick={() => handleOnClickChat(chat_session)}
             >
               <div className="flex items-center">
                 <img
@@ -146,11 +197,15 @@ const ChatList = () => {
                 <div className="flex-1">
                   <div className="flex justify-between">
                     <h3 className="text-lg font-semibold text-gray-800">
-                      Friend {x}
+                      Friend {chat_session.client_id}
                     </h3>
-                    <p className="text-xs text-gray-500">10:00 AM</p>
+                    <p className="text-xs text-gray-500">
+                      {formatChatTime(last_message.created_at)}
+                    </p>
                   </div>
-                  <p className="text-gray-600 text-sm">Last message...</p>
+                  <p className="text-gray-600 text-sm">
+                    {last_message.message}
+                  </p>
                 </div>
               </div>
             </div>

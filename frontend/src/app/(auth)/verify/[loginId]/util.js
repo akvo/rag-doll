@@ -9,3 +9,8 @@ export const setCookie = (name, value) => {
 export const deleteCookie = (name) => {
   cookies().delete(name);
 };
+
+export const getCookie = async (name) => {
+  const cookie = cookies().get(name);
+  return cookie.value;
+};

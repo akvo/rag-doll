@@ -122,17 +122,17 @@ def connect_to_chromadb() -> chromadb.Collection:
             time.sleep(1)
 
 
-def add_chunk_to_chroma(knowledgebase: chromadb.Collection, chunk: str, id: str, country: str):
-    logger.info(f"=== country: {country}, length: {len(chunk)}, id: {id} ==================")
-    # logger.info('.'.join(chunk))
+def add_chunk_to_chroma(knowledgebase: chromadb.Collection, chunk: str, eppo_code: str, country: str, uniquefier: int) -> None:
+    id = f"{eppo_code}:{country}:{uniquefier}"
+    logger.info(f"    adding chunk of {len(chunk)} lines as {id}")
     knowledgebase.add(
         documents=['. '.join(chunk)],
-        metadatas=[{'country': country}],
+        metadatas=[{'country': country, 'eppo_code': eppo_code}],
         ids=[id]
     )
 
 
-def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, eppo_code: str, country: str):
+def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, eppo_code: str, country: str) -> None:
     '''
         Break the text up into chunks and push the chunks into ChromaDB.
         ChromaDB handles the vectorisation using its default embedding model.
@@ -146,14 +146,15 @@ def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, e
     this_chunk: list[str] = []
     next_chunk: list[str] = []
 
-    id = f"{eppo_code}/{country}"
     uniquefier: int = 0
+
+    logger.info(f"building chunks from {len(sentences)} sentences for {eppo_code}:{country}")
 
     for sentence in sentences:
         if len(this_chunk) >= CHUNK_SIZE:
             # done with the first chunk, add to overlap?
             if len(next_chunk) == OVERLAP_SIZE:
-                add_chunk_to_chroma(knowledgebase, this_chunk, f"{id}/{uniquefier}", country)
+                add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, uniquefier)
                 uniquefier = uniquefier + 1
                 this_chunk = next_chunk
                 next_chunk = []
@@ -166,10 +167,10 @@ def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, e
             this_chunk.append(sentence)
 
     if len(this_chunk) > 0:
-        add_chunk_to_chroma(knowledgebase, this_chunk, f"{id}/{uniquefier}", country)
+        add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, uniquefier)
         uniquefier = uniquefier + 1
     if len(next_chunk) > 0:
-        add_chunk_to_chroma(knowledgebase, next_chunk, f"{id}/{uniquefier}", country)
+        add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, uniquefier)
         uniquefier = uniquefier + 1
 
 

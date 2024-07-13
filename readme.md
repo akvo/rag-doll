@@ -60,8 +60,8 @@ Secretariat.*
 | `EPPO_DATASHEET_URL` | https://gd.eppo.int/taxon/{eppo_code}/datasheet | The URL to the organism datasheet in the EPPO database. Use `{eppo_code}` as placeholder for the EPPO code. |
 | `EPPO_COUNTRIES` | _CHANGEME_ | A comma-separated list of ISO 3166-1 alpha-2 country codes of countries that you are interested in. |
 
-
-**license** adherence and citation...
+EPPO is not completely clear on what license they expect. They do not restrict
+accessing the datasheets. They do ask for citation, which we provide.
 
 
 ## ChromaDB Vector Database

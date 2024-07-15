@@ -38,7 +38,7 @@ class LLM:
         logging.info(f"OPENAI RESPONSE: {response.choices[0].message.content}")
         message = response.choices[0].message
         self.append_message(message.role, message.content)
-        return response
+        return message.content
 
     def append_message(self, role, content):
         self.messages.append({"role": role, "content": str(content)})

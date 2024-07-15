@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useLayoutEffect, Fragment } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket } from "@/lib";
-import { createQueueMessage } from "@/utils/formatter";
+import { generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 
 const SenderRoleEnum = {
@@ -91,7 +91,7 @@ const ChatWindow = () => {
           platform: "WHATSAPP",
         };
       }
-      const chatPayload = createQueueMessage({
+      const chatPayload = generateMessage({
         ...chatBreakdown,
         sender_role: "user",
         body: message,

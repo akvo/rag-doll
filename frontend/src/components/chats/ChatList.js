@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useChatDispatch } from "@/context/ChatContextProvider";
+import { useAuthDispatch } from "@/context/AuthContextProvider";
+import { useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
+import { deleteCookie } from "@/app/(auth)/verify/[loginId]/util";
 
 function formatChatTime(timeString) {
   const date = new Date(timeString);
@@ -46,6 +49,8 @@ function formatChatTime(timeString) {
 
 const ChatList = () => {
   const router = useRouter();
+  const userDispatch = useUserDispatch();
+  const authDispatch = useAuthDispatch();
   const chatDispatch = useChatDispatch();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [chatItems, setChatItems] = useState([]);
@@ -81,6 +86,14 @@ const ChatList = () => {
       const resData = await res.json();
       if (res.status === 200) {
         setChatItems(resData);
+      }
+      if (res.status === 401) {
+        userDispatch({
+          type: "DELETE",
+        });
+        authDispatch({ type: "DELETE" });
+        deleteCookie("AUTH_TOKEN");
+        router.replace("/login");
       }
     };
     fetchData();

@@ -123,7 +123,6 @@ class TwilioClient:
                     media.append(media_url)
             queue_message = queue_message_util.create_queue_message(
                 message_id=values["MessageSid"],
-                conversation_id="__CHANGEME__",
                 client_phone_number=formatted_phone,
                 sender_role=Sender_Role_Enum.CLIENT,
                 sender_role_enum=Sender_Role_Enum,

@@ -7,12 +7,12 @@ class QueueMessageUtil:
     @staticmethod
     def create_queue_message(
         message_id: str,
-        conversation_id: str,
         sender_role: str,
         sender_role_enum: Type[Enum],
         platform: str,
         platform_enum: Type[Enum],
         body: str,
+        conversation_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         user_phone_number: Optional[str] = None,
         client_phone_number: Optional[str] = None,

@@ -42,7 +42,6 @@ async def send_login_link(
     link = f"{webdomain}/verify/{user.login_code}"
     message_body = queue_message_util.create_queue_message(
         message_id=str(uuid4()),
-        conversation_id=str(uuid4()),
         user_phone_number=phone_number,
         sender_role=Sender_Role_Enum.SYSTEM,
         sender_role_enum=Sender_Role_Enum,

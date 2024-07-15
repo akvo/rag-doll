@@ -61,7 +61,6 @@ class TestQueueMessageUtil(unittest.TestCase):
 
         message = queue_message_util.create_queue_message(
             message_id=str(uuid4()),
-            conversation_id=str(uuid4()),
             client_phone_number="+6281234567890",
             user_phone_number="+6282234567899",
             sender_role=ChatRoleEnum.USER,
@@ -103,8 +102,8 @@ class TestQueueMessageUtil(unittest.TestCase):
 
         # Check UUIDs
         self.assertTrue(UUID(message["conversation_envelope"]["message_id"]))
-        self.assertTrue(
-            UUID(message["conversation_envelope"]["conversation_id"])
+        self.assertEqual(
+            message["conversation_envelope"]["conversation_id"], None
         )
 
     def test_create_queue_message_with_media_and_context(self):

@@ -7,7 +7,14 @@ from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
 from http.cookies import SimpleCookie
 from utils.jwt_handler import verify_jwt_token
 from fastapi import HTTPException
-from models import Chat_Session, User, Client, Sender_Role_Enum, Platform_Enum
+from models import (
+    Chat_Session,
+    User,
+    Client,
+    Sender_Role_Enum,
+    Platform_Enum,
+    Chat,
+)
 from core.database import engine
 from sqlmodel import Session, select
 from datetime import datetime, timezone
@@ -103,13 +110,68 @@ async def chat_message(sid, msg):
                 body=json.dumps(queue_message),
                 routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             )
+        else:
+            logger.error(
+                f"Conversation not exist: user[{user_phone_number}], "
+                f"client[{client_phone_number}]"
+            )
 
 
 async def user_chats_callback(body: str):
     # Listen client messages from queue and send to socket io
     message = json.loads(body)
+    conversation_envelope = message.get("conversation_envelope", {})
+    client_phone_number = conversation_envelope.get(
+        "client_phone_number", None
+    )
+    sender_role = conversation_envelope.get("sender_role", None)
+    message_body = message.get("body", None)
+    # check if prev conversation for the incoming message exist
+    prev_conversation_exist = db_session.exec(
+        select(Chat_Session)
+        .join(Client)
+        .where(Client.phone_number == client_phone_number)
+    ).first()
+    conversation_id = prev_conversation_exist.id
+
+    if not prev_conversation_exist:
+        # create a new conversation and assign into lowest user id
+        user = db_session.exec(select(User).order_by(User.id)).first()
+
+        new_client = Client(client_phone_number=client_phone_number)
+        db_session.add(new_client)
+        db_session.commit()
+
+        new_chat_session = Chat_Session(
+            user_id=user.id, client_id=new_client.id
+        )
+        db_session.add(new_chat_session)
+        db_session.commit()
+
+        conversation_id = new_chat_session.id
+        db_session.flush()
+    else:
+        # update the existing conversation
+        prev_conversation_exist.last_read = datetime.now(timezone.utc)
+        db_session.add(prev_conversation_exist)
+        db_session.commit()
+        db_session.refresh(prev_conversation_exist)
+
+    # save message body into chat table
+    new_chat = Chat(
+        chat_session_id=conversation_id,
+        message=message_body,
+        sender_role=(
+            Sender_Role_Enum[sender_role.upper()]
+            if sender_role
+            else sender_role
+        ),
+    )
+    db_session.add(new_chat)
+    db_session.commit()
+    db_session.flush()
+
     # format queue message to send into FE
-    conversation_envelope = message.get("conversation_envelope")
     for key in [
         "conversation_id",
         "user_phone_number",

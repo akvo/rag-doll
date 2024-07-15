@@ -23,16 +23,13 @@ MSG_SUCCESS = "success"
 class LLM:
     def __init__(self, chat_model: str):
         self.chat_model = chat_model
-        self.client = OpenAI(
-            # This is the default and can be omitted
-            api_key=os.environ.get("OPENAI_API_KEY"),
-        )
+        self.llm_client = OpenAI()
         self.messages = []
         self.append_message(ROLE_SYSTEM, os.getenv("ASSISTANT_ROLE"))
 
     def chat(self, content: str) -> dict:
         self.append_message(ROLE_USER, content)
-        response = self.client.chat.completions.create(
+        response = self.llm_client.chat.completions.create(
             model=self.chat_model, messages=self.messages
         )
         logging.info(f"OPENAI RESPONSE: {response.choices[0].message.content}")
@@ -41,7 +38,7 @@ class LLM:
         return message.content
 
     def append_message(self, role, content):
-        self.messages.append({"role": role, "content": str(content)})
+        self.messages.append({MSG_ROLE: role, MSG_CONTENT: str(content)})
 
 
 llm = LLM(os.getenv("OPENAI_CHAT_MODEL"))

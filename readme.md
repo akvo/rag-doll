@@ -39,18 +39,17 @@ retrieval part of the system.
 | `LIBRARIAN_COLLECTION` | knowledge-base | The name of the ChromaDB collection where the corpus will be stored. |
 
 
-## Ollama LLM Runtime
+## OpenAI LLM Runtime
 
-We use [Ollama](https://ollama.com/) as the model run-time. Ollama makes it easy
-to manage multiple models, without having to handle large model files. It also
-solves the need for registration on all kinds of sites. Ollama will just pull
-the model in and cache it locally.
+We use [OpenAI](https://platform.openai.com/) as the model run-time. OpenAI provides robust capabilities for managing multiple models and handling large model files. It simplifies the integration process by managing registrations and pulling models as needed.
 
 | `.env` | default | description |
 |---|---|---|
-| `OLLAMA_HOST` | _CHANGEME_ | The IP address or DNS name of the host that runs Ollama. |
-| `OLLAMA_PORT` | 11434 | The port number on the host that runs Ollama. |
-| `OLLAMA_CHAT_MODEL` | mistral | The LLM model that is used to handle chat messages. |
+| `OPENAI_API_KEY` | _CHANGEME_ | The API key for authenticating with OpenAI services. |
+| `OPENAI_CHAT_MODEL` | `gpt-3.5` / `gpt-4` | The LLM model that is used to handle chat messages. Read more about [OpenAI models](https://platform.openai.com/docs/models) |
+
+Note: The __OPENAI_API_KEY__ does not need to be explicitly called in [assistant.py](https://github.com/akvo/rag-doll/blob/master/assistant/assistant.py) because the openai library automatically reads it from the environment variables when `openai.OpenAI()` is instantiated.
+
 
 
 ## ChromaDB Vector Database

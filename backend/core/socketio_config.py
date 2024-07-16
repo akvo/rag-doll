@@ -6,7 +6,6 @@ import json
 from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
 from http.cookies import SimpleCookie
 from utils.jwt_handler import verify_jwt_token
-from fastapi import HTTPException
 from models import (
     Chat_Session,
     User,
@@ -18,8 +17,7 @@ from models import (
 from core.database import engine
 from sqlmodel import Session, select
 from datetime import datetime, timezone
-from sqlalchemy.exc import SQLAlchemyError
-
+from fastapi import HTTPException
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,11 +38,26 @@ sio_app = socketio.ASGIApp(
 cookie = SimpleCookie()
 
 
+def get_value_or_raise_error(data_dict, key, error_msg=None):
+    try:
+        value = data_dict[key]
+    except KeyError:
+        if error_msg is None:
+            error_msg = f"Key '{key}' not found in message"
+        raise KeyError(error_msg)
+    return value
+
+
 def check_conversation_exist_and_generate_queue_message(
     session: Session, msg: dict, user_phone_number: str
 ):
-    conversation_envelope = msg.get("conversation_envelope")
-    client_phone_number = conversation_envelope.get("client_phone_number")
+    conversation_envelope = get_value_or_raise_error(
+        msg, "conversation_envelope"
+    )
+    client_phone_number = get_value_or_raise_error(
+        conversation_envelope, "client_phone_number"
+    )
+
     conversation_exist = session.exec(
         select(Chat_Session)
         .join(User)
@@ -54,13 +67,18 @@ def check_conversation_exist_and_generate_queue_message(
             Client.phone_number == client_phone_number,
         )
     ).first()
+
     if conversation_exist:
         iso_timestamp = datetime.now(timezone.utc).isoformat()
-        sender_role = conversation_envelope.get("sender_role")
-        platform = conversation_envelope.get("platform")
-        # format message into queue message
+        sender_role = get_value_or_raise_error(
+            conversation_envelope, "sender_role"
+        )
+        platform = get_value_or_raise_error(conversation_envelope, "platform")
+
         queue_message = queue_message_util.create_queue_message(
-            message_id=conversation_envelope.get("message_id"),
+            message_id=get_value_or_raise_error(
+                conversation_envelope, "message_id"
+            ),
             client_phone_number=client_phone_number,
             user_phone_number=user_phone_number,
             sender_role=(
@@ -73,10 +91,12 @@ def check_conversation_exist_and_generate_queue_message(
                 Platform_Enum[platform.upper()] if platform else platform
             ),
             platform_enum=Platform_Enum,
-            body=msg.get("body"),
-            media=msg.get("media"),
-            context=msg.get("context"),
-            transformation_log=msg.get("transformation_log"),
+            body=get_value_or_raise_error(msg, "body"),
+            media=get_value_or_raise_error(msg, "media"),
+            context=get_value_or_raise_error(msg, "context"),
+            transformation_log=get_value_or_raise_error(
+                msg, "transformation_log"
+            ),
             timestamp=iso_timestamp,
         )
         return queue_message
@@ -84,14 +104,16 @@ def check_conversation_exist_and_generate_queue_message(
 
 
 def handle_incoming_message(session: Session, message: dict):
-    conversation_envelope = message.get("conversation_envelope")
-    client_phone_number = conversation_envelope.get(
-        "client_phone_number", None
+    conversation_envelope = get_value_or_raise_error(
+        message, "conversation_envelope"
     )
-    sender_role = conversation_envelope.get("sender_role")
-    message_body = message.get("body")
+    client_phone_number = get_value_or_raise_error(
+        conversation_envelope, "client_phone_number"
+    )
+    sender_role = get_value_or_raise_error(
+        conversation_envelope, "sender_role"
+    )
 
-    # Check if prev conversation for the incoming message exists
     prev_conversation_exist = session.exec(
         select(Chat_Session)
         .join(Client)
@@ -99,7 +121,6 @@ def handle_incoming_message(session: Session, message: dict):
     ).first()
 
     if not prev_conversation_exist:
-        # Create a new conversation and assign to the lowest user ID
         user = session.exec(select(User).order_by(User.id)).first()
         new_client = Client(
             phone_number=int("".join(filter(str.isdigit, client_phone_number)))
@@ -118,15 +139,10 @@ def handle_incoming_message(session: Session, message: dict):
     else:
         chat_session_id = prev_conversation_exist.id
 
-    # Save message body into chat table
     new_chat = Chat(
         chat_session_id=chat_session_id,
-        message=message_body,
-        sender_role=(
-            Sender_Role_Enum[sender_role.upper()]
-            if sender_role
-            else sender_role
-        ),
+        message=get_value_or_raise_error(message, "body"),
+        sender_role=(Sender_Role_Enum[sender_role.upper()]),
     )
     session.add(new_chat)
     session.commit()
@@ -145,7 +161,7 @@ async def sio_connect(sid, environ):
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"SIO Error: {e}")
 
 
 @sio_server.on("disconnect")
@@ -158,58 +174,59 @@ async def chat_message(sid, msg):
     try:
         session = Session(engine)
         logger.info(f"Server received: sid[{sid}] msg: {msg}")
-        # Receive a user chat message from FE and put in chat replies queue
-        conversation_envelope = msg.get("conversation_envelope")
-        async with sio_server.session(sid) as sio_session:
-            user_phone_number = sio_session.get("user_phone_number")
-            client_phone_number = conversation_envelope.get(
-                "client_phone_number"
-            )
-            # check conversation exists with client phone & user phone number
-            queue_message = (
-                check_conversation_exist_and_generate_queue_message(
-                    session=session,
-                    msg=msg,
-                    user_phone_number=user_phone_number,
-                )
-            )
-            if queue_message:
-                logger.info(f"Transform into queue message: {queue_message}")
-                await rabbitmq_client.producer(
-                    body=json.dumps(queue_message),
-                    routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                )
-            else:
-                logger.error(
-                    f"Conversation not exist: user[{user_phone_number}], "
-                    f"client[{client_phone_number}]"
-                )
 
-    except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
+        conversation_envelope = get_value_or_raise_error(
+            msg, "conversation_envelope"
+        )
+        user_phone_number = get_value_or_raise_error(
+            sio_server.session(sid), "user_phone_number"
+        )
+        client_phone_number = get_value_or_raise_error(
+            conversation_envelope, "client_phone_number"
+        )
+
+        queue_message = check_conversation_exist_and_generate_queue_message(
+            session=session,
+            msg=msg,
+            user_phone_number=user_phone_number,
+        )
+
+        if queue_message:
+            logger.info(f"Transform into queue message: {queue_message}")
+            await rabbitmq_client.producer(
+                body=json.dumps(queue_message),
+                routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            )
+        else:
+            logger.error(
+                f"Conversation not exist: user[{user_phone_number}], "
+                f"client[{client_phone_number}]"
+            )
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"Error handling chats event: {e}")
+    finally:
+        session.close()
 
 
 async def user_chats_callback(body: str):
-    # Listen client messages from queue and send to socket io
     try:
         session = Session(engine)
         message = json.loads(body)
+
         handle_incoming_message(session=session, message=message)
-        # format queue message to send into FE
-        conversation_envelope = message.get("conversation_envelope")
-        conversation_envelope.pop("user_phone_number")
-        message.pop("conversation_envelope")
+
+        conversation_envelope = get_value_or_raise_error(
+            message, "conversation_envelope"
+        )
+        conversation_envelope.pop("user_phone_number", None)
+        message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
+
         logger.info(
             f"Send transformed user_chats_callback into socket: {message}"
         )
         await sio_server.emit("chats", message)
-
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON: {e}")
-    except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"Error handling user_chats_callback: {e}")
+    finally:
+        session.close()

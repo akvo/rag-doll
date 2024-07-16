@@ -69,9 +69,9 @@ See also [Running Chroma](https://cookbook.chromadb.dev/running/running-chroma/#
 
 ## RabbitMQ Message Queueing
 
-In order to separate the Slack and WhatsApp bots, we use message queues. This
-allows us to organise and scale workloads, while having each component have only
-a single responsibility.
+In order to communicate between the services we use message queues. This allows
+us to organise and scale workloads, while having each component have only a
+single responsibility.
 
 ### Queue Message Format
 
@@ -103,9 +103,7 @@ platform WhatsApp format... E.164 numbers
 | `RABBITMQ_MANAGEMENT_PORT` | 15672 | The HTTP port for the management web UI of RabbitMQ. |
 
 
-## Backend and Frontend Overview
-
-### Backend (Fast API)
+## Backend (Fast API)
 
 The backend of this project is built using [FastAPI](https://fastapi.tiangolo.com/), a modern and high-performance web framework for building APIs with Python 3.12.3. The backend communicates with a PostgreSQL database to manage and store application data. The PostgreSQL database is initialized with predefined scripts located in the ./postgres/docker-entrypoint-initdb.d directory, ensuring that the database schema and initial data are set up automatically. Additionally, a PgAdmin4 service is provided to offer a user-friendly interface for managing the PostgreSQL database. PgAdmin4 is configured to run on port 5050 and can be accessed using the default credentials specified in the environment variables.
 
@@ -117,7 +115,7 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `MAGIC_LINK_CHAT_TEMPLATE` | _CHANGEME_ | A template for magic link message, e.g. "You can login into APP_NAME by clicking this link: {magic_link}" |
 
 
-#### Twilio
+### Twilio
 
 In the backend, we handle Twilio's send and receive messages through a service called TwilioClient. Currently, we only support WhatsApp text messages.
 
@@ -132,20 +130,25 @@ The TwilioClient connects to the message queue to interact with the rest of the 
 | `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
 
 
-## Slack Bot
+### Slack Channel
 
-The Slack bot is one of the messaging platforms that can be used to chat with Rag Doll. Most of the Slack interface code was taken from [Getting started with Bolt for Python](https://seratch.github.io/bolt-python/tutorial/getting-started).
+Slack is one of the messaging platforms that can be used to chat with Rag Doll.
+Most of the Slack interface code was taken from
+[Getting started with Bolt for Python](https://seratch.github.io/bolt-python/tutorial/getting-started).
 
-The Slack bot listens to incoming messages using a web hook, which is handled nicely by the Bolt framework.
+The Slack client in the backend listens to incoming messages using a web hook,
+which is handled nicely by the Bolt framework.
 
 | `.env` | default | description |
 |---|---|---|
 | `SLACK_BOT_TOKEN` | _CHANGEME_ | The token for your Slack bot. |
 | `SLACK_SIGNING_SECRET` | _CHANGEME_ | The signing secret for your Slack bot. |
 
-When installing the Slack Bot, you can use `backend/slackbot-app-manifest.yml` as a template. Before using it, change the following values:
+When installing the the backend as Slack App, you can use
+`backend/slackbot-app-manifest.yml` as a template. Before using it, change the
+following values:
 
-| `slackbot/app-manifest.ymlbackend/slackbot-app-manifest.yml` | default | description |
+| `backend/slackbot-app-manifest.yml` | default | description |
 |---|---|---|
 | `description` | _CHANGEME_ | A brief description of the purpose of the bot. |
 | `background_color` | _CHANGEME_ | The 6-digit hex colour code for the Slack bot background. |
@@ -154,7 +157,8 @@ When installing the Slack Bot, you can use `backend/slackbot-app-manifest.yml` a
 
 You will also want to upload a nice avatar image to go with your bot.
 
-### Frontend (Next JS)
+
+## Frontend (Next JS)
 
 The frontend of this project is developed using [React with Next.js](https://react.dev/learn/start-a-new-react-project#nextjs-pages-router). In the development environment, the frontend and backend services are configured to facilitate efficient and streamlined development. The frontend, built with React and Next.js, communicates with the backend API using a proxy setup defined in the next.config.js file. This configuration rewrites requests matching the pattern /api/:path* to be forwarded to the backend service at http://backend:5000/api/:path*. This proxy setup simplifies the API call structure during development, allowing developers to interact with the backend as if it were part of the same application.
 
@@ -182,15 +186,18 @@ export default nextConfig;
 ```
 
 In the production environment, the interaction between the frontend and backend is handled differently to optimize performance and security. Instead of using the proxy setup defined in the development configuration, the frontend and backend services communicate through an Nginx server. The Nginx configuration, located in the frontend folder, acts as a reverse proxy, efficiently routing requests from the frontend to the backend.
+ 
 
-## POSTGRESQL
-This project uses PostgreSQL as the backend database for our API.
+## PostgreSQL
+
+This project uses PostgreSQL as the backend database.
 
 | `.env` | default | description |
 |---|---|---|
 | `POSTGRES_PORT` | 5432 | The external port used by the Database |
 | `POSTGRES_PASS` | _CHANGEME_ | The default password for accessing Database |
 | `PGADMIN_PORT` | 5050 | The external port used by pgadmin page |
+
 
 ## Google Cloud Deployment
 

@@ -163,29 +163,39 @@ async def sio_disconnect(sid):
 
 @sio_server.on("chats")
 async def chat_message(sid, msg):
-    logger.info(f"Server received: sid[{sid}] msg: {msg}")
-    # Receive a user chat message from FE and put in chat replies queue
-    conversation_envelope = msg.get("conversation_envelope", {})
-    async with sio_server.session(sid) as sio_session:
-        user_phone_number = sio_session.get("user_phone_number", None)
-        client_phone_number = conversation_envelope.get(
-            "client_phone_number", None
-        )
-        # check conversation exists with client phone & user phone number
-        queue_message = check_conversation_exist_and_generate_queue_message(
-            session=session, msg=msg, user_phone_number=user_phone_number
-        )
-        if queue_message:
-            logger.info(f"Transform into queue message: {queue_message}")
-            await rabbitmq_client.producer(
-                body=json.dumps(queue_message),
-                routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+    try:
+        logger.info(f"Server received: sid[{sid}] msg: {msg}")
+        # Receive a user chat message from FE and put in chat replies queue
+        conversation_envelope = msg.get("conversation_envelope", {})
+        async with sio_server.session(sid) as sio_session:
+            user_phone_number = sio_session.get("user_phone_number", None)
+            client_phone_number = conversation_envelope.get(
+                "client_phone_number", None
             )
-        else:
-            logger.error(
-                f"Conversation not exist: user[{user_phone_number}], "
-                f"client[{client_phone_number}]"
+            # check conversation exists with client phone & user phone number
+            queue_message = (
+                check_conversation_exist_and_generate_queue_message(
+                    session=session,
+                    msg=msg,
+                    user_phone_number=user_phone_number,
+                )
             )
+            if queue_message:
+                logger.info(f"Transform into queue message: {queue_message}")
+                await rabbitmq_client.producer(
+                    body=json.dumps(queue_message),
+                    routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+                )
+            else:
+                logger.error(
+                    f"Conversation not exist: user[{user_phone_number}], "
+                    f"client[{client_phone_number}]"
+                )
+
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
 
 
 async def user_chats_callback(body: str):

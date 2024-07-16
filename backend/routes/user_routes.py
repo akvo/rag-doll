@@ -70,7 +70,6 @@ async def verify_login_code(
         )
     login_token = create_jwt_token(
         {
-            "sub": str(user.login_code),
             "uid": user.id,
             "uphone_number": user.phone_number,
         },

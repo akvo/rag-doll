@@ -1,7 +1,14 @@
 import os
 import logging
 
-from fastapi import APIRouter, Request, HTTPException, Response, status
+from fastapi import (
+    APIRouter,
+    Request,
+    HTTPException,
+    Response,
+    status,
+    Depends,
+)
 from fastapi.security import HTTPBearer
 from pydantic import ValidationError
 from clients.twilio_client import IncomingMessage, TwilioClient
@@ -17,8 +24,20 @@ security = HTTPBearer()
 RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 
 
+def get_rabbitmq_client():
+    return rabbitmq_client
+
+
+def get_twilio_client():
+    return TwilioClient()
+
+
 @router.post("/whatsapp")
-async def receive_whatsapp_message(request: Request):
+async def receive_whatsapp_message(
+    request: Request,
+    rabbitmq_client=Depends(get_rabbitmq_client),
+    twilio_client=Depends(get_twilio_client),
+):
     try:
         form_data = await request.form()
         values = {key: form_data[key] for key in form_data}
@@ -28,8 +47,7 @@ async def receive_whatsapp_message(request: Request):
             Body=values.get("Body"),
             NumMedia=int(values.get("NumMedia", 0)),
         )
-        body = TwilioClient().format_to_queue_message(data.model_dump())
-        # Send incoming whatsapp message to RabbitMQ queue
+        body = twilio_client.format_to_queue_message(data.model_dump())
         await rabbitmq_client.initialize()
         await rabbitmq_client.producer(
             body=body,

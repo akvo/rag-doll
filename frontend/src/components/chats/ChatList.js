@@ -32,7 +32,7 @@ function formatChatTime(timeString) {
     return date.toLocaleTimeString(undefined, {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: false,
+      hour12: true,
       timeZone: browserTimeZone,
     });
   } else if (diffInSeconds < day * 2 && now.getDate() !== date.getDate()) {

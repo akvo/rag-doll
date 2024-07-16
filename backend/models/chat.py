@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, Enum
+from sqlalchemy import Column, DateTime, Enum, func
 from sqlmodel import Field, SQLModel
 from typing import Optional
 
@@ -28,9 +28,10 @@ class Chat_Session(SQLModel, table=True):
     last_read: datetime = Field(
         sa_column=Column(
             DateTime(),
-            server_default="now()",
+            server_default=func.now(),
             nullable=False,
         ),
+        default_factory=lambda: datetime.now(tz),
     )
 
 
@@ -44,9 +45,10 @@ class Chat(SQLModel, table=True):
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(),
-            server_default="now()",
+            server_default=func.now(),
             nullable=False,
-        )
+        ),
+        default_factory=lambda: datetime.now(tz),
     )
 
     def __init__(self, **data):

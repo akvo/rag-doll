@@ -38,7 +38,6 @@ sio_app = socketio.ASGIApp(
 )
 
 cookie = SimpleCookie()
-session = Session(engine)
 
 
 def check_conversation_exist_and_generate_queue_message(
@@ -164,6 +163,7 @@ async def sio_disconnect(sid):
 @sio_server.on("chats")
 async def chat_message(sid, msg):
     try:
+        session = Session(engine)
         logger.info(f"Server received: sid[{sid}] msg: {msg}")
         # Receive a user chat message from FE and put in chat replies queue
         conversation_envelope = msg.get("conversation_envelope", {})
@@ -201,6 +201,7 @@ async def chat_message(sid, msg):
 async def user_chats_callback(body: str):
     # Listen client messages from queue and send to socket io
     try:
+        session = Session(engine)
         message = json.loads(body)
         handle_incoming_message(session=session, message=message)
         # format queue message to send into FE

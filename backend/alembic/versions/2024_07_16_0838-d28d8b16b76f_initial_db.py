@@ -1,8 +1,8 @@
-"""initial db
+"""initial_db
 
-Revision ID: 0f5561eac65a
+Revision ID: d28d8b16b76f
 Revises:
-Create Date: 2024-07-12 08:21:24.996181
+Create Date: 2024-07-16 08:38:38.047362
 
 """
 
@@ -14,7 +14,7 @@ import sqlmodel  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0f5561eac65a"
+revision: str = "d28d8b16b76f"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -45,7 +45,10 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("client_id", sa.Integer(), nullable=False),
         sa.Column(
-            "last_read", sa.DateTime(), server_default="now()", nullable=False
+            "last_read",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.ForeignKeyConstraint(
             ["client_id"],
@@ -100,7 +103,10 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "created_at", sa.DateTime(), server_default="now()", nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.ForeignKeyConstraint(
             ["chat_session_id"],

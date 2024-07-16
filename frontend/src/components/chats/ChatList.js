@@ -9,16 +9,17 @@ import { api } from "@/lib";
 import { deleteCookie } from "@/app/(auth)/verify/[loginId]/util";
 
 function formatChatTime(timeString) {
-  const date = new Date(timeString);
+  const date = new Date(`${timeString}Z`);
   const now = new Date();
 
   const diffInMilliseconds = now.getTime() - date.getTime();
   const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
 
-  // Define thresholds in seconds for different chat time formats
   const minute = 60;
   const hour = minute * 60;
   const day = hour * 24;
+
+  const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   if (diffInSeconds < 5) {
     return "Just now";
@@ -27,23 +28,24 @@ function formatChatTime(timeString) {
   } else if (diffInSeconds < hour) {
     const minutes = Math.floor(diffInSeconds / minute);
     return `${minutes} minutes ago`;
-  } else if (now.getDate() === date.getDate()) {
-    // Show time in HH:mm format if it's today
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
+  } else if (now.toDateString() === date.toDateString()) {
+    return date.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: browserTimeZone,
+    });
   } else if (diffInSeconds < day * 2 && now.getDate() !== date.getDate()) {
     return "Yesterday";
   } else {
-    // Use Intl.DateTimeFormat for localized date format
-    const formatter = new Intl.DateTimeFormat(undefined, {
+    return date.toLocaleString(undefined, {
       month: "short",
       day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: true,
+      timeZone: browserTimeZone,
     });
-    return formatter.format(date);
   }
 }
 

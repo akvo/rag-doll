@@ -132,7 +132,7 @@ async def user_chats_callback(body: str):
         .join(Client)
         .where(Client.phone_number == client_phone_number)
     ).first()
-    conversation_id = prev_conversation_exist.id
+    chat_session_id = prev_conversation_exist.id
 
     if not prev_conversation_exist:
         # create a new conversation and assign into lowest user id
@@ -148,7 +148,7 @@ async def user_chats_callback(body: str):
         db_session.add(new_chat_session)
         db_session.commit()
 
-        conversation_id = new_chat_session.id
+        chat_session_id = new_chat_session.id
         db_session.flush()
     else:
         # update the existing conversation
@@ -159,7 +159,7 @@ async def user_chats_callback(body: str):
 
     # save message body into chat table
     new_chat = Chat(
-        chat_session_id=conversation_id,
+        chat_session_id=chat_session_id,
         message=message_body,
         sender_role=(
             Sender_Role_Enum[sender_role.upper()]
@@ -172,11 +172,8 @@ async def user_chats_callback(body: str):
     db_session.flush()
 
     # format queue message to send into FE
-    for key in [
-        "conversation_id",
-        "user_phone_number",
-    ]:
-        conversation_envelope.pop(key)
+    if "user_phone_number" in conversation_envelope:
+        conversation_envelope.pop("user_phone_number")
     message.pop("conversation_envelope")
     message.update({"conversation_envelope": conversation_envelope})
     logger.info(f"Send transformed user_chats_callback into socket: {message}")

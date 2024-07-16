@@ -119,11 +119,6 @@ def handle_incoming_message(session: Session, message: dict):
         session.flush()
     else:
         chat_session_id = prev_conversation_exist.id
-        # Update the existing conversation
-        prev_conversation_exist.last_read = datetime.now(timezone.utc)
-        session.add(prev_conversation_exist)
-        session.commit()
-        session.refresh(prev_conversation_exist)
 
     # Save message body into chat table
     new_chat = Chat(

@@ -87,7 +87,6 @@ const ChatWindow = () => {
       } else {
         chatBreakdown = {
           message_id: uuidv4(),
-          conversation_id: uuidv4(),
           platform: "WHATSAPP",
         };
       }

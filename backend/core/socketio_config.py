@@ -18,6 +18,7 @@ from models import (
 from core.database import engine
 from sqlmodel import Session, select
 from datetime import datetime, timezone
+from sqlalchemy.exc import SQLAlchemyError
 
 
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +39,51 @@ sio_app = socketio.ASGIApp(
 
 cookie = SimpleCookie()
 db_session = Session(engine)
+
+
+def check_conversation_exist_and_generate_queue_message(
+    msg: dict, user_phone_number: str
+):
+    conversation_envelope = msg.get("conversation_envelope", {})
+    client_phone_number = conversation_envelope.get(
+        "client_phone_number", None
+    )
+    conversation_exist = db_session.exec(
+        select(Chat_Session)
+        .join(User)
+        .join(Client)
+        .where(
+            User.phone_number == user_phone_number,
+            Client.phone_number == client_phone_number,
+        )
+    ).first()
+    if conversation_exist:
+        iso_timestamp = datetime.now(timezone.utc).isoformat()
+        sender_role = conversation_envelope.get("sender_role", None)
+        platform = conversation_envelope.get("platform", None)
+        # format message into queue message
+        queue_message = queue_message_util.create_queue_message(
+            message_id=conversation_envelope.get("message_id"),
+            client_phone_number=client_phone_number,
+            user_phone_number=user_phone_number,
+            sender_role=(
+                Sender_Role_Enum[sender_role.upper()]
+                if sender_role
+                else sender_role
+            ),
+            sender_role_enum=Sender_Role_Enum,
+            platform=(
+                Platform_Enum[platform.upper()] if platform else platform
+            ),
+            platform_enum=Platform_Enum,
+            body=msg.get("body"),
+            media=msg.get("media"),
+            context=msg.get("context"),
+            transformation_log=msg.get("transformation_log"),
+            timestamp=iso_timestamp,
+        )
+        return queue_message
+    return conversation_exist
 
 
 @sio_server.on("connect")
@@ -71,40 +117,10 @@ async def chat_message(sid, msg):
             "client_phone_number", None
         )
         # check conversation exists with client phone & user phone number
-        conversation_exist = db_session.exec(
-            select(Chat_Session)
-            .join(User)
-            .join(Client)
-            .where(
-                User.phone_number == user_phone_number,
-                Client.phone_number == client_phone_number,
-            )
-        ).first()
-        if conversation_exist:
-            iso_timestamp = datetime.now(timezone.utc).isoformat()
-            sender_role = conversation_envelope.get("sender_role", None)
-            platform = conversation_envelope.get("platform", None)
-            # format message into queue message
-            queue_message = queue_message_util.create_queue_message(
-                message_id=conversation_envelope.get("message_id"),
-                client_phone_number=client_phone_number,
-                user_phone_number=user_phone_number,
-                sender_role=(
-                    Sender_Role_Enum[sender_role.upper()]
-                    if sender_role
-                    else sender_role
-                ),
-                sender_role_enum=Sender_Role_Enum,
-                platform=(
-                    Platform_Enum[platform.upper()] if platform else platform
-                ),
-                platform_enum=Platform_Enum,
-                body=msg.get("body"),
-                media=msg.get("media"),
-                context=msg.get("context"),
-                transformation_log=msg.get("transformation_log"),
-                timestamp=iso_timestamp,
-            )
+        queue_message = check_conversation_exist_and_generate_queue_message(
+            msg=msg, user_phone_number=user_phone_number
+        )
+        if queue_message:
             logger.info(f"Transform into queue message: {queue_message}")
             await rabbitmq_client.producer(
                 body=json.dumps(queue_message),
@@ -119,62 +135,76 @@ async def chat_message(sid, msg):
 
 async def user_chats_callback(body: str):
     # Listen client messages from queue and send to socket io
-    message = json.loads(body)
-    conversation_envelope = message.get("conversation_envelope", {})
-    client_phone_number = conversation_envelope.get(
-        "client_phone_number", None
-    )
-    sender_role = conversation_envelope.get("sender_role", None)
-    message_body = message.get("body", None)
-    # check if prev conversation for the incoming message exist
-    prev_conversation_exist = db_session.exec(
-        select(Chat_Session)
-        .join(Client)
-        .where(Client.phone_number == client_phone_number)
-    ).first()
-    chat_session_id = prev_conversation_exist.id
-
-    if not prev_conversation_exist:
-        # create a new conversation and assign into lowest user id
-        user = db_session.exec(select(User).order_by(User.id)).first()
-
-        new_client = Client(client_phone_number=client_phone_number)
-        db_session.add(new_client)
-        db_session.commit()
-
-        new_chat_session = Chat_Session(
-            user_id=user.id, client_id=new_client.id
+    try:
+        message = json.loads(body)
+        conversation_envelope = message.get("conversation_envelope", {})
+        client_phone_number = conversation_envelope.get(
+            "client_phone_number", None
         )
-        db_session.add(new_chat_session)
-        db_session.commit()
+        sender_role = conversation_envelope.get("sender_role", None)
+        message_body = message.get("body", None)
 
-        chat_session_id = new_chat_session.id
+        # Check if prev conversation for the incoming message exists
+        prev_conversation_exist = db_session.exec(
+            select(Chat_Session)
+            .join(Client)
+            .where(Client.phone_number == client_phone_number)
+        ).first()
+
+        if not prev_conversation_exist:
+            # Create a new conversation and assign to the lowest user ID
+            user = db_session.exec(select(User).order_by(User.id)).first()
+            new_client = Client(
+                phone_number=int(
+                    "".join(filter(str.isdigit, client_phone_number))
+                )
+            )
+            db_session.add(new_client)
+            db_session.commit()
+
+            new_chat_session = Chat_Session(
+                user_id=user.id, client_id=new_client.id
+            )
+            db_session.add(new_chat_session)
+            db_session.commit()
+
+            chat_session_id = new_chat_session.id
+            db_session.flush()
+        else:
+            chat_session_id = prev_conversation_exist.id
+            # Update the existing conversation
+            prev_conversation_exist.last_read = datetime.now(timezone.utc)
+            db_session.add(prev_conversation_exist)
+            db_session.commit()
+            db_session.refresh(prev_conversation_exist)
+
+        # Save message body into chat table
+        new_chat = Chat(
+            chat_session_id=chat_session_id,
+            message=message_body,
+            sender_role=(
+                Sender_Role_Enum[sender_role.upper()]
+                if sender_role
+                else sender_role
+            ),
+        )
+        db_session.add(new_chat)
+        db_session.commit()
         db_session.flush()
-    else:
-        # update the existing conversation
-        prev_conversation_exist.last_read = datetime.now(timezone.utc)
-        db_session.add(prev_conversation_exist)
-        db_session.commit()
-        db_session.refresh(prev_conversation_exist)
 
-    # save message body into chat table
-    new_chat = Chat(
-        chat_session_id=chat_session_id,
-        message=message_body,
-        sender_role=(
-            Sender_Role_Enum[sender_role.upper()]
-            if sender_role
-            else sender_role
-        ),
-    )
-    db_session.add(new_chat)
-    db_session.commit()
-    db_session.flush()
+        # format queue message to send into FE
+        if "user_phone_number" in conversation_envelope:
+            conversation_envelope.pop("user_phone_number")
+        message.pop("conversation_envelope")
+        message.update({"conversation_envelope": conversation_envelope})
+        logger.info(
+            f"Send transformed user_chats_callback into socket: {message}"
+        )
+        await sio_server.emit("chats", message)
 
-    # format queue message to send into FE
-    if "user_phone_number" in conversation_envelope:
-        conversation_envelope.pop("user_phone_number")
-    message.pop("conversation_envelope")
-    message.update({"conversation_envelope": conversation_envelope})
-    logger.info(f"Send transformed user_chats_callback into socket: {message}")
-    await sio_server.emit("chats", message)
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON: {e}")
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")

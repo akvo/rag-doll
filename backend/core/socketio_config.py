@@ -43,10 +43,8 @@ cookie = SimpleCookie()
 def check_conversation_exist_and_generate_queue_message(
     session: Session, msg: dict, user_phone_number: str
 ):
-    conversation_envelope = msg.get("conversation_envelope", {})
-    client_phone_number = conversation_envelope.get(
-        "client_phone_number", None
-    )
+    conversation_envelope = msg.get("conversation_envelope")
+    client_phone_number = conversation_envelope.get("client_phone_number")
     conversation_exist = session.exec(
         select(Chat_Session)
         .join(User)
@@ -58,8 +56,8 @@ def check_conversation_exist_and_generate_queue_message(
     ).first()
     if conversation_exist:
         iso_timestamp = datetime.now(timezone.utc).isoformat()
-        sender_role = conversation_envelope.get("sender_role", None)
-        platform = conversation_envelope.get("platform", None)
+        sender_role = conversation_envelope.get("sender_role")
+        platform = conversation_envelope.get("platform")
         # format message into queue message
         queue_message = queue_message_util.create_queue_message(
             message_id=conversation_envelope.get("message_id"),
@@ -86,12 +84,12 @@ def check_conversation_exist_and_generate_queue_message(
 
 
 def handle_incoming_message(session: Session, message: dict):
-    conversation_envelope = message.get("conversation_envelope", {})
+    conversation_envelope = message.get("conversation_envelope")
     client_phone_number = conversation_envelope.get(
         "client_phone_number", None
     )
-    sender_role = conversation_envelope.get("sender_role", None)
-    message_body = message.get("body", None)
+    sender_role = conversation_envelope.get("sender_role")
+    message_body = message.get("body")
 
     # Check if prev conversation for the incoming message exists
     prev_conversation_exist = session.exec(
@@ -140,14 +138,14 @@ async def sio_connect(sid, environ):
     try:
         cookie.load(environ["HTTP_COOKIE"])
         auth_token = cookie["AUTH_TOKEN"].value
-        user_phone_number = verify_jwt_token(auth_token).get(
-            "uphone_number", None
-        )
+        user_phone_number = verify_jwt_token(auth_token).get("uphone_number")
         async with sio_server.session(sid) as sio_session:
             sio_session["user_phone_number"] = user_phone_number
         logger.info(f"User sid[{sid}] connected")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
 
 
 @sio_server.on("disconnect")
@@ -161,11 +159,11 @@ async def chat_message(sid, msg):
         session = Session(engine)
         logger.info(f"Server received: sid[{sid}] msg: {msg}")
         # Receive a user chat message from FE and put in chat replies queue
-        conversation_envelope = msg.get("conversation_envelope", {})
+        conversation_envelope = msg.get("conversation_envelope")
         async with sio_server.session(sid) as sio_session:
-            user_phone_number = sio_session.get("user_phone_number", None)
+            user_phone_number = sio_session.get("user_phone_number")
             client_phone_number = conversation_envelope.get(
-                "client_phone_number", None
+                "client_phone_number"
             )
             # check conversation exists with client phone & user phone number
             queue_message = (
@@ -200,9 +198,8 @@ async def user_chats_callback(body: str):
         message = json.loads(body)
         handle_incoming_message(session=session, message=message)
         # format queue message to send into FE
-        conversation_envelope = message.get("conversation_envelope", {})
-        if "user_phone_number" in conversation_envelope:
-            conversation_envelope.pop("user_phone_number")
+        conversation_envelope = message.get("conversation_envelope")
+        conversation_envelope.pop("user_phone_number")
         message.pop("conversation_envelope")
         message.update({"conversation_envelope": conversation_envelope})
         logger.info(

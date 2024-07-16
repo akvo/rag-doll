@@ -38,17 +38,17 @@ sio_app = socketio.ASGIApp(
 )
 
 cookie = SimpleCookie()
-db_session = Session(engine)
+session = Session(engine)
 
 
 def check_conversation_exist_and_generate_queue_message(
-    msg: dict, user_phone_number: str
+    session: Session, msg: dict, user_phone_number: str
 ):
     conversation_envelope = msg.get("conversation_envelope", {})
     client_phone_number = conversation_envelope.get(
         "client_phone_number", None
     )
-    conversation_exist = db_session.exec(
+    conversation_exist = session.exec(
         select(Chat_Session)
         .join(User)
         .join(Client)
@@ -86,6 +86,61 @@ def check_conversation_exist_and_generate_queue_message(
     return conversation_exist
 
 
+def handle_incoming_message(session: Session, message: dict):
+    conversation_envelope = message.get("conversation_envelope", {})
+    client_phone_number = conversation_envelope.get(
+        "client_phone_number", None
+    )
+    sender_role = conversation_envelope.get("sender_role", None)
+    message_body = message.get("body", None)
+
+    # Check if prev conversation for the incoming message exists
+    prev_conversation_exist = session.exec(
+        select(Chat_Session)
+        .join(Client)
+        .where(Client.phone_number == client_phone_number)
+    ).first()
+
+    if not prev_conversation_exist:
+        # Create a new conversation and assign to the lowest user ID
+        user = session.exec(select(User).order_by(User.id)).first()
+        new_client = Client(
+            phone_number=int("".join(filter(str.isdigit, client_phone_number)))
+        )
+        session.add(new_client)
+        session.commit()
+
+        new_chat_session = Chat_Session(
+            user_id=user.id, client_id=new_client.id
+        )
+        session.add(new_chat_session)
+        session.commit()
+
+        chat_session_id = new_chat_session.id
+        session.flush()
+    else:
+        chat_session_id = prev_conversation_exist.id
+        # Update the existing conversation
+        prev_conversation_exist.last_read = datetime.now(timezone.utc)
+        session.add(prev_conversation_exist)
+        session.commit()
+        session.refresh(prev_conversation_exist)
+
+    # Save message body into chat table
+    new_chat = Chat(
+        chat_session_id=chat_session_id,
+        message=message_body,
+        sender_role=(
+            Sender_Role_Enum[sender_role.upper()]
+            if sender_role
+            else sender_role
+        ),
+    )
+    session.add(new_chat)
+    session.commit()
+    session.flush()
+
+
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
     try:
@@ -94,8 +149,8 @@ async def sio_connect(sid, environ):
         user_phone_number = verify_jwt_token(auth_token).get(
             "uphone_number", None
         )
-        async with sio_server.session(sid) as session:
-            session["user_phone_number"] = user_phone_number
+        async with sio_server.session(sid) as sio_session:
+            sio_session["user_phone_number"] = user_phone_number
         logger.info(f"User sid[{sid}] connected")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
@@ -111,14 +166,14 @@ async def chat_message(sid, msg):
     logger.info(f"Server received: sid[{sid}] msg: {msg}")
     # Receive a user chat message from FE and put in chat replies queue
     conversation_envelope = msg.get("conversation_envelope", {})
-    async with sio_server.session(sid) as session:
-        user_phone_number = session.get("user_phone_number", None)
+    async with sio_server.session(sid) as sio_session:
+        user_phone_number = sio_session.get("user_phone_number", None)
         client_phone_number = conversation_envelope.get(
             "client_phone_number", None
         )
         # check conversation exists with client phone & user phone number
         queue_message = check_conversation_exist_and_generate_queue_message(
-            msg=msg, user_phone_number=user_phone_number
+            session=session, msg=msg, user_phone_number=user_phone_number
         )
         if queue_message:
             logger.info(f"Transform into queue message: {queue_message}")
@@ -137,62 +192,9 @@ async def user_chats_callback(body: str):
     # Listen client messages from queue and send to socket io
     try:
         message = json.loads(body)
-        conversation_envelope = message.get("conversation_envelope", {})
-        client_phone_number = conversation_envelope.get(
-            "client_phone_number", None
-        )
-        sender_role = conversation_envelope.get("sender_role", None)
-        message_body = message.get("body", None)
-
-        # Check if prev conversation for the incoming message exists
-        prev_conversation_exist = db_session.exec(
-            select(Chat_Session)
-            .join(Client)
-            .where(Client.phone_number == client_phone_number)
-        ).first()
-
-        if not prev_conversation_exist:
-            # Create a new conversation and assign to the lowest user ID
-            user = db_session.exec(select(User).order_by(User.id)).first()
-            new_client = Client(
-                phone_number=int(
-                    "".join(filter(str.isdigit, client_phone_number))
-                )
-            )
-            db_session.add(new_client)
-            db_session.commit()
-
-            new_chat_session = Chat_Session(
-                user_id=user.id, client_id=new_client.id
-            )
-            db_session.add(new_chat_session)
-            db_session.commit()
-
-            chat_session_id = new_chat_session.id
-            db_session.flush()
-        else:
-            chat_session_id = prev_conversation_exist.id
-            # Update the existing conversation
-            prev_conversation_exist.last_read = datetime.now(timezone.utc)
-            db_session.add(prev_conversation_exist)
-            db_session.commit()
-            db_session.refresh(prev_conversation_exist)
-
-        # Save message body into chat table
-        new_chat = Chat(
-            chat_session_id=chat_session_id,
-            message=message_body,
-            sender_role=(
-                Sender_Role_Enum[sender_role.upper()]
-                if sender_role
-                else sender_role
-            ),
-        )
-        db_session.add(new_chat)
-        db_session.commit()
-        db_session.flush()
-
+        handle_incoming_message(session=session, message=message)
         # format queue message to send into FE
+        conversation_envelope = message.get("conversation_envelope", {})
         if "user_phone_number" in conversation_envelope:
             conversation_envelope.pop("user_phone_number")
         message.pop("conversation_envelope")

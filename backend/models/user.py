@@ -27,17 +27,12 @@ class User(SQLModel, table=True):
             "id": self.id,
             "phone_number": str(self),
             "name": self.properties.name if self.properties else None,
-            "email": self.properties.email if self.properties else None,
         }
 
 
 class User_Properties(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id", primary_key=True)
     name: str = Field(
-        sa_column=Column(String, unique=True),
-    )
-    # TODO :: Remove email column
-    email: str | None = Field(
         sa_column=Column(String, unique=True),
     )
     user: "User" = Relationship(back_populates="properties")

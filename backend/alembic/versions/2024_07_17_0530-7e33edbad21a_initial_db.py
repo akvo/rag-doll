@@ -1,8 +1,8 @@
 """initial_db
 
-Revision ID: d28d8b16b76f
+Revision ID: 7e33edbad21a
 Revises:
-Create Date: 2024-07-16 08:38:38.047362
+Create Date: 2024-07-17 05:30:38.527065
 
 """
 
@@ -14,7 +14,7 @@ import sqlmodel  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "d28d8b16b76f"
+revision: str = "7e33edbad21a"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -75,13 +75,11 @@ def upgrade() -> None:
         "user_properties",
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=True),
-        sa.Column("email", sa.String(), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.id"],
         ),
         sa.PrimaryKeyConstraint("user_id"),
-        sa.UniqueConstraint("email"),
         sa.UniqueConstraint("name"),
     )
     op.create_table(

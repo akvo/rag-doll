@@ -12,7 +12,6 @@ def test_get_phone_number_in_international_format(session: Session) -> None:
         "id": user.id,
         "phone_number": "+12345678900",
         "name": None,
-        "email": None,
     }
 
     client = session.exec(
@@ -44,7 +43,6 @@ def test_verify_login_link(client: TestClient, session: Session) -> None:
     assert "token" in content
     assert "phone_number" in content
     assert "name" in content
-    assert "email" in content
     response = client.get(f"/verify/{verification_uuid}")
     assert response.status_code == 400
     content = response.json()
@@ -87,7 +85,6 @@ def test_user_set_phone_number_strips_plus_sign(session: Session) -> None:
         "id": user.id,
         "phone_number": "+12345678901",
         "name": None,
-        "email": None,
     }
 
 

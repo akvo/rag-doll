@@ -18,7 +18,7 @@ const VerifyLogin = ({ params }) => {
       const res = await api.get(`verify/${params.loginId}`);
       const resData = await res.json();
       if (resData && resData?.token) {
-        const { token, phone_number, name, email, id: userID } = resData;
+        const { token, phone_number, name, id: userID } = resData;
         setCookie("AUTH_TOKEN", token);
         api.setToken(resData.token);
         setTimeout(() => {
@@ -34,7 +34,6 @@ const VerifyLogin = ({ params }) => {
             payload: {
               id: userID,
               name,
-              email,
               phone_number,
             },
           });

@@ -12,5 +12,5 @@ export const deleteCookie = (name) => {
 
 export const getCookie = (name) => {
   const cookie = cookies().get(name);
-  return cookie.value;
+  return cookie ? cookie.value : null;
 };

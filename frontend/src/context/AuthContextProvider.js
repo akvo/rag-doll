@@ -1,5 +1,9 @@
 "use client";
+
+import { useEffect } from "react";
 import { createContext, useContext, useReducer } from "react";
+import { getCookie } from "@/app/(auth)/verify/[loginId]/util";
+import { api } from "@/lib";
 
 const AuthContext = createContext(null);
 const AuthDispatchContext = createContext(null);
@@ -28,6 +32,16 @@ const authReducer = (state, action) => {
 
 const AuthContextProvider = ({ children }) => {
   const [auth, dispatch] = useReducer(authReducer, initialAuthState);
+
+  useEffect(() => {
+    const setApiToken = async () => {
+      const token = await getCookie("AUTH_TOKEN");
+      if (token) {
+        api.setToken(token);
+      }
+    };
+    setApiToken();
+  }, []);
 
   return (
     <AuthContext.Provider value={auth}>

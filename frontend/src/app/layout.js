@@ -14,13 +14,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="h-full bg-white">
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <AuthContextProvider>
-        <body className={`${inter.className} min-h-full`}>
+      <body className={`${inter.className} min-h-full`}>
+        <AuthContextProvider>
           {/* <Header /> */}
           <main>{children}</main>
           {/* <footer>&nbsp;</footer> */}
-        </body>
-      </AuthContextProvider>
+        </AuthContextProvider>
+      </body>
     </html>
   );
 }

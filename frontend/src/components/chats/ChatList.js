@@ -24,11 +24,12 @@ const ChatList = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleOnClickChat = ({ client_id }) => {
+  const handleOnClickChat = ({ name, phone_number }) => {
     chatDispatch({
       type: "UPDATE",
       payload: {
-        clientId: client_id,
+        clientName: name,
+        clientPhoneNumber: phone_number,
       },
     });
   };
@@ -167,7 +168,7 @@ const ChatList = () => {
                 <div className="flex-1">
                   <div className="flex justify-between">
                     <h3 className="text-lg font-semibold text-gray-800">
-                      Friend {chat_session.client_id}
+                      {chat_session.name || chat_session.phone_number}
                     </h3>
                     <p className="text-xs text-gray-500">
                       {formatChatTime(last_message.created_at)}

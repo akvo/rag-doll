@@ -68,10 +68,7 @@ const ChatWindow = () => {
 
   const handleOnClickBack = () => {
     chatDispatch({
-      type: "UPDATE",
-      payload: {
-        clientId: null,
-      },
+      type: "CLEAR",
     });
   };
 
@@ -176,7 +173,9 @@ const ChatWindow = () => {
         />
 
         <div>
-          <h3 className="text-lg font-semibold">{`Chat ${chatContext?.clientId}`}</h3>
+          <h3 className="text-lg font-semibold">
+            {chatContext.clientName || chatContext.clientPhoneNumber}
+          </h3>
           <p className="text-sm text-gray-600">Online</p>
         </div>
       </div>

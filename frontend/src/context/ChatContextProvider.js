@@ -5,8 +5,8 @@ const ChatContext = createContext(null);
 const ChatDispatchContext = createContext(null);
 
 const initialChatState = {
-  clientId: null,
-  chatList: [],
+  clientName: null,
+  clientPhoneNumber: null,
 };
 
 const chatReducer = (state, action) => {
@@ -16,6 +16,8 @@ const chatReducer = (state, action) => {
         ...state,
         ...action.payload,
       };
+    case "CLEAR":
+      return initialChatState;
     default:
       throw Error(
         `Unknown action: ${action.type}. Remeber action type must be CAPITAL text.`

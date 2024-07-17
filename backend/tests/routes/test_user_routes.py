@@ -20,6 +20,7 @@ def test_get_phone_number_in_international_format(session: Session) -> None:
     assert str(client) == "+6281234567890"
     assert client.serialize() == {
         "id": client.id,
+        "name": None,
         "phone_number": "+6281234567890",
     }
 
@@ -113,6 +114,7 @@ def test_client_set_phone_number_strips_plus_sign(session: Session) -> None:
     assert str(client) == "+12345"
     assert client.serialize() == {
         "id": client.id,
+        "name": None,
         "phone_number": "+12345",
     }
 

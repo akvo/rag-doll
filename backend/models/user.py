@@ -36,6 +36,7 @@ class User_Properties(SQLModel, table=True):
     name: str = Field(
         sa_column=Column(String, unique=True),
     )
+    # TODO :: Remove email column
     email: str | None = Field(
         sa_column=Column(String, unique=True),
     )

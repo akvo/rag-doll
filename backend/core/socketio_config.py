@@ -18,6 +18,7 @@ from core.database import engine
 from sqlmodel import Session, select
 from datetime import datetime, timezone
 from fastapi import HTTPException
+from socketio.exceptions import ConnectionRefusedError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -160,8 +161,10 @@ async def sio_connect(sid, environ):
         logger.info(f"User sid[{sid}] connected")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
+        raise ConnectionRefusedError("Authentication failed")
     except Exception as e:
-        logger.error(f"SIO Error: {e}")
+        logger.error(f"SIO Connection Error: {e}")
+        raise e
 
 
 @sio_server.on("disconnect")
@@ -204,6 +207,7 @@ async def chat_message(sid, msg):
             )
     except Exception as e:
         logger.error(f"Error handling chats event: {e}")
+        raise e
     finally:
         session.close()
 
@@ -228,5 +232,6 @@ async def user_chats_callback(body: str):
         await sio_server.emit("chats", message)
     except Exception as e:
         logger.error(f"Error handling user_chats_callback: {e}")
+        raise e
     finally:
         session.close()

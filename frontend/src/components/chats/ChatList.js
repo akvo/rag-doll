@@ -6,48 +6,8 @@ import { useAuthDispatch } from "@/context/AuthContextProvider";
 import { useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
-import { deleteCookie } from "@/app/(auth)/verify/[loginId]/util";
-
-function formatChatTime(timeString) {
-  const date = new Date(`${timeString}Z`);
-  const now = new Date();
-
-  const diffInMilliseconds = now.getTime() - date.getTime();
-  const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
-
-  const minute = 60;
-  const hour = minute * 60;
-  const day = hour * 24;
-
-  const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  if (diffInSeconds < 5) {
-    return "Just now";
-  } else if (diffInSeconds < minute) {
-    return `${diffInSeconds} seconds ago`;
-  } else if (diffInSeconds < hour) {
-    const minutes = Math.floor(diffInSeconds / minute);
-    return `${minutes} minutes ago`;
-  } else if (now.toDateString() === date.toDateString()) {
-    return date.toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: browserTimeZone,
-    });
-  } else if (diffInSeconds < day * 2 && now.getDate() !== date.getDate()) {
-    return "Yesterday";
-  } else {
-    return date.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: browserTimeZone,
-    });
-  }
-}
+import { deleteCookie } from "@/lib/cookies";
+import { formatChatTime } from "@/utils/formatter";
 
 const ChatList = () => {
   const router = useRouter();

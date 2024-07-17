@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { createContext, useContext, useReducer } from "react";
-import { getCookie } from "@/app/(auth)/verify/[loginId]/util";
 import { api } from "@/lib";
+import { getCookie } from "@/lib/cookies";
 
 const AuthContext = createContext(null);
 const AuthDispatchContext = createContext(null);

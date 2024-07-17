@@ -2,7 +2,7 @@
 import { useUserContext, useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { useAuthDispatch } from "@/context/AuthContextProvider";
-import { deleteCookie } from "../(auth)/verify/[loginId]/util";
+import { deleteCookie } from "@/lib/cookies";
 
 const Settings = () => {
   const user = useUserContext();

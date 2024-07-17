@@ -5,7 +5,7 @@ import { useAuthContext, useAuthDispatch } from "@/context/AuthContextProvider";
 import { useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
-import { setCookie } from "./util";
+import { setCookie } from "@/lib/cookies";
 
 const VerifyLogin = ({ params }) => {
   const route = useRouter();

@@ -19,17 +19,31 @@ def test_get_chats_authenticated(client: TestClient) -> None:
     content = response.json()
     assert "token" in content
     token = content["token"]
+
     response = client.get(
         "/chat-list", headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
     content = response.json()
-    assert len(content) == 1
-    chat_session = content[0].get("chat_session")
+
+    assert "total_chats" in content
+    assert "chats" in content
+    assert "limit" in content
+    assert "offset" in content
+
+    assert content["limit"] == 10
+    assert content["offset"] == 0
+
+    assert isinstance(content["chats"], list)
+    assert len(content["chats"]) >= 1
+
+    chat_session = content["chats"][0].get("chat_session")
     assert chat_session.get("phone_number")
     assert chat_session.get("last_read")
-    last_chat_message = content[0].get("last_message")
-    sender = content[0].get("last_message").get("sender_role")
+
+    last_chat_message = content["chats"][0].get("last_message")
+    assert last_chat_message is not None
+    sender = last_chat_message.get("sender_role")
     assert sender == Sender_Role_Enum.CLIENT.value
     assert (
         last_chat_message.get("message") == "Yes, I need help with something."

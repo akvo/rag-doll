@@ -9,14 +9,18 @@ import { api } from "@/lib";
 import { deleteCookie } from "@/lib/cookies";
 import { formatChatTime } from "@/utils/formatter";
 
+const initialChatItems = { total_chats: 0, chats: [], limit: 10, offset: 0 };
+
 const ChatList = () => {
   const router = useRouter();
   const userDispatch = useUserDispatch();
   const authDispatch = useAuthDispatch();
   const chatDispatch = useChatDispatch();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [chatItems, setChatItems] = useState([]);
-  const [page, setPage] = useState(1);
+  const [chatItems, setChatItems] = useState(initialChatItems);
+  const [offset, setOffset] = useState(0);
+  const limit = 10;
+
   const chatListRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -39,18 +43,26 @@ const ChatList = () => {
   };
 
   const loadMoreChats = () => {
-    setChatItems((prevChats) => [...prevChats]);
-    setPage((prevPage) => prevPage + 1);
+    setOffset((prevOffset) => prevOffset + limit);
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await api.get("chat-list");
-      const resData = await res.json();
+      const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
       if (res.status === 200) {
-        setChatItems(resData);
+        const resData = await res.json();
+        setChatItems((prev) => ({
+          ...prev,
+          chats: [...prev.chats, ...resData.chats].filter(
+            (value, index, self) =>
+              index ===
+              self.findIndex((t) => t.chat_session.id === value.chat_session.id)
+          ),
+          limit: prev.limit,
+          offset: resData.offset,
+        }));
       }
-      if (res.status === 401) {
+      if (res.status === 401 || res.status === 403) {
         userDispatch({
           type: "DELETE",
         });
@@ -60,7 +72,7 @@ const ChatList = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [offset]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -153,9 +165,9 @@ const ChatList = () => {
       <div className="pt-2 pb-20 w-full">
         {/* Chat List */}
         <div className="bg-white overflow-hidden">
-          {chatItems.map(({ chat_session, last_message }) => (
+          {chatItems.chats.map(({ chat_session, last_message }) => (
             <div
-              key={chat_session.id}
+              key={`chat-list-${chat_session.id}`}
               className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
               onClick={() => handleOnClickChat(chat_session)}
             >

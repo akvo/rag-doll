@@ -54,3 +54,36 @@ async def get_chats(
         "limit": limit,
         "offset": offset,
     }
+
+
+@router.get("/chat-details/{client_id}")
+async def get_chat_details_by_client_id(
+    client_id: int,
+    session: Session = Depends(get_session),
+    auth: credentials = Depends(security),
+):
+    user = verify_user(session, auth)
+
+    chat_session = session.exec(
+        select(Chat_Session)
+        .where(Chat_Session.client_id == client_id)
+        .where(Chat_Session.user_id == user.id)
+    ).first()
+
+    if not chat_session:
+        raise HTTPException(
+            status_code=404,
+            detail="No chat session found for this client and user",
+        )
+
+    messages = session.exec(
+        select(Chat)
+        .where(Chat.chat_session_id == chat_session.id)
+        .order_by(Chat.created_at.desc(), Chat.id.desc())
+    ).all()
+
+    return {
+        "client_id": client_id,
+        "chat_session": chat_session.serialize(),
+        "messages": messages,
+    }

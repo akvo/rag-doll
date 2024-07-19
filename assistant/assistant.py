@@ -1,9 +1,9 @@
 import os
 import json
-from time import sleep
-from ollama import Client
+from openai import OpenAI
 import pika
 import logging
+from time import sleep
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,40 +16,32 @@ MSG_CONTENT = "content"
 MSG_RESPONSE = "response"
 MSG_STATUS = "status"
 MSG_SUCCESS = "success"
-OLLAMA_HOST = os.getenv("OLLAMA_HOST")
-OLLAMA_PORT = os.getenv("OLLAMA_PORT")
 
-# --- Ollama section
+# --- LLM section
 
 
 class LLM:
     def __init__(self, chat_model: str):
-        self.llm_client = Client(host=f"http://{OLLAMA_HOST}:{OLLAMA_PORT}")
         self.chat_model = chat_model
-        pull_response = self.llm_client.pull(self.chat_model)
-        if pull_response[MSG_STATUS] != MSG_SUCCESS:
-            raise Exception(
-                f"failed to pull {self.chat_model}: {pull_response}"
-            )
-
+        self.llm_client = OpenAI()
         self.messages = []
         self.append_message(ROLE_SYSTEM, os.getenv("ASSISTANT_ROLE"))
 
     def chat(self, content: str) -> dict:
         self.append_message(ROLE_USER, content)
-        response = self.llm_client.chat(
+        response = self.llm_client.chat.completions.create(
             model=self.chat_model, messages=self.messages
         )
-        message = response[MSG_MESSAGE]
-        self.append_message(message[MSG_ROLE], message[MSG_CONTENT])
-        return response
+        logging.info(f"OPENAI RESPONSE: {response.choices[0].message.content}")
+        message = response.choices[0].message
+        self.append_message(message.role, message.content)
+        return message.content
 
     def append_message(self, role, content):
-        self.messages.append({MSG_ROLE: role, MSG_CONTENT: content})
-        # logging.debug(f"------- {self.messages}")
+        self.messages.append({MSG_ROLE: role, MSG_CONTENT: str(content)})
 
 
-llm = LLM(os.getenv("OLLAMA_CHAT_MODEL"))
+llm = LLM(os.getenv("OPENAI_CHAT_MODEL"))
 
 # --- RabbitMQ Section
 

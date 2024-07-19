@@ -125,21 +125,26 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `WEBDOMAIN` | "http://localhost" | The base URL of the web application |
 | `MAGIC_LINK_CHAT_TEMPLATE` | _CHANGEME_ | A template for magic link message, e.g. "You can login into APP_NAME by clicking this link: {magic_link}" |
 
+### Twilio Channel
 
-### Twilio
+In the backend, we handle Twilio's send and receive messages through a service
+called `TwilioClient`. Currently, we only support WhatsApp text messages.
 
-In the backend, we handle Twilio's send and receive messages through a service called TwilioClient. Currently, we only support WhatsApp text messages.
+When started, `TwilioClient` listens to incoming messages from Twilio using a
+webhook. `TwilioClient` will use the frontend port proxy to point to the Twilio
+callback URL. In Twilio, configure the sandbox webhook URL to be the external
+URL for your `TwilioClient` routes.
 
-When started, TwilioClient listens to incoming messages from Twilio using a webhook. TwilioClient will use the frontend port proxy to point to the Twilio callback URL. In Twilio, configure the Sandbox webhook URL to be the external URL for your TwilioClient routes.
-
-The TwilioClient connects to the message queue to interact with the rest of the system, notably the assistant. Incoming messages are forwarded to the `RABBITMQ_QUEUE_USER_CHATS` queue and replies coming from the `RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
+The `TwilioClient` connects to the message queue to interact with the rest of
+the system, notably the assistant. Incoming messages are forwarded to the
+`RABBITMQ_QUEUE_USER_CHATS` queue and replies coming from the
+`RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
 
 | `.env` | default | description |
 |---|---|---|
 | `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
 | `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
 | `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
-
 
 ### Slack Channel
 

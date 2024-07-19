@@ -1,9 +1,9 @@
 import os
 import json
-from openai import OpenAI
 import pika
 import logging
 from time import sleep
+from openai import OpenAI
 
 logging.basicConfig(level=logging.INFO)
 
@@ -43,8 +43,8 @@ class LLM:
 
 llm = LLM(os.getenv("OPENAI_CHAT_MODEL"))
 
-# --- RabbitMQ Section
 
+# --- RabbitMQ Section
 
 def connect_and_create_queue(queue: str):
     pika_credentials = pika.PlainCredentials(

@@ -14,7 +14,7 @@ pre-trained machine learning models. You'll want to run this on something with a
 decent GPU, or you will find this all to be very slow. Rag Doll is broken up
 into several containers, each with a single responsibility (or as close to that
 as I could get). Containerising makes it easier to upgrade and improve
-individual componetns.
+individual components.
 
 
 ## Assistant
@@ -22,9 +22,21 @@ individual componetns.
 The assistant handles queries to the RAG for us. It awaits messages from the
 user chat queue, queries the knowledge base and builds a prompt for the LLM.
 
+We use [OpenAI](https://platform.openai.com/) as the model run-time. OpenAI
+provides robust capabilities for managing multiple models and handling large
+model files. It simplifies the integration process by managing registrations and
+pulling models as needed.
+
 | `.env` | default | description |
 |---|---|---|
 | `ASSISTANT_ROLE` | _CHANGEME_ | The system prompt to the LLM. Describe the assistant's role here. |
+| `OPENAI_API_KEY` | _CHANGEME_ | The API key for authenticating with OpenAI services. |
+| `OPENAI_CHAT_MODEL` | `gpt-3.5` / `gpt-4` | The LLM model that is used to handle chat messages. Read more about [OpenAI models](https://platform.openai.com/docs/models) |
+
+Note: The __OPENAI_API_KEY__ does not need to be explicitly called in
+[assistant.py](https://github.com/akvo/rag-doll/blob/master/assistant/assistant.py)
+because the openai library automatically reads it from the environment variables
+when `openai.OpenAI()` is instantiated.
 
 
 ## Librarian
@@ -37,19 +49,6 @@ retrieval part of the system.
 |---|---|---|
 | `LIBRARIAN_CORPUS` | _CHANGEME_ | The full path to a gzipped Apache Parquet file with corpus data. |
 | `LIBRARIAN_COLLECTION` | knowledge-base | The name of the ChromaDB collection where the corpus will be stored. |
-
-
-## OpenAI LLM Runtime
-
-We use [OpenAI](https://platform.openai.com/) as the model run-time. OpenAI provides robust capabilities for managing multiple models and handling large model files. It simplifies the integration process by managing registrations and pulling models as needed.
-
-| `.env` | default | description |
-|---|---|---|
-| `OPENAI_API_KEY` | _CHANGEME_ | The API key for authenticating with OpenAI services. |
-| `OPENAI_CHAT_MODEL` | `gpt-3.5` / `gpt-4` | The LLM model that is used to handle chat messages. Read more about [OpenAI models](https://platform.openai.com/docs/models) |
-
-Note: The __OPENAI_API_KEY__ does not need to be explicitly called in [assistant.py](https://github.com/akvo/rag-doll/blob/master/assistant/assistant.py) because the openai library automatically reads it from the environment variables when `openai.OpenAI()` is instantiated.
-
 
 
 ## ChromaDB Vector Database
@@ -144,7 +143,7 @@ The Slack bot listens to incoming messages using a web hook, which is handled ni
 
 When installing the Slack Bot, you can use `backend/slackbot-app-manifest.yml` as a template. Before using it, change the following values:
 
-| `slackbot/app-manifest.ymlbackend/slackbot-app-manifest.yml` | default | description |
+| `backend/slackbot-app-manifest.yml` | default | description |
 |---|---|---|
 | `description` | _CHANGEME_ | A brief description of the purpose of the bot. |
 | `background_color` | _CHANGEME_ | The 6-digit hex colour code for the Slack bot background. |
@@ -182,14 +181,16 @@ export default nextConfig;
 
 In the production environment, the interaction between the frontend and backend is handled differently to optimize performance and security. Instead of using the proxy setup defined in the development configuration, the frontend and backend services communicate through an Nginx server. The Nginx configuration, located in the frontend folder, acts as a reverse proxy, efficiently routing requests from the frontend to the backend.
 
-## POSTGRESQL
-This project uses PostgreSQL as the backend database for our API.
+## PostgreSQL
+
+This project uses PostgreSQL as the backend database.
 
 | `.env` | default | description |
 |---|---|---|
 | `POSTGRES_PORT` | 5432 | The external port used by the Database |
 | `POSTGRES_PASS` | _CHANGEME_ | The default password for accessing Database |
 | `PGADMIN_PORT` | 5050 | The external port used by pgadmin page |
+
 
 ## Google Cloud Deployment
 
@@ -198,33 +199,16 @@ code from this repository. The description assumes you will be deploying to
 Google Cloud, so if you deploy on a different cloud provider you may see things
 that are different.
 
-I deployed Rag Doll on two virtual machines, mostly because I like to keep
-machines as boring and generic as possible. I could not get Ollama to run inside
-a Docker container due to the intricacies of GPU support for Docker containers,
-so that means I have to install it outside Docker (for now). On top of that, I
-would have had to dig into Docker networking. By default you cannot connect to
-the host from inside a Docker container. There are ways, of course, but I chose
-the quicker route. That's why I ended up with one Docker Compose host and one
-Ollama host. You can combine the two if you prefer.
-
 ### Disk Space
 
-There are two things that consume a lot of disk space: cached large language
-model files and cached Docker files. The stock 10GB disks won't be large enough
-for even moderate use of Rag Doll, so you probably want to allocate 100GB
+Cached Docker files and images consume a lot of disk space. The stock 10GB disks
+won't be large enough for Rag Doll, so you probably want to allocate 100GB
 instead. Depending on how you like to organise disks you can get extra attached
 storage or just start with larger root disks.
 
-### Reserved IP Addresses
+### Reserved IP Address
 
-For the most reliable operation, reserve two static IP addresses for Rag Doll;
-an internal IP address for Ollama and an external IP address for the Slack API
-integration. There are other solutions, of course, but this is simple and you
-don't need to edit `.env` each time something has rebooted.
-
-if you choose to run everything on the same machine, you don't need to reserve
-an internal IP address for Ollama, but you still need the external IP address
-for the Slack API integration.
+Reserve a static IP address for the webhook calls from Twilio and Slack.
 
 ### Rag Doll using Docker Compose on a Virtual Machine
 
@@ -233,11 +217,11 @@ The repository contains a template that you can use. It has reasonably sane
 defaults for most variables. All that you have to do is add keys and passwords
 and you should be good to go.
 
-Copy the template to a file named `.env` and edit that file with your favourite
-editor. In the template, search for `CHANGEME` and replace that placeholder with
-your own key or generated password. Please do not reuse passwords from other
-places, but us a password generator. You won't have to type them, so making them
-strong is just as much and as little work as making them weak.
+Copy `env.template` to `.env` and edit that file with your favourite editor. In
+the template, search for `CHANGEME` and replace that placeholder with your own
+key or generated password. Please do not reuse passwords from other places, but
+us a password generator. You won't have to type them, so making them strong is
+just as much and as little work as making them weak.
 
 ```sh
 $ cp env.template .env
@@ -251,55 +235,6 @@ following command:
 ```sh
 $ docker compose up
 ```
-
-### Ollama on a GPU Instance
-
-Even though there is now an official Docker image of Ollama, I still could not
-get it running. so for now we host Ollama on its own virtual machine.
-
-Installing Ollama on a clean GPU instance...
-
-Ideally, this would be running as a single Docker compose cluster. That would be
-the simplest by far. Unfortunately, I've not had the time to dig into running
-Ollama on GPUs inside a Docker container on the Google Cloud. This is not
-trivial, so until I sorted that out I chose to split Ollama out onto its own
-machine. I thought about running it on baremetal alongside the Docker compose
-containers, but then I'd have to wade into Docker's networking weeds. A separate
-machine is just as easy.
-
-So while most of the system can be constructed using a simple `docker compose up`,
-for Ollama there is a separate installation instruction.
-
-On the GPU instance, follow the instructions here: [Running Llama 3 models locally on CPU machines](https://yang3kc.substack.com/p/running-llama-3-models-locally-on). Yes, that reads "CPU" and not "GPU", not sure what that is about.
-
-```sh
-$ find . -name ollama.service
-$ sudo vi ./system/ollama.service
-$ systemctl daemon-reload
-$ sudo systemctl daemon-reload
-$ sudo systemctl restart ollama
-```
-
-https://github.com/ollama/ollama/blob/main/docs/faq.md
-
-Also: `nvtop` is awesome!
-
-### Allocate GPU Instance on Google Cloud
-
-Allocating a GPU instance on the Google Cloud is hard, because everyone us vying
-for the same resources. Most of the time your start request will be denied for
-lack of resources. So here is what I do: open the Google Cloud Shell and
-programmatically try to start the instance. If it fails, wait for a bit and
-try again. It can take well over an hour for you to be able to start it, so
-leave this running and do something else in the mean time.
-
-```sh
-$ until gcloud compute instances start rag-doll-t4 --zone europe-central2-b; do date; echo "waiting..."; sleep 2; done
-```
-
-Replace `rag-doll-t4` with the name and `europe-central2-b` with the zone name
-for your virtual machine.
-
 
 ### Docker Logger Crash Prevention
 

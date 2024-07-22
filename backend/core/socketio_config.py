@@ -42,6 +42,7 @@ cookie = SimpleCookie()
 # In memory cache using dictionary
 # TODO :: maybe we want to use another way?
 user_sid_map: Dict[str, str] = {}
+USER_CACHE_KEY = "USER_"
 
 
 def get_value_or_raise_error(data_dict, key, error_msg=None):
@@ -128,6 +129,7 @@ def handle_incoming_message(session: Session, message: dict):
 
     if not prev_conversation_exist:
         user = session.exec(select(User).order_by(User.id)).first()
+        user_id = user.id
 
         curr_client = session.exec(
             select(Client).where(Client.phone_number == client_phone_number)
@@ -153,6 +155,7 @@ def handle_incoming_message(session: Session, message: dict):
         chat_session_id = new_chat_session.id
         session.flush()
     else:
+        user_id = prev_conversation_exist.user_id
         chat_session_id = prev_conversation_exist.id
 
     new_chat = Chat(
@@ -163,6 +166,7 @@ def handle_incoming_message(session: Session, message: dict):
     session.add(new_chat)
     session.commit()
     session.flush()
+    return user_id
 
 
 @sio_server.on("connect")
@@ -170,11 +174,13 @@ async def sio_connect(sid, environ):
     try:
         cookie.load(environ["HTTP_COOKIE"])
         auth_token = cookie["AUTH_TOKEN"].value
-        user_phone_number = verify_jwt_token(auth_token).get("uphone_number")
+        decoded_token = verify_jwt_token(auth_token)
+        user_phone_number = decoded_token.get("uphone_number")
+        user_id = decoded_token.get("uid")
         async with sio_server.session(sid) as sio_session:
             sio_session["user_phone_number"] = user_phone_number
-            user_sid_map[user_phone_number] = sid
-        logger.info(f"User sid[{sid}] connected")
+            user_sid_map[f"{USER_CACHE_KEY}{user_id}"] = sid
+        logger.info(f"User sid[{sid}] connected: {user_sid_map}")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
         raise ConnectionRefusedError("Authentication failed")
@@ -201,30 +207,34 @@ async def chat_message(sid, msg):
         conversation_envelope = get_value_or_raise_error(
             msg, "conversation_envelope"
         )
-        user_phone_number = get_value_or_raise_error(
-            sio_server.session(sid), "user_phone_number"
-        )
         client_phone_number = get_value_or_raise_error(
             conversation_envelope, "client_phone_number"
         )
 
-        queue_message = check_conversation_exist_and_generate_queue_message(
-            session=session,
-            msg=msg,
-            user_phone_number=user_phone_number,
-        )
+        async with sio_server.session(sid) as sio_session:
+            user_phone_number = get_value_or_raise_error(
+                sio_session, "user_phone_number"
+            )
 
-        if queue_message:
-            logger.info(f"Transform into queue message: {queue_message}")
-            await rabbitmq_client.producer(
-                body=json.dumps(queue_message),
-                routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            queue_message = (
+                check_conversation_exist_and_generate_queue_message(
+                    session=session,
+                    msg=msg,
+                    user_phone_number=user_phone_number,
+                )
             )
-        else:
-            logger.error(
-                f"Conversation not exist: user[{user_phone_number}], "
-                f"client[{client_phone_number}]"
-            )
+
+            if queue_message:
+                logger.info(f"Transform into queue message: {queue_message}")
+                await rabbitmq_client.producer(
+                    body=json.dumps(queue_message),
+                    routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+                )
+            else:
+                logger.error(
+                    f"Conversation not exist: user[{user_phone_number}], "
+                    f"client[{client_phone_number}]"
+                )
     except Exception as e:
         logger.error(f"Error handling chats event: {e}")
         raise e
@@ -237,20 +247,20 @@ async def user_chats_callback(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        handle_incoming_message(session=session, message=message)
+        user_id = handle_incoming_message(session=session, message=message)
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
-        user_phone_number = conversation_envelope.get("user_phone_number")
         conversation_envelope.pop("user_phone_number", None)
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = user_sid_map.get(user_phone_number)
+        user_sid = user_sid_map.get(f"{USER_CACHE_KEY}{user_id}")
 
         logger.info(
-            f"Send transformed user_chats_callback to {user_sid}: {message}"
+            f"Send user_chats_callback to {USER_CACHE_KEY}{user_id} "
+            f"{user_sid}: {message}"
         )
 
         await sio_server.emit("chats", message, to=user_sid)

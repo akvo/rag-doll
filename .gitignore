@@ -8,3 +8,4 @@
 *.coverage.*
 **/setup.cfg
 *.bak
+*/temp_data

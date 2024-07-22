@@ -71,7 +71,6 @@ async def receive_whatsapp_message(
         )
 
     except Exception as e:
-        print(f"[xxxx] {e}")
         logger.error(f"Error receiving Whatsapp message: {values}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

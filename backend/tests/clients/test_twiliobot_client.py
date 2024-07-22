@@ -51,6 +51,7 @@ def test_format_to_queue_message_valid(twilio_client):
         "Body": "Test message",
         "NumMedia": 1,
         "MediaUrl0": "http://example.com/image.jpg",
+        "MediaContentType0": "audio/ogg",
     }
     formatted_message = twilio_client.format_to_queue_message(values)
     assert isinstance(formatted_message, str)
@@ -68,7 +69,12 @@ def test_format_to_queue_message_valid(twilio_client):
         },
         "body": "Test message",
         "media": ["http://example.com/image.jpg"],
-        "context": [],
+        "context": [
+            {
+                "file": "http://example.com/image.jpg",
+                "type": "audio/ogg",
+            },
+        ],
         "transformation_log": ["Test message"],
     }
 

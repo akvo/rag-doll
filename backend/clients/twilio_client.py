@@ -3,6 +3,8 @@ import json
 import logging
 import time
 import phonenumbers
+import requests
+import urllib.request
 
 from datetime import datetime, timezone
 from json.decoder import JSONDecodeError
@@ -13,6 +15,8 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 from Akvo_rabbitmq_client import queue_message_util
 from models.chat import Sender_Role_Enum, Platform_Enum
 from typing import Optional
+from pydub import AudioSegment
+from base64 import b64encode
 
 
 logging.basicConfig(level=logging.INFO)
@@ -108,6 +112,7 @@ class TwilioClient:
             raise ValidationError(f"Phone number validation error: {e}")
 
     def format_to_queue_message(self, values: dict) -> str:
+        logger.info(f"[ABC] {values}")
         try:
             iso_timestamp = datetime.now(timezone.utc).isoformat()
             # Validate and format the phone number
@@ -117,11 +122,20 @@ class TwilioClient:
             )
             # Add media files if present
             media = []
+            context = []
             num_media = values.get("NumMedia", 0)
             for i in range(num_media):
                 media_url = values.get(f"MediaUrl{i}", "")
+                media_type = values.get(f"MediaContentType{i}")
                 if media_url:
                     media.append(media_url)
+                    context.append({"file": media_url, "type": media_type})
+                if media_url and media_type == "audio/ogg":
+                    mp3_file_path = self.ogg2mp3(
+                        audio_url=media_url, message_sid=values["MessageSid"]
+                    )
+                    logger.info(f"Audio converted {mp3_file_path}")
+
             queue_message = queue_message_util.create_queue_message(
                 message_id=values["MessageSid"],
                 client_phone_number=formatted_phone,
@@ -131,9 +145,31 @@ class TwilioClient:
                 platform_enum=Platform_Enum,
                 body=values["Body"],
                 media=media,
+                context=context,
                 timestamp=iso_timestamp,
             )
             return json.dumps(queue_message)
         except ValueError as e:
             logger.error(f"Error formatting message: {e}")
             raise ValueError(f"Error formatting message: {e}")
+
+    def ogg2mp3(self, audio_url: str, message_sid: str):
+        try:
+            # create authentication token
+            auth_str = f"{self.TWILIO_ACCOUNT_SID}:{self.TWILIO_AUTH_TOKEN}"
+            auth_bytes = auth_str.encode("utf-8")
+            auth_b64 = b64encode(auth_bytes).decode("utf-8")
+            headers = {"Authorization": "Basic " + auth_b64}
+            # download and convert the audio file
+            response = requests.get(url=audio_url, headers=headers)
+            url = response.url
+            if not os.path.exists("temp_data"):
+                os.makedirs("temp_data")
+            # TODO :: continue here
+            # last time get error [Errno 2] No such file or directory: 'ffprobe'
+            urllib.request.urlretrieve(url, "temp_data/audio.ogg")
+            audio_file = AudioSegment.from_ogg("temp_data/audio.ogg")
+            audio_file.export("temp_data/audio.mp3", format="mp3")
+            return os.path.join(os.getcwd(), "temp_data/audio.mp3")
+        except Exception as e:
+            logger.error(f"Error downloading audio file: {e}")

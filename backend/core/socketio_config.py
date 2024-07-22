@@ -123,11 +123,21 @@ def handle_incoming_message(session: Session, message: dict):
 
     if not prev_conversation_exist:
         user = session.exec(select(User).order_by(User.id)).first()
-        new_client = Client(
-            phone_number=int("".join(filter(str.isdigit, client_phone_number)))
-        )
-        session.add(new_client)
-        session.commit()
+
+        curr_client = session.exec(
+            select(Client).where(Client.phone_number == client_phone_number)
+        ).first()
+
+        if curr_client:
+            new_client = curr_client
+        else:
+            new_client = Client(
+                phone_number=int(
+                    "".join(filter(str.isdigit, client_phone_number))
+                )
+            )
+            session.add(new_client)
+            session.commit()
 
         new_chat_session = Chat_Session(
             user_id=user.id, client_id=new_client.id

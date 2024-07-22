@@ -24,6 +24,20 @@ def test_receive_whatsapp_message(run_app, client: TestClient) -> None:
     assert response.status_code == 204
 
 
+def test_receive_whatsapp_message_with_num_media(
+    run_app, client: TestClient
+) -> None:
+    form_data = {
+        "MessageSid": "test_sid",
+        "From": "whatsapp:+6281234567890",
+        "Body": "Test message",
+        "NumMedia": 1,
+        "MediaUrl0": "https://example_media.com",
+    }
+    response = client.post("/whatsapp", data=form_data)
+    assert response.status_code == 204
+
+
 def test_receive_whatsapp_message_format_error(client: TestClient) -> None:
     form_data = {
         "sid": "test_sid",

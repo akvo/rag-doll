@@ -47,7 +47,8 @@ async def receive_whatsapp_message(
             Body=values.get("Body"),
             NumMedia=int(values.get("NumMedia", 0)),
         )
-        body = twilio_client.format_to_queue_message(data.model_dump())
+        values.update(data.model_dump())
+        body = twilio_client.format_to_queue_message(values)
         await rabbitmq_client.initialize()
         await rabbitmq_client.producer(
             body=body,
@@ -70,6 +71,7 @@ async def receive_whatsapp_message(
         )
 
     except Exception as e:
+        print(f"[xxxx] {e}")
         logger.error(f"Error receiving Whatsapp message: {values}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

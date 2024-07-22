@@ -12,6 +12,7 @@ from pydantic import BaseModel, ValidationError
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from Akvo_rabbitmq_client import queue_message_util
 from models.chat import Sender_Role_Enum, Platform_Enum
+from typing import Optional
 
 
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +25,7 @@ class IncomingMessage(BaseModel):
     MessageSid: str
     From: str
     Body: str
-    NumMedia: int
+    NumMedia: Optional[int]
 
 
 class PhoneValidationModel(BaseModel):

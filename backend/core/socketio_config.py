@@ -19,6 +19,7 @@ from sqlmodel import Session, select
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
+from typing import Dict
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,6 +38,10 @@ sio_app = socketio.ASGIApp(
 )
 
 cookie = SimpleCookie()
+
+# In memory cache using dictionary
+# TODO :: maybe we want to use another way?
+user_sid_map: Dict[str, str] = {}
 
 
 def get_value_or_raise_error(data_dict, key, error_msg=None):
@@ -168,6 +173,7 @@ async def sio_connect(sid, environ):
         user_phone_number = verify_jwt_token(auth_token).get("uphone_number")
         async with sio_server.session(sid) as sio_session:
             sio_session["user_phone_number"] = user_phone_number
+            user_sid_map[user_phone_number] = sid
         logger.info(f"User sid[{sid}] connected")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
@@ -179,6 +185,10 @@ async def sio_connect(sid, environ):
 
 @sio_server.on("disconnect")
 async def sio_disconnect(sid):
+    async with sio_server.session(sid) as sio_session:
+        user_phone_number = sio_session["user_phone_number"]
+        if user_phone_number in user_sid_map:
+            del user_sid_map[user_phone_number]
     logger.info(f"User sid[{sid}] disconnected")
 
 
@@ -232,14 +242,18 @@ async def user_chats_callback(body: str):
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
+        user_phone_number = conversation_envelope.get("user_phone_number")
         conversation_envelope.pop("user_phone_number", None)
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
+        user_sid = user_sid_map.get(user_phone_number)
+
         logger.info(
-            f"Send transformed user_chats_callback into socket: {message}"
+            f"Send transformed user_chats_callback to {user_sid}: {message}"
         )
-        await sio_server.emit("chats", message)
+
+        await sio_server.emit("chats", message, to=user_sid)
     except Exception as e:
         logger.error(f"Error handling user_chats_callback: {e}")
         raise e

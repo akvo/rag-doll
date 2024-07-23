@@ -1,12 +1,15 @@
 import os
 import json
-import pika
+import asyncio
 import logging
 import chromadb
 from time import sleep
 from openai import OpenAI
+from Akvo_rabbitmq_client import rabbitmq_client
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 ROLE_USER = "user"
 ROLE_SYSTEM = "system"
@@ -41,11 +44,12 @@ def connect_to_chromadb() -> chromadb.Collection:
         except Exception as e:
             logger.warn(f"unable to connect to http://{CHROMADB_HOST}:{CHROMADB_PORT}, retrying...: {type(e)}: {e}")
             chromadb_client = None
-            time.sleep(1)
+            sleep(1)
 
 
 def query_collection(collection: chromadb.Collection, prompt: str) -> str:
-    # Assuming we query by text for simplicity
+    logger.info(f"    -> will query: {collection} for {prompt}")
+
     query_result = collection.query(
         query_texts=[prompt],
         n_results=5,
@@ -69,7 +73,7 @@ class LLM:
         response = self.llm_client.chat.completions.create(
             model=self.chat_model, messages=self.messages
         )
-        logging.info(f"OPENAI RESPONSE: {response.choices[0].message.content}")
+        logger.info(f"OPENAI RESPONSE: {response}")
         message = response.choices[0].message
         self.append_message(message.role, message.content)
         return message.content
@@ -83,28 +87,8 @@ llm = LLM(os.getenv("OPENAI_CHAT_MODEL"))
 
 # --- RabbitMQ Section
 
-def connect_and_create_queue(queue: str):
-    pika_credentials = pika.PlainCredentials(
-        os.getenv("RABBITMQ_USER"), os.getenv("RABBITMQ_PASS")
-    )
-    pika_parameters = pika.ConnectionParameters(
-        os.getenv("RABBITMQ_HOST"),
-        int(os.getenv("RABBITMQ_PORT")),
-        "/",
-        pika_credentials,
-    )
-    pika_connection = pika.BlockingConnection(pika_parameters)
-    q = pika_connection.channel()
-    q.queue_declare(queue=queue)
-    return q
-
-
 RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-user_chat_queue = connect_and_create_queue(RABBITMQ_QUEUE_USER_CHATS)
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
-user_chat_reply_queue = connect_and_create_queue(
-    RABBITMQ_QUEUE_USER_CHAT_REPLIES
-)
 
 
 def queue_message_and_llm_response_to_reply(
@@ -135,7 +119,7 @@ def publish_reliably(queue_message: str) -> None:
             )
             return
         except Exception as e:
-            logging.warning(f"{type(e)}: {e}")
+            logger.warning(f"{type(e)}: {e}")
 
         sleep(5)
         user_chat_reply_queue = connect_and_create_queue(
@@ -143,38 +127,39 @@ def publish_reliably(queue_message: str) -> None:
         )
 
 
-def on_message(ch, method, properties, body) -> None:
-    logging.info(
-        f"Message received: ch: {ch}, method: {method}, properties: {properties}, body: {body}"
-    )
-    queue_message = json.loads(body.decode("utf8"))
+async def on_message(body: str) -> None:
+    from_client = json.loads(body)
+    logger.info(f"    -> parsed JSON: {from_client}")
 
-    collection_query_result = query_collection(queue_message["text"])
-    logging.info(f"Collection query result: {collection_query_result}")
+    collection_query_result = query_collection(chromadb_collection, from_client["body"])
+    logger.info(f"Collection query result: {collection_query_result}")
 
-    prompt = f"{queue_message["text"]}. In your answer, use the following information if it is related: {collection_query_result}"
+    prompt = f"{from_client["body"]}. In your answer, use the following information if it is related: {collection_query_result}"
 
     llm_response = llm.chat(prompt)
-    logging.info(f"LLM replied: {llm_response}")
+    logger.info(f"LLM replied: {llm_response}")
 
     publish_reliably(
-        queue_message_and_llm_response_to_reply(queue_message, llm_response)
+        queue_message_and_llm_response_to_reply(from_client, llm_response)
     )
 
 
-while True:
+async def main():
+    await rabbitmq_client.initialize()
+    
+    await rabbitmq_client.consume(
+        queue_name=RABBITMQ_QUEUE_USER_CHATS,
+        routing_key=RABBITMQ_QUEUE_USER_CHATS,
+        callback=on_message,
+    )
+    
     try:
-        user_chat_queue.basic_consume(
-            queue=RABBITMQ_QUEUE_USER_CHATS,
-            auto_ack=True,
-            on_message_callback=on_message,
-        )
-        user_chat_queue.start_consuming()
-    except Exception as e:
-        logging.warning(
-            "reconnecting {}: {}: {}".format(
-                RABBITMQ_QUEUE_USER_CHATS, type(e), e
-            )
-        )
-        sleep(5)
-        user_chat_queue = connect_and_create_queue(RABBITMQ_QUEUE_USER_CHATS)
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Shutting down...")
+        await rabbitmq_client.disconnect()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+

@@ -2,6 +2,7 @@ import os
 import io
 import time
 import nltk
+import logging
 import requests
 import chromadb
 import pandas as pd
@@ -9,7 +10,6 @@ from lxml import html
 from lxml.html import HtmlElement
 from nltk.tokenize import sent_tokenize
 
-import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

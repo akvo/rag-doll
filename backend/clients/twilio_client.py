@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 MAX_WHATSAPP_MESSAGE_LENGTH = 1500
+STORAGE = "./storage"
 
 
 class IncomingMessage(BaseModel):
@@ -155,21 +156,26 @@ class TwilioClient:
 
     def ogg2mp3(self, audio_url: str, message_sid: str):
         try:
+            filepath = f"{STORAGE}/audio"
             # create authentication token
             auth_str = f"{self.TWILIO_ACCOUNT_SID}:{self.TWILIO_AUTH_TOKEN}"
             auth_bytes = auth_str.encode("utf-8")
             auth_b64 = b64encode(auth_bytes).decode("utf-8")
             headers = {"Authorization": "Basic " + auth_b64}
+
             # download and convert the audio file
             response = requests.get(url=audio_url, headers=headers)
             url = response.url
-            if not os.path.exists("temp_data"):
-                os.makedirs("temp_data")
-            # TODO :: continue here
-            # last time get error [Errno 2] No such file or directory: 'ffprobe'
-            urllib.request.urlretrieve(url, "temp_data/audio.ogg")
-            audio_file = AudioSegment.from_ogg("temp_data/audio.ogg")
-            audio_file.export("temp_data/audio.mp3", format="mp3")
-            return os.path.join(os.getcwd(), "temp_data/audio.mp3")
+            if not os.path.exists(filepath):
+                os.makedirs(filepath)
+
+            audio_filepath = f"{filepath}/{message_sid}.ogg"
+            urllib.request.urlretrieve(url, audio_filepath)
+            audio_file = AudioSegment.from_ogg(audio_filepath)
+
+            mp3_filepath = f"{filepath}/{message_sid}.mp3"
+            audio_file.export(mp3_filepath, format="mp3")
+
+            return os.path.join(os.getcwd(), mp3_filepath)
         except Exception as e:
             logger.error(f"Error downloading audio file: {e}")

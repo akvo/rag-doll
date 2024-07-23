@@ -95,7 +95,8 @@ const ChatWindow = () => {
       }
       const chatPayload = generateMessage({
         ...chatBreakdown,
-        sender_role: "user",
+        client_phone_number: clientPhoneNumber,
+        sender_role: SenderRoleEnum.USER,
         body: message,
         transformation_log: null,
       });

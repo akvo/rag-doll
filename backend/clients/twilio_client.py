@@ -72,6 +72,7 @@ def save_chat_history(
         session.add(new_chat)
         session.commit()
         session.flush()
+        return new_chat.id
     except Exception as e:
         logger.error(f"Save chat history failed: {e}")
         raise e

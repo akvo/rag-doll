@@ -45,10 +45,8 @@ def test_get_chats_authenticated(client: TestClient) -> None:
     last_chat_message = content["chats"][0].get("last_message")
     assert last_chat_message is not None
     sender = last_chat_message.get("sender_role")
-    assert sender == Sender_Role_Enum.CLIENT.value
-    assert (
-        last_chat_message.get("message") == "Yes, I need help with something."
-    )
+    assert sender == Sender_Role_Enum.USER.value
+    assert last_chat_message.get("message") == "Saved message"
 
 
 def test_get_chat_details_by_client_id(

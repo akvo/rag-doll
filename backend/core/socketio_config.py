@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
 from typing import Dict
+from utils.util import get_value_or_raise_error
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,16 +44,6 @@ cookie = SimpleCookie()
 # TODO :: maybe we want to use another way?
 user_sid_map: Dict[str, str] = {}
 USER_CACHE_KEY = "USER_"
-
-
-def get_value_or_raise_error(data_dict, key, error_msg=None):
-    try:
-        value = data_dict[key]
-    except KeyError:
-        if error_msg is None:
-            error_msg = f"Key '{key}' not found in message"
-        raise KeyError(error_msg)
-    return value
 
 
 def check_conversation_exist_and_generate_queue_message(

@@ -2,6 +2,7 @@ import os
 import json
 import pika
 import logging
+import chromadb
 from time import sleep
 from openai import OpenAI
 
@@ -17,8 +18,44 @@ MSG_RESPONSE = "response"
 MSG_STATUS = "status"
 MSG_SUCCESS = "success"
 
-# --- LLM section
 
+# ChromaDB section
+
+CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
+CHROMADB_PORT: int = os.getenv('CHROMADB_PORT')
+CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
+
+def connect_to_chromadb() -> chromadb.Collection:
+    '''
+        Connect to ChromaDB. The ChromaDB service takes a second or so to start,
+        so we have a crude retry loop. Once connected. we clear the collection
+        and recreate it. This ensures the collection is always completely up to
+        date.
+    '''
+    chromadb_client = None
+    while chromadb_client == None:
+        try:
+            logger.info(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}/{CHROMADB_COLLECTION}...")
+            chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT, settings=chromadb.Settings(anonymized_telemetry=False))
+            return chromadb_client.get_collection(name=CHROMADB_COLLECTION)
+        except Exception as e:
+            logger.warn(f"unable to connect to http://{CHROMADB_HOST}:{CHROMADB_PORT}, retrying...: {type(e)}: {e}")
+            chromadb_client = None
+            time.sleep(1)
+
+
+def query_collection(collection: chromadb.Collection, prompt: str) -> str:
+    # Assuming we query by text for simplicity
+    query_result = collection.query(
+        query_texts=[prompt],
+        n_results=5,
+        include=["documents"]
+    )
+    return json.dumps(query_result["documents"])
+
+chromadb_collection: chromadb.Collection = connect_to_chromadb()
+
+# --- LLM section
 
 class LLM:
     def __init__(self, chat_model: str):
@@ -108,13 +145,16 @@ def publish_reliably(queue_message: str) -> None:
 
 def on_message(ch, method, properties, body) -> None:
     logging.info(
-        "Message received: ch: {}, method: {}, properties: {}, body: {}".format(
-            ch, method, properties, body
-        )
+        f"Message received: ch: {ch}, method: {method}, properties: {properties}, body: {body}"
     )
     queue_message = json.loads(body.decode("utf8"))
 
-    llm_response = llm.chat(queue_message["text"])
+    collection_query_result = query_collection(queue_message["text"])
+    logging.info(f"Collection query result: {collection_query_result}")
+
+    prompt = f"{queue_message["text"]}. In your answer, use the following information if it is related: {collection_query_result}"
+
+    llm_response = llm.chat(prompt)
     logging.info(f"LLM replied: {llm_response}")
 
     publish_reliably(

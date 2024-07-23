@@ -11,8 +11,12 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL}
+      CHROMADB_HOST: ${CHROMADB_HOST}
+      CHROMADB_PORT: ${CHROMADB_PORT}
+      CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
     depends_on:
       - rabbitmq
+      - chromadb
 
   eppo-librarian:
     build: eppo-librarian

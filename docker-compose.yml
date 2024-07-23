@@ -18,8 +18,12 @@ services:
       ASSISTANT_ROLE: ${ASSISTANT_ROLE}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL}
+      CHROMADB_HOST: ${CHROMADB_HOST}
+      CHROMADB_PORT: ${CHROMADB_PORT}
+      CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
     depends_on:
       - rabbitmq
+      - chromadb
     command: ["./run.sh"]
     volumes:
       - ./assistant:/app:delegated

@@ -9,7 +9,7 @@ from pydantic import BaseModel, ValidationError
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
 
-faker = Faker(['en_US'])
+faker = Faker(["en_US"])
 
 
 class UserCreateModel(BaseModel):
@@ -20,14 +20,12 @@ def seed_users(session: Session, count: int):
     try:
         for _ in range(count):
             phone_number = faker.phone_number()
-            phone_number = re.sub(r'\D', '', phone_number)
+            phone_number = re.sub(r"\D", "", phone_number)
             phone_number = f"+{phone_number}"
             try:
                 user = User(
                     phone_number=int(
-                        "".join(
-                            filter(str.isdigit, phone_number)
-                        )
+                        "".join(filter(str.isdigit, phone_number))
                     ),
                     login_code=None,
                 )
@@ -37,13 +35,12 @@ def seed_users(session: Session, count: int):
 
                 # User Properties
                 name = faker.name()
-                email = faker.email()
-                user_properties = User_Properties(
-                    user_id=user.id, name=name, email=email
-                )
+                user_properties = User_Properties(user_id=user.id, name=name)
                 session.add(user_properties)
                 session.commit()
-                print(f"Seeded user {user.id} with phone number {phone_number}")
+                print(
+                    f"Seeded user {user.id} with phone number {phone_number}"
+                )
             except ValidationError as e:
                 print(f"Validation error for phone number {phone_number}: {e}")
     finally:
@@ -58,7 +55,8 @@ def interactive_seeder(session: Session):
             validated_data = UserCreateModel(phone_number=phone_number)
             user = User(
                 phone_number=int(
-                    "".join(filter(str.isdigit, validated_data.phone_number))),
+                    "".join(filter(str.isdigit, validated_data.phone_number))
+                ),
                 login_code=None,
             )
             session.add(user)
@@ -66,10 +64,7 @@ def interactive_seeder(session: Session):
 
             if input("Does the user have properties? (y/n): ").lower() == "y":
                 name = input("Enter name: ")
-                email = input("Enter email: ")
-                user_properties = User_Properties(
-                    user_id=user.id, name=name, email=email
-                )
+                user_properties = User_Properties(user_id=user.id, name=name)
                 session.add(user_properties)
 
             session.commit()

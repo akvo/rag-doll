@@ -75,7 +75,6 @@ ORDER  BY ordinal_position;
 |-------------+-------------------+-------------|
 | user_id     | integer           | NO          |
 | name        | character varying | YES         |
-| email       | character varying | YES         |
 
 #+name Client
 #+begin_src sql

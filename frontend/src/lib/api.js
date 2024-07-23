@@ -36,14 +36,14 @@ const API = () => {
         ...config,
       }),
     patch: (url, data, config) =>
-      axios(`${baseURL}${url}`, {
+      fetch(`${baseURL}${url}`, {
         method: "PATCH",
         body: data,
         ...getConfig(),
         ...config,
       }),
     delete: (url) =>
-      axios(`${baseURL}${url}`, { method: "DELETE", ...getConfig() }),
+      fetch(`${baseURL}${url}`, { method: "DELETE", ...getConfig() }),
     setToken: (token) => {
       api.token = token;
     },

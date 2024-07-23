@@ -20,3 +20,6 @@ pytest-asyncio==0.23.7
 aiohttp==3.9.5
 slack_bolt==1.19.1
 slack_sdk==3.30.0
+pytest-aiohttp==1.0.5
+pydub==0.25.1
+SpeechRecognition==3.10.4

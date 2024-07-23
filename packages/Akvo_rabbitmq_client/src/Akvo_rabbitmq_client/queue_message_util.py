@@ -7,7 +7,6 @@ class QueueMessageUtil:
     @staticmethod
     def create_queue_message(
         message_id: str,
-        conversation_id: str,
         sender_role: str,
         sender_role_enum: Type[Enum],
         platform: str,
@@ -39,7 +38,6 @@ class QueueMessageUtil:
         message = {
             "conversation_envelope": {
                 "message_id": message_id,
-                "conversation_id": conversation_id,
                 "client_phone_number": client_phone_number,
                 "user_phone_number": user_phone_number,
                 "sender_role": sender_role.value,

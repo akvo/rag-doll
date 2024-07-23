@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useChatContext } from "@/context/ChatContextProvider";
 import { ChatWindow, ChatList } from "@/components";
 import { socket } from "@/lib";
 
 const Chats = () => {
-  const { clientId } = useChatContext();
+  const { clientPhoneNumber } = useChatContext();
 
   useEffect(() => {
     socket.connect();
@@ -28,7 +28,7 @@ const Chats = () => {
     };
   });
 
-  return clientId ? <ChatWindow /> : <ChatList />;
+  return clientPhoneNumber ? <ChatWindow /> : <ChatList />;
 };
 
 export default Chats;

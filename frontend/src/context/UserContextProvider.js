@@ -7,7 +7,6 @@ const UserDispatchContext = createContext(null);
 const initalUserState = {
   id: null,
   name: "",
-  email: "",
 };
 
 const userReducer = (state, action) => {
@@ -17,7 +16,7 @@ const userReducer = (state, action) => {
         ...state,
         id: action.payload.id,
         name: action.payload.name,
-        email: action.payload.email,
+        phone_number: action.payload.phone_number,
       };
     case "DELETE":
       return initalUserState;

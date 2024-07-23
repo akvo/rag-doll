@@ -51,10 +51,12 @@ class SlackBotClient:
         iso_timestamp = datetime.fromtimestamp(
             timestamp, tz=timezone.utc
         ).isoformat()
+        client_phone_number = (
+            event.get("channel") if event.get("channel") else event.get("user")
+        )
         queue_message = queue_message_util.create_queue_message(
             message_id=event.get("client_msg_id"),
-            conversation_id=event.get("channel"),
-            client_phone_number=event.get("user"),
+            client_phone_number=client_phone_number,
             sender_role=Sender_Role_Enum.CLIENT,
             sender_role_enum=Sender_Role_Enum,
             platform=Platform_Enum.SLACK,
@@ -71,7 +73,7 @@ class SlackBotClient:
                 "conversation_envelope", {}
             )
             text = queue_message.get("body")
-            channel = conversation_envelope.get("conversation_id")
+            channel = conversation_envelope.get("client_phone_number")
             response = await self.client.chat_postMessage(
                 channel=channel, text=text
             )

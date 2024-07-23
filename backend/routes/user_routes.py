@@ -42,7 +42,6 @@ async def send_login_link(
     link = f"{webdomain}/verify/{user.login_code}"
     message_body = queue_message_util.create_queue_message(
         message_id=str(uuid4()),
-        conversation_id=str(uuid4()),
         user_phone_number=phone_number,
         sender_role=Sender_Role_Enum.SYSTEM,
         sender_role_enum=Sender_Role_Enum,
@@ -70,9 +69,18 @@ async def verify_login_code(
             status_code=400, detail="Invalid verification UUID"
         )
     login_token = create_jwt_token(
-        {"sub": str(user.login_code), "uid": user.id},
+        {
+            "uid": user.id,
+            "uphone_number": user.phone_number,
+        },
         expires_delta=timedelta(hours=2),
     )
     user.login_code = None
     session.commit()
-    return {"token": login_token}
+    res = user.serialize()
+    res.update(
+        {
+            "token": login_token,
+        }
+    )
+    return res

@@ -37,7 +37,6 @@ def test_interactive_seeder(session: Session, monkeypatch):
         select(User_Properties).where(User_Properties.user_id == user_id)
     ).first()
     assert result_up.name == "John Doe"
-    assert result_up.email == "john.doe@example.com"
 
 
 def test_interactive_seeder_with_wrong_phone_number(

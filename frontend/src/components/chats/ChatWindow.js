@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useLayoutEffect, Fragment } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket } from "@/lib";
-import { createQueueMessage } from "@/utils/formatter";
+import { generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 
 const SenderRoleEnum = {
@@ -16,6 +16,8 @@ const SenderRoleEnum = {
 const ChatWindow = () => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
+
+  const { clientName, clientPhoneNumber } = chatContext;
 
   const textareaRef = useRef(null);
   const [message, setMessage] = useState("");
@@ -39,7 +41,11 @@ const ChatWindow = () => {
   useEffect(() => {
     function onChats(value) {
       console.log(value, "socket chats");
-      setChats((previous) => [...previous, value]);
+      if (
+        value.conversation_envelope.client_phone_number === clientPhoneNumber
+      ) {
+        setChats((previous) => [...previous, value]);
+      }
     }
     socket.on("chats", onChats);
 
@@ -68,10 +74,7 @@ const ChatWindow = () => {
 
   const handleOnClickBack = () => {
     chatDispatch({
-      type: "UPDATE",
-      payload: {
-        clientId: null,
-      },
+      type: "CLEAR",
     });
   };
 
@@ -87,13 +90,13 @@ const ChatWindow = () => {
       } else {
         chatBreakdown = {
           message_id: uuidv4(),
-          conversation_id: uuidv4(),
           platform: "WHATSAPP",
         };
       }
-      const chatPayload = createQueueMessage({
+      const chatPayload = generateMessage({
         ...chatBreakdown,
-        sender_role: "user",
+        client_phone_number: clientPhoneNumber,
+        sender_role: SenderRoleEnum.USER,
         body: message,
         transformation_log: null,
       });
@@ -109,7 +112,7 @@ const ChatWindow = () => {
     return chats.map((c, ci) => {
       if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
         return (
-          <div key={`chat-${ci}`} className="flex mb-4 justify-end">
+          <div key={`user-${ci}`} className="flex mb-4 justify-end">
             <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
               <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
               <p>
@@ -129,7 +132,7 @@ const ChatWindow = () => {
       }
       if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
         return (
-          <div className="flex mb-4">
+          <div key={`client-${ci}`} className="flex mb-4">
             <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
               <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
               <p>
@@ -177,7 +180,9 @@ const ChatWindow = () => {
         />
 
         <div>
-          <h3 className="text-lg font-semibold">{`Chat ${chatContext?.clientId}`}</h3>
+          <h3 className="text-lg font-semibold">
+            {clientName || clientPhoneNumber}
+          </h3>
           <p className="text-sm text-gray-600">Online</p>
         </div>
       </div>

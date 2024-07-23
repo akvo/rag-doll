@@ -2,16 +2,25 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useChatDispatch } from "@/context/ChatContextProvider";
+import { useAuthDispatch } from "@/context/AuthContextProvider";
+import { useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib";
+import { deleteCookie } from "@/lib/cookies";
+import { formatChatTime } from "@/utils/formatter";
+
+const initialChatItems = { total_chats: 0, chats: [], limit: 10, offset: 0 };
 
 const ChatList = () => {
   const router = useRouter();
+  const userDispatch = useUserDispatch();
+  const authDispatch = useAuthDispatch();
   const chatDispatch = useChatDispatch();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [chatItems, setChatItems] = useState(
-    Array.from({ length: 10 }, (_, index) => index + 1)
-  );
-  const [page, setPage] = useState(1);
+  const [chatItems, setChatItems] = useState(initialChatItems);
+  const [offset, setOffset] = useState(0);
+  const limit = 10;
+
   const chatListRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -19,11 +28,12 @@ const ChatList = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleOnClickChat = (id) => {
+  const handleOnClickChat = ({ name, phone_number }) => {
     chatDispatch({
       type: "UPDATE",
       payload: {
-        clientId: id,
+        clientName: name,
+        clientPhoneNumber: phone_number,
       },
     });
   };
@@ -33,12 +43,36 @@ const ChatList = () => {
   };
 
   const loadMoreChats = () => {
-    setChatItems((prevChats) => [
-      ...prevChats,
-      ...Array.from({ length: 10 }, (_, index) => index + 1 + prevChats.length),
-    ]);
-    setPage((prevPage) => prevPage + 1);
+    setOffset((prevOffset) => prevOffset + limit);
   };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
+      if (res.status === 200) {
+        const resData = await res.json();
+        setChatItems((prev) => ({
+          ...prev,
+          chats: [...prev.chats, ...resData.chats].filter(
+            (value, index, self) =>
+              index ===
+              self.findIndex((t) => t.chat_session.id === value.chat_session.id)
+          ),
+          limit: prev.limit,
+          offset: resData.offset,
+        }));
+      }
+      if (res.status === 401 || res.status === 403) {
+        userDispatch({
+          type: "DELETE",
+        });
+        authDispatch({ type: "DELETE" });
+        deleteCookie("AUTH_TOKEN");
+        router.replace("/login");
+      }
+    };
+    fetchData();
+  }, [offset]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -131,11 +165,11 @@ const ChatList = () => {
       <div className="pt-2 pb-20 w-full">
         {/* Chat List */}
         <div className="bg-white overflow-hidden">
-          {chatItems.map((x) => (
+          {chatItems.chats.map(({ chat_session, last_message }) => (
             <div
-              key={x}
+              key={`chat-list-${chat_session.id}`}
               className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
-              onClick={() => handleOnClickChat(x)}
+              onClick={() => handleOnClickChat(chat_session)}
             >
               <div className="flex items-center">
                 <img
@@ -146,11 +180,15 @@ const ChatList = () => {
                 <div className="flex-1">
                   <div className="flex justify-between">
                     <h3 className="text-lg font-semibold text-gray-800">
-                      Friend {x}
+                      {chat_session.name || chat_session.phone_number}
                     </h3>
-                    <p className="text-xs text-gray-500">10:00 AM</p>
+                    <p className="text-xs text-gray-500">
+                      {formatChatTime(last_message.created_at)}
+                    </p>
                   </div>
-                  <p className="text-gray-600 text-sm">Last message...</p>
+                  <p className="text-gray-600 text-sm">
+                    {last_message.message}
+                  </p>
                 </div>
               </div>
             </div>

@@ -5,7 +5,7 @@ import { useAuthContext, useAuthDispatch } from "@/context/AuthContextProvider";
 import { useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
-import { setCookie } from "./util";
+import { setCookie } from "@/lib/cookies";
 
 const VerifyLogin = ({ params }) => {
   const route = useRouter();
@@ -18,22 +18,23 @@ const VerifyLogin = ({ params }) => {
       const res = await api.get(`verify/${params.loginId}`);
       const resData = await res.json();
       if (resData && resData?.token) {
-        setCookie("AUTH_TOKEN", resData.token);
+        const { token, phone_number, name, id: userID } = resData;
+        setCookie("AUTH_TOKEN", token);
         api.setToken(resData.token);
         setTimeout(() => {
           authDispatch({
             type: "UPDATE",
             payload: {
-              token: resData.token,
+              token,
               isLogin: true,
             },
           });
           userDispatch({
             type: "UPDATE",
             payload: {
-              id: 1,
-              name: "Test user",
-              email: "test@test.com  ",
+              id: userID,
+              name,
+              phone_number,
             },
           });
           route.replace("/chats");

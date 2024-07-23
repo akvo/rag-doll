@@ -49,19 +49,16 @@ def test_format_to_queue_message_valid(twilio_client):
         "MessageSid": "1234567890",
         "From": "whatsapp:+6281234567890",
         "Body": "Test message",
-        "NumMedia": 1,
-        "MediaUrl0": "http://example.com/image.jpg",
+        "NumMedia": 0,
     }
     formatted_message = twilio_client.format_to_queue_message(values)
     assert isinstance(formatted_message, str)
     queue_message = json.loads(formatted_message)
     conversation_envelope = queue_message.get("conversation_envelope", {})
     timestamp = conversation_envelope.get("timestamp")
-    conversation_id = conversation_envelope.get("conversation_id")
     assert queue_message == {
         "conversation_envelope": {
             "message_id": "1234567890",
-            "conversation_id": conversation_id,
             "client_phone_number": "+6281234567890",
             "user_phone_number": None,
             "sender_role": "client",
@@ -69,9 +66,45 @@ def test_format_to_queue_message_valid(twilio_client):
             "timestamp": timestamp,
         },
         "body": "Test message",
-        "media": ["http://example.com/image.jpg"],
+        "media": [],
         "context": [],
         "transformation_log": ["Test message"],
+    }
+
+
+def test_format_to_queue_message_valid_with_voice_notes(twilio_client):
+    audio_file_link = "https://getsamplefiles.com/download/ogg/sample-3.ogg"
+    values = {
+        "MessageSid": "1234567890",
+        "From": "whatsapp:+6281234567890",
+        "Body": "Test message",
+        "NumMedia": 1,
+        "MediaUrl0": audio_file_link,
+        "MediaContentType0": "audio/ogg",
+    }
+    formatted_message = twilio_client.format_to_queue_message(values)
+    assert isinstance(formatted_message, str)
+    queue_message = json.loads(formatted_message)
+    conversation_envelope = queue_message.get("conversation_envelope", {})
+    timestamp = conversation_envelope.get("timestamp")
+    assert queue_message == {
+        "conversation_envelope": {
+            "message_id": "1234567890",
+            "client_phone_number": "+6281234567890",
+            "user_phone_number": None,
+            "sender_role": "client",
+            "platform": "WHATSAPP",
+            "timestamp": timestamp,
+        },
+        "body": "",
+        "media": [audio_file_link],
+        "context": [
+            {
+                "file": audio_file_link,
+                "type": "audio/ogg",
+            },
+        ],
+        "transformation_log": [""],
     }
 
 
@@ -104,7 +137,6 @@ def test_send_whatsapp_message_success(
         {
             "conversation_envelope": {
                 "message_id": "message_id",
-                "conversation_id": "conversation_id",
                 "client_phone_number": None,
                 "user_phone_number": "+1234567890",
                 "sender_role": "system",
@@ -138,7 +170,6 @@ def test_send_whatsapp_message_twilio_error(
         {
             "conversation_envelope": {
                 "message_id": "message_id",
-                "conversation_id": "conversation_id",
                 "client_phone_number": "+1234567899",
                 "user_phone_number": "+1234567890",
                 "sender_role": "system",
@@ -196,7 +227,6 @@ def test_send_whatsapp_message_unexpected_error(
         {
             "conversation_envelope": {
                 "message_id": "message_id",
-                "conversation_id": "conversation_id",
                 "client_phone_number": "+1234567899",
                 "user_phone_number": "+1234567890",
                 "sender_role": "system",

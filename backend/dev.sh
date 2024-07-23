@@ -3,7 +3,7 @@ set -eu
 
 # Install FFmpeg to support pydub
 apt-get update
-apt-get install -y ffmpeg
+apt-get install -y flac ffmpeg
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 

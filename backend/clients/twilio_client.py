@@ -5,6 +5,7 @@ import time
 import phonenumbers
 import requests
 import urllib.request
+import speech_recognition as sr
 
 from datetime import datetime, timezone
 from json.decoder import JSONDecodeError
@@ -113,7 +114,6 @@ class TwilioClient:
             raise ValidationError(f"Phone number validation error: {e}")
 
     def format_to_queue_message(self, values: dict) -> str:
-        logger.info(f"[ABC] {values}")
         try:
             iso_timestamp = datetime.now(timezone.utc).isoformat()
             # Validate and format the phone number
@@ -121,6 +121,7 @@ class TwilioClient:
             formatted_phone = self.validate_and_format_phone_number(
                 phone_number=phone_number
             )
+            message_body = values["Body"]
             # Add media files if present
             media = []
             context = []
@@ -132,10 +133,14 @@ class TwilioClient:
                     media.append(media_url)
                     context.append({"file": media_url, "type": media_type})
                 if media_url and media_type == "audio/ogg":
-                    mp3_file_path = self.ogg2mp3(
+                    audio_file_path = self.ogg2mp3(
                         audio_url=media_url, message_sid=values["MessageSid"]
                     )
-                    logger.info(f"Audio converted {mp3_file_path}")
+                    logger.info(f"Audio converted {audio_file_path}")
+                    transcription = self.transcribe_audio(
+                        wav_path=audio_file_path
+                    )
+                    message_body = transcription if transcription else ""
 
             queue_message = queue_message_util.create_queue_message(
                 message_id=values["MessageSid"],
@@ -144,7 +149,7 @@ class TwilioClient:
                 sender_role_enum=Sender_Role_Enum,
                 platform=Platform_Enum.WHATSAPP,
                 platform_enum=Platform_Enum,
-                body=values["Body"],
+                body=message_body,
                 media=media,
                 context=context,
                 timestamp=iso_timestamp,
@@ -173,9 +178,34 @@ class TwilioClient:
             urllib.request.urlretrieve(url, audio_filepath)
             audio_file = AudioSegment.from_ogg(audio_filepath)
 
-            mp3_filepath = f"{filepath}/{message_sid}.mp3"
-            audio_file.export(mp3_filepath, format="mp3")
+            converted_filepath = f"{filepath}/{message_sid}.wav"
+            audio_file.export(converted_filepath, format="wav")
+            os.remove(audio_filepath)
 
-            return os.path.join(os.getcwd(), mp3_filepath)
+            return os.path.join(os.getcwd(), converted_filepath)
         except Exception as e:
             logger.error(f"Error downloading audio file: {e}")
+            return None
+
+    def transcribe_audio(self, wav_path: str):
+        try:
+            recognizer = sr.Recognizer()
+            with sr.AudioFile(wav_path) as source:
+                audio_data = recognizer.record(source)
+            text = recognizer.recognize_google(audio_data)
+            logger.info("Audio transcription: " + text)
+            return text
+        except sr.UnknownValueError:
+            logger.error(
+                "Google Speech Recognition could not understand audio"
+            )
+            return None
+        except sr.RequestError as e:
+            logger.error(
+                "Could not request results from Google Speech Recognition "
+                f"service; {e}"
+            )
+            return None
+        except Exception as e:
+            logger.error(f"Exception error: {e}")
+            return None

@@ -171,7 +171,7 @@ def build_chunks_from_sentences(text: str, eppo_code: str, countries: str, datas
 
     uniquefier: int = 0
 
-    logger.info(f"building chunks from {len(sentences)} sentences for {eppo_code}:{country}")
+    logger.info(f"building chunks from {len(sentences)} sentences for {eppo_code}:{countries}")
 
     for sentence in sentences:
         if len(this_chunk) >= CHUNK_SIZE:

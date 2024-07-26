@@ -78,7 +78,7 @@ def download_datasheet_as_html(eppo_code: str) -> HtmlElement:
     logger.info(f"downloading datasheet for {eppo_code} from {url}")
     response = requests.get(url)
     response.raise_for_status()
-    return html.fromstring(response.content)
+    return url, html.fromstring(response.content)
     
 
 def clean_datasheet(tree: HtmlElement) -> HtmlElement:
@@ -102,9 +102,8 @@ def clean_datasheet(tree: HtmlElement) -> HtmlElement:
 def connect_to_chromadb() -> chromadb.Collection:
     '''
         Connect to ChromaDB. The ChromaDB service takes a second or so to start,
-        so we have a crude retry loop. Once connected. we clear the collection
-        and recreate it. This ensures the collection is always completely up to
-        date.
+        so we have a crude retry loop. Once connected, we look up or create the
+        collection.
     '''
     chromadb_client = None
     while chromadb_client == None:
@@ -112,9 +111,9 @@ def connect_to_chromadb() -> chromadb.Collection:
             logger.info(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}/{CHROMADB_COLLECTION}...")
             chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT, settings=chromadb.Settings(anonymized_telemetry=False))
             collections = chromadb_client.list_collections()
-            for coll in collections:
-                if CHROMADB_COLLECTION == coll.name:
-                    chromadb_client.delete_collection(CHROMADB_COLLECTION)
+            for collection in collections:
+                if CHROMADB_COLLECTION == collection.name:
+                    return collection
             return chromadb_client.create_collection(name=CHROMADB_COLLECTION)
         except Exception as e:
             logger.warn(f"unable to connect to http://{CHROMADB_HOST}:{CHROMADB_PORT}, retrying...: {type(e)}: {e}")
@@ -122,17 +121,18 @@ def connect_to_chromadb() -> chromadb.Collection:
             time.sleep(1)
 
 
-def add_chunk_to_chroma(knowledgebase: chromadb.Collection, chunk: str, eppo_code: str, country: str, uniquefier: int) -> None:
+def add_chunk_to_chroma(knowledgebase: chromadb.Collection, chunk: str, eppo_code: str, country: str, datasheet_url: str, uniquefier: int) -> None:
     id = f"{eppo_code}:{country}:{uniquefier}"
     logger.info(f"    adding chunk of {len(chunk)} lines as {id}")
     knowledgebase.add(
-        documents=['. '.join(chunk)],
+        ids=[id],
+        uris=[datasheet_url],
         metadatas=[{'country': country, 'eppo_code': eppo_code}],
-        ids=[id]
+        documents=['. '.join(chunk)],
     )
 
 
-def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, eppo_code: str, country: str) -> None:
+def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, eppo_code: str, country: str, datasheet_url: str) -> None:
     '''
         Break the text up into chunks and push the chunks into ChromaDB.
         ChromaDB handles the vectorisation using its default embedding model.
@@ -154,7 +154,7 @@ def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, e
         if len(this_chunk) >= CHUNK_SIZE:
             # done with the first chunk, add to overlap?
             if len(next_chunk) == OVERLAP_SIZE:
-                add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, uniquefier)
+                add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, datasheet_url, uniquefier)
                 uniquefier = uniquefier + 1
                 this_chunk = next_chunk
                 next_chunk = []
@@ -167,39 +167,43 @@ def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, e
             this_chunk.append(sentence)
 
     if len(this_chunk) > 0:
-        add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, uniquefier)
+        add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, datasheet_url, uniquefier)
         uniquefier = uniquefier + 1
     if len(next_chunk) > 0:
-        add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, uniquefier)
+        add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, datasheet_url, uniquefier)
         uniquefier = uniquefier + 1
 
 
-# Download the NLTK sentence splitter
-nltk.download('punkt')
+if __name__ == "__main__":
+    # Download the NLTK sentence splitter
+    nltk.download('punkt')
+    
+    eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)
+    logger.info(eppo_code_df.info())
+    logger.info(eppo_code_df)
+    
+    knowledgebase: chromadb.Collection = connect_to_chromadb() # XXX switch to using a temporary collection here
+    
+    for index, row in eppo_code_df.iterrows():
+        eppo_code: str = row[COL_EPPO_CODE]
+        countries: list[str] = row[COL_COUNTRY].split(', ')
+    
+        datasheet_url, datasheet_html = download_datasheet_as_html(eppo_code)
+        datasheet_html = clean_datasheet(datasheet_html)
+    
+        logger.info(html.tostring(datasheet_html, pretty_print=True).decode('utf-8'))
+    
+        datasheet_text = datasheet_html.xpath('//body//text()')
+        datasheet_text = ' '.join(datasheet_text)
+    
+        logger.info(datasheet_text)
+    
+        for country in countries:
+            build_chunks_from_sentences(knowledgebase, datasheet_text, eppo_code, country, datasheet_url)
 
-eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)
-logger.info(eppo_code_df.info())
-logger.info(eppo_code_df)
-
-knowledgebase: chromadb.Collection = connect_to_chromadb()
-
-for index, row in eppo_code_df.iterrows():
-    eppo_code: str = row[COL_EPPO_CODE]
-    countries: list[str] = row[COL_COUNTRY].split(', ')
-
-    datasheet_html = download_datasheet_as_html(eppo_code)
-    datasheet_html = clean_datasheet(datasheet_html)
-
-    logger.info(html.tostring(datasheet_html, pretty_print=True).decode('utf-8'))
-
-    datasheet_text = datasheet_html.xpath('//body//text()')
-    datasheet_text = ' '.join(datasheet_text)
-
-    logger.info(datasheet_text)
-
-    for country in countries:
-        build_chunks_from_sentences(knowledgebase, datasheet_text, eppo_code, country)
-
+    # XXX now swap the temporary collection with the new one. Note that clients connect by
+    # collection ID and we should force a reconnect of clients (which in turn forces a
+    # re-lookup of teh collection) to fix the ID that clients use.
 
 # And with that, the librarian is done. The searchable text has been updated and
 # is ready to be queried.

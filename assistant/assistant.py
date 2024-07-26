@@ -134,7 +134,7 @@ async def on_message(body: str) -> None:
     collection_query_result = query_collection(chromadb_collection, from_client["body"])
     logger.info(f"Collection query result: {collection_query_result}")
 
-    prompt = f"{from_client["body"]}. In your answer, use the following information if it is related: {collection_query_result}"
+    prompt = f"{from_client['body']}. In your answer, use the following information if it is related: {collection_query_result}"
 
     llm_response = llm.chat(prompt)
     logger.info(f"LLM replied: {llm_response}")

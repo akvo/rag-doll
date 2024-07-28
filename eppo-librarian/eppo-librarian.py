@@ -81,7 +81,7 @@ def download_datasheet_as_html(eppo_code: str) -> HtmlElement:
     response = requests.get(url)
     response.raise_for_status()
     return url, html.fromstring(response.content)
-    
+
 
 def clean_datasheet(tree: HtmlElement) -> HtmlElement:
     '''
@@ -119,7 +119,7 @@ def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
             COL_URL: datasheet_url,
             COL_TEXT_EN: datasheet_text,
         })
-    
+
     return df.apply(download_and_extract_text, axis=1)
 
 
@@ -208,7 +208,7 @@ def add_chunks_to_chromadb(df, text_column, chroma_collection):
 if __name__ == "__main__":
     # download the NLTK sentence splitter
     nltk.download('punkt')
-    
+
     eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)
     logger.info(eppo_code_df.info())
     logger.info(eppo_code_df.head())

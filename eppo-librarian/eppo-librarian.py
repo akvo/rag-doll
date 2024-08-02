@@ -1,12 +1,12 @@
 import os
 import io
-import time
 import nltk
 import logging
 import requests
 import chromadb
 import pandas as pd
 from lxml import html
+from time import sleep
 from lxml.html import HtmlElement
 from nltk.tokenize import sent_tokenize
 
@@ -134,15 +134,11 @@ def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.
         try:
             logger.info(f"trying http://{host}:{port}/{collection_name}...")
             chromadb_client = chromadb.HttpClient(host=host, port=port, settings=chromadb.Settings(anonymized_telemetry=False))
-            collections = chromadb_client.list_collections()
-            for chroma_collection in collections:
-                if collection_name == chroma_collection.name:
-                    return chroma_collection
-            return chromadb_client.create_collection(name=collection_name)
+            return chromadb_client.get_or_create_collection(collection_name)
         except Exception as e:
             logger.warning(f"unable to connect to http://{host}:{port}/{collection_name}, retrying...: {type(e)}: {e}")
             chromadb_client = None
-            time.sleep(1)
+            sleep(1)
 
 
 def add_chunk_to_chroma(chunk: str, eppo_code: str, countries: str, datasheet_url: str, uniquefier: int, chroma_collection: chromadb.Collection) -> None:

@@ -28,21 +28,20 @@ CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
 CHROMADB_PORT: int = os.getenv('CHROMADB_PORT')
 CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
 
-def connect_to_chromadb() -> chromadb.Collection:
+def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.Collection:
     '''
         Connect to ChromaDB. The ChromaDB service takes a second or so to start,
-        so we have a crude retry loop. Once connected. we clear the collection
-        and recreate it. This ensures the collection is always completely up to
-        date.
+        so we have a crude retry loop. Once connected, we look up or create the
+        collection.
     '''
     chromadb_client = None
     while chromadb_client == None:
         try:
-            logger.info(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}/{CHROMADB_COLLECTION}...")
-            chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT, settings=chromadb.Settings(anonymized_telemetry=False))
-            return chromadb_client.get_collection(name=CHROMADB_COLLECTION)
+            logger.info(f"trying http://{host}:{port}/{collection_name}...")
+            chromadb_client = chromadb.HttpClient(host=host, port=port, settings=chromadb.Settings(anonymized_telemetry=False))
+            return chromadb_client.get_or_create_collection(collection_name)
         except Exception as e:
-            logger.warn(f"unable to connect to http://{CHROMADB_HOST}:{CHROMADB_PORT}, retrying...: {type(e)}: {e}")
+            logger.warning(f"unable to connect to http://{host}:{port}/{collection_name}, retrying...: {type(e)}: {e}")
             chromadb_client = None
             sleep(1)
 
@@ -57,7 +56,7 @@ def query_collection(collection: chromadb.Collection, prompt: str) -> str:
     )
     return json.dumps(query_result["documents"])
 
-chromadb_collection: chromadb.Collection = connect_to_chromadb()
+chromadb_collection = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB_COLLECTION)
 
 # --- LLM section
 
@@ -146,13 +145,13 @@ async def on_message(body: str) -> None:
 
 async def main():
     await rabbitmq_client.initialize()
-    
+
     await rabbitmq_client.consume(
         queue_name=RABBITMQ_QUEUE_USER_CHATS,
         routing_key=RABBITMQ_QUEUE_USER_CHATS,
         callback=on_message,
     )
-    
+
     try:
         while True:
             await asyncio.sleep(1)

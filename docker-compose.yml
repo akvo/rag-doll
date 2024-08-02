@@ -16,6 +16,8 @@ services:
     environment:
       <<: *rabbitmq_client_env
       ASSISTANT_ROLE: ${ASSISTANT_ROLE}
+      RAG_PROMPT: ${RAG_PROMPT}
+      RAGLESS_PROMPT: ${RAGLESS_PROMPT}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL}
       CHROMADB_HOST: ${CHROMADB_HOST}

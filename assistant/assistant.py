@@ -11,17 +11,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-ROLE_USER = "user"
-ROLE_SYSTEM = "system"
-ROLE_ASSISTANT = "assistant"
-MSG_MESSAGE = "message"
-MSG_ROLE = "role"
-MSG_CONTENT = "content"
-MSG_RESPONSE = "response"
-MSG_STATUS = "status"
-MSG_SUCCESS = "success"
-
-
 # ChromaDB section
 
 CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
@@ -68,15 +57,21 @@ chromadb_collection = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB
 
 # --- LLM section
 
+ASSISTANT_ROLE    = os.getenv("ASSISTANT_ROLE")
+OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL")
+RAG_PROMPT        = os.getenv("RAG_PROMPT")
+RAGLESS_PROMPT    = os.getenv("RAGLESS_PROMPT")
+
+
 class LLM:
     def __init__(self, chat_model: str):
         self.chat_model = chat_model
         self.llm_client = OpenAI()
         self.messages = []
-        self.append_message(ROLE_SYSTEM, os.getenv("ASSISTANT_ROLE"))
+        self.append_message("system", ASSISTANT_ROLE)
 
     def chat(self, content: str) -> dict:
-        self.append_message(ROLE_USER, content)
+        self.append_message("user", content)
         response = self.llm_client.chat.completions.create(
             model=self.chat_model, messages=self.messages
         )
@@ -86,15 +81,15 @@ class LLM:
         return message.content
 
     def append_message(self, role, content):
-        self.messages.append({MSG_ROLE: role, MSG_CONTENT: str(content)})
+        self.messages.append({"role": role, "content": str(content)})
 
 
-llm = LLM(os.getenv("OPENAI_CHAT_MODEL"))
+llm = LLM(OPENAI_CHAT_MODEL)
 
 
 # --- RabbitMQ Section
 
-RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
+RABBITMQ_QUEUE_USER_CHATS        = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
 
 
@@ -106,7 +101,7 @@ def queue_message_and_llm_response_to_reply(
         "timestamp": f"{llm_response['created_at'][:-1]}+00:00",  # noqa replace 'Z' with +00:00
         "platform": queue_message["platform"],
         "to": queue_message["from"],
-        "text": llm_response[MSG_MESSAGE][MSG_CONTENT],
+        "text": llm_response["message"]["content"],
     }
     return json.dumps(reply)
 
@@ -135,14 +130,19 @@ def publish_reliably(queue_message: str) -> None:
 
 
 async def on_message(body: str) -> None:
+    logger.info(f"    -> message: {body}")
     from_client = json.loads(body)
-    logger.info(f"    -> parsed JSON: {from_client}")
 
-    collection_query_result = query_collection(chromadb_collection, from_client["body"])
-    logger.info(f"Collection query result: {collection_query_result}")
+    # query the knowledge base for RAG context
+    rag_context = query_collection(chromadb_collection, from_client["body"])
 
-    prompt = f"{from_client['body']}. In your answer, use the following information if it is related: {collection_query_result}"
+    # if there is context, add it to the prompt
+    if len(rag_context) > 0:
+        prompt = RAG_PROMPT.format(from_client['body'], collection_query_result)
+    else:
+        prompt = RAGLESS_PROMPT.format(from_client['body'])
 
+    # then send that prompt over to the LLM
     llm_response = llm.chat(prompt)
     logger.info(f"LLM replied: {llm_response}")
 

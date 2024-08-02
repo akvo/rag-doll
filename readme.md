@@ -30,6 +30,8 @@ pulling models as needed.
 | `.env` | default | description |
 |---|---|---|
 | `ASSISTANT_ROLE` | _CHANGEME_ | The system prompt to the LLM. Describe the assistant's role here. |
+| `RAG_PROMPT`     | "{}. In your answer, use the following information if it is related: {}" | The RAG enabled prompt for the LLM. The first placeholder is for the client question and the second placeholder is where the RAG context is added. |
+| `RAGLESS_PROMPT` | "{}" | The prompt in case there is no usable RAG context. The first and only placeholder is where the client's question is added. |
 | `OPENAI_API_KEY` | _CHANGEME_ | The API key for authenticating with OpenAI services. |
 | `OPENAI_CHAT_MODEL` | `gpt-4o` | The LLM model that is used to handle chat messages. Read more about [OpenAI models](https://platform.openai.com/docs/models) |
 | `CHROMADB_DISTANCE_CUTOFF` | `1.5` | The minimum vector distance needed for a chunk for the chunk to be included in the prompt as RAG context. Chunks with a higher distance are discarded from the RAG query results. |

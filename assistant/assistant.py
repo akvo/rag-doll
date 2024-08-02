@@ -27,6 +27,7 @@ MSG_SUCCESS = "success"
 CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
 CHROMADB_PORT: int = os.getenv('CHROMADB_PORT')
 CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
+CHROMADB_DISTANCE_CUTOFF: float = float(os.getenv("CHROMADB_DISTANCE_CUTOFF"))
 
 def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.Collection:
     '''
@@ -46,15 +47,22 @@ def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.
             sleep(1)
 
 
-def query_collection(collection: chromadb.Collection, prompt: str) -> str:
-    logger.info(f"    -> will query: {collection} for {prompt}")
+def query_collection(collection: chromadb.Collection, prompt: str) -> list[str]:
+    logger.info(f"    -> will query: {collection} for {prompt}, with cut-off {CHROMADB_DISTANCE_CUTOFF}")
 
     query_result = collection.query(
         query_texts=[prompt],
         n_results=5,
-        include=["documents"]
+        include=["documents", "distances"]
     )
-    return json.dumps(query_result["documents"])
+    filtered_documents = [
+        doc for doc, dist in zip(query_result["documents"][0], query_result["distances"][0])
+        if dist < CHROMADB_DISTANCE_CUTOFF
+    ]
+
+    logger.info(f"    -> accepted {len(filtered_documents)} of {len(query_result["documents"][0])} query results: distances: {query_result["distances"][0]}, cut-off: {CHROMADB_DISTANCE_CUTOFF}")
+    return filtered_documents
+
 
 chromadb_collection = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB_COLLECTION)
 

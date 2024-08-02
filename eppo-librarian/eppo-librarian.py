@@ -32,7 +32,9 @@ CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
 
 
 COL_EPPO_CODE: str = 'EPPOCode'
-COL_COUNTRY: str = 'ISO 3166-1 2-character country code'
+COL_COUNTRY: str   = 'ISO 3166-1 2-character country code'
+COL_URL: str       = 'EPPO datasheet url'
+COL_TEXT_EN: str   = 'datasheet (English)'
 
 
 def download_eppo_code_registry(url: str, countries: list[str]) -> pd.DataFrame:
@@ -99,7 +101,29 @@ def clean_datasheet(tree: HtmlElement) -> HtmlElement:
     return tree
 
 
-def connect_to_chromadb() -> chromadb.Collection:
+def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+        Download all datasheets specified, clean their text and provide the URL
+        for the datasheet, for reference.
+    '''
+
+    def download_and_extract_text(row):
+        eppo_code = row[COL_EPPO_CODE]
+        datasheet_url, datasheet_html = download_datasheet_as_html(eppo_code)
+        cleaned_html = clean_datasheet(datasheet_html)
+        datasheet_text = ' '.join(cleaned_html.xpath('//body//text()'))
+        datasheet_text = ' '.join(datasheet_text.split()) # weed out superfluous whitespace
+        return pd.Series({
+            COL_EPPO_CODE: eppo_code,
+            COL_COUNTRY: row[COL_COUNTRY],
+            COL_URL: datasheet_url,
+            COL_TEXT_EN: datasheet_text,
+        })
+    
+    return df.apply(download_and_extract_text, axis=1)
+
+
+def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.Collection:
     '''
         Connect to ChromaDB. The ChromaDB service takes a second or so to start,
         so we have a crude retry loop. Once connected, we look up or create the
@@ -108,31 +132,30 @@ def connect_to_chromadb() -> chromadb.Collection:
     chromadb_client = None
     while chromadb_client == None:
         try:
-            logger.info(f"trying http://{CHROMADB_HOST}:{CHROMADB_PORT}/{CHROMADB_COLLECTION}...")
-            chromadb_client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT, settings=chromadb.Settings(anonymized_telemetry=False))
+            logger.info(f"trying http://{host}:{port}/{collection_name}...")
+            chromadb_client = chromadb.HttpClient(host=host, port=port, settings=chromadb.Settings(anonymized_telemetry=False))
             collections = chromadb_client.list_collections()
-            for collection in collections:
-                if CHROMADB_COLLECTION == collection.name:
-                    return collection
-            return chromadb_client.create_collection(name=CHROMADB_COLLECTION)
+            for chroma_collection in collections:
+                if collection_name == chroma_collection.name:
+                    return chroma_collection
+            return chromadb_client.create_collection(name=collection_name)
         except Exception as e:
-            logger.warn(f"unable to connect to http://{CHROMADB_HOST}:{CHROMADB_PORT}, retrying...: {type(e)}: {e}")
+            logger.warning(f"unable to connect to http://{host}:{port}/{collection_name}, retrying...: {type(e)}: {e}")
             chromadb_client = None
             time.sleep(1)
 
 
-def add_chunk_to_chroma(knowledgebase: chromadb.Collection, chunk: str, eppo_code: str, country: str, datasheet_url: str, uniquefier: int) -> None:
-    id = f"{eppo_code}:{country}:{uniquefier}"
-    logger.info(f"    adding chunk of {len(chunk)} lines as {id}")
-    knowledgebase.add(
+def add_chunk_to_chroma(chunk: str, eppo_code: str, countries: str, datasheet_url: str, uniquefier: int, chroma_collection: chromadb.Collection) -> None:
+    id = f"{eppo_code}:{uniquefier}"
+    chroma_collection.add(
         ids=[id],
         uris=[datasheet_url],
-        metadatas=[{'country': country, 'eppo_code': eppo_code}],
+        metadatas=[{'countries': countries, 'eppo_code': eppo_code}],
         documents=['. '.join(chunk)],
     )
 
 
-def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, eppo_code: str, country: str, datasheet_url: str) -> None:
+def build_chunks_from_sentences(text: str, eppo_code: str, countries: str, datasheet_url: str, chroma_collection: chromadb.Collection) -> None:
     '''
         Break the text up into chunks and push the chunks into ChromaDB.
         ChromaDB handles the vectorisation using its default embedding model.
@@ -154,7 +177,7 @@ def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, e
         if len(this_chunk) >= CHUNK_SIZE:
             # done with the first chunk, add to overlap?
             if len(next_chunk) == OVERLAP_SIZE:
-                add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, datasheet_url, uniquefier)
+                add_chunk_to_chroma(this_chunk, eppo_code, countries, datasheet_url, uniquefier, chroma_collection)
                 uniquefier = uniquefier + 1
                 this_chunk = next_chunk
                 next_chunk = []
@@ -167,43 +190,39 @@ def build_chunks_from_sentences(knowledgebase: chromadb.Collection, text: str, e
             this_chunk.append(sentence)
 
     if len(this_chunk) > 0:
-        add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, datasheet_url, uniquefier)
+        add_chunk_to_chroma(this_chunk, eppo_code, countries, datasheet_url, uniquefier, chroma_collection)
         uniquefier = uniquefier + 1
     if len(next_chunk) > 0:
-        add_chunk_to_chroma(knowledgebase, this_chunk, eppo_code, country, datasheet_url, uniquefier)
+        add_chunk_to_chroma(this_chunk, eppo_code, countries, datasheet_url, uniquefier, chroma_collection)
         uniquefier = uniquefier + 1
 
 
+def add_chunks_to_chromadb(df, text_column, chroma_collection):
+    for index, row in df.iterrows():
+        eppo_code: str = row[COL_EPPO_CODE]
+        datasheet_url = row[COL_URL]
+        datasheet_text = row[text_column]
+
+        build_chunks_from_sentences(datasheet_text, eppo_code, row[COL_COUNTRY], datasheet_url, chroma_collection)
+
 if __name__ == "__main__":
-    # Download the NLTK sentence splitter
+    # download the NLTK sentence splitter
     nltk.download('punkt')
     
     eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)
     logger.info(eppo_code_df.info())
-    logger.info(eppo_code_df)
-    
-    knowledgebase: chromadb.Collection = connect_to_chromadb() # XXX switch to using a temporary collection here
-    
-    for index, row in eppo_code_df.iterrows():
-        eppo_code: str = row[COL_EPPO_CODE]
-        countries: list[str] = row[COL_COUNTRY].split(', ')
-    
-        datasheet_url, datasheet_html = download_datasheet_as_html(eppo_code)
-        datasheet_html = clean_datasheet(datasheet_html)
-    
-        logger.info(html.tostring(datasheet_html, pretty_print=True).decode('utf-8'))
-    
-        datasheet_text = datasheet_html.xpath('//body//text()')
-        datasheet_text = ' '.join(datasheet_text)
-    
-        logger.info(datasheet_text)
-    
-        for country in countries:
-            build_chunks_from_sentences(knowledgebase, datasheet_text, eppo_code, country, datasheet_url)
+    logger.info(eppo_code_df.head())
+
+    datasheets_df = download_datasheets(eppo_code_df)
+    logger.info(datasheets_df.info())
+    logger.info(datasheets_df.head())
+
+    knowledgebase = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB_COLLECTION)
+    add_chunks_to_chromadb(datasheets_df, COL_TEXT_EN, knowledgebase)
 
     # XXX now swap the temporary collection with the new one. Note that clients connect by
     # collection ID and we should force a reconnect of clients (which in turn forces a
-    # re-lookup of teh collection) to fix the ID that clients use.
+    # re-lookup of the collection) to fix the ID that clients use.
 
 # And with that, the librarian is done. The searchable text has been updated and
 # is ready to be queried.

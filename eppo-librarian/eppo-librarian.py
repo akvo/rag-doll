@@ -203,6 +203,11 @@ def add_chunks_to_chromadb(df, text_column, chroma_collection):
         datasheet_url = row[COL_URL]
         datasheet_text = row[text_column]
 
+        # before adding the data sheet, delete all chunks for this data sheet.
+        # There is a race condition with querying the knowledge base, but for
+        # now this is a decent solution.
+        chroma_collection.delete(where={"eppo_code": eppo_code})
+
         build_chunks_from_sentences(datasheet_text, eppo_code, row[COL_COUNTRY], datasheet_url, chroma_collection)
 
 if __name__ == "__main__":
@@ -219,10 +224,6 @@ if __name__ == "__main__":
 
     knowledgebase = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB_COLLECTION)
     add_chunks_to_chromadb(datasheets_df, COL_TEXT_EN, knowledgebase)
-
-    # XXX now swap the temporary collection with the new one. Note that clients connect by
-    # collection ID and we should force a reconnect of clients (which in turn forces a
-    # re-lookup of the collection) to fix the ID that clients use.
 
 # And with that, the librarian is done. The searchable text has been updated and
 # is ready to be queried.

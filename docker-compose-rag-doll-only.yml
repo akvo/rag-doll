@@ -32,7 +32,7 @@ services:
     restart: no
 
   chromadb:
-    image: chromadb/chroma
+    image: chromadb/chroma:0.5.5
     ports:
       - ${CHROMADB_PORT}:${CHROMADB_PORT}
     environment:

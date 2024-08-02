@@ -27,6 +27,7 @@ services:
     command: ["./run.sh"]
     volumes:
       - ./assistant:/app:delegated
+      - ./packages/Akvo_rabbitmq_client:/lib/Akvo_rabbitmq_client:delegated
 
   eppo-librarian:
     image: python:3.12.3
@@ -46,7 +47,7 @@ services:
     restart: no
 
   chromadb:
-    image: chromadb/chroma
+    image: chromadb/chroma:0.5.5
     ports:
       - ${CHROMADB_PORT}:${CHROMADB_PORT}
     environment:

@@ -21,22 +21,9 @@ const ChatWindow = () => {
 
   const textareaRef = useRef(null);
   const [message, setMessage] = useState("");
-  const [aiMessages, setAiMessages] = useState([
-    "AI suggested message...",
-    <>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis eget
-      sollicitudin augue. Curabitur quis risus ut nulla consectetur gravida.
-      Nunc sit amet turpis tempor, rutrum mi vel, molestie purus. Lorem ipsum
-      dolor sit amet, consectetur adipiscing elit. In hac habitasse platea
-      dictumst. Donec dignissim mi ut eros elementum fringilla. Phasellus
-      maximus feugiat nunc. Aliquam erat volutpat. Cras dictum tortor bibendum
-      velit dapibus, in rutrum mi porttitor. In malesuada odio at augue
-      efficitur maximus. Nullam elementum est a sagittis consectetur. Nullam ac
-      sem dolor. Pellentesque quis sagittis augue. Quisque lobortis sed eros ut
-      dignissim. Curabitur fringilla hendrerit dui, vitae consequat dolor
-    </>,
-  ]);
+  const [aiMessages, setAiMessages] = useState([]);
   const [chats, setChats] = useState([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     function onChats(value) {
@@ -54,6 +41,15 @@ const ChatWindow = () => {
     };
   }, []);
 
+  useEffect(() => {
+    setTimeout(() => {
+      setAiMessages([
+        ...aiMessages,
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis eget sollicitudin augue. Curabitur quis risus ut nulla consectetur gravida. Nunc sit amet turpis tempor, rutrum mi vel, molestie purus.",
+      ]);
+    }, 2000);
+  }, []);
+
   useLayoutEffect(() => {
     const messagesContainer = document.getElementById("messagesContainer");
     if (messagesContainer) {
@@ -62,7 +58,7 @@ const ChatWindow = () => {
     // Trigger on chats change to scroll to the bottom
   }, [chats]);
 
-  const handleInput = (event) => {
+  const handleInput = () => {
     const textarea = textareaRef.current;
     textarea.style.height = "auto"; // Reset height to auto
     textarea.style.height = `${textarea.scrollHeight}px`; // Set height based on scroll height
@@ -105,6 +101,16 @@ const ChatWindow = () => {
       socket.timeout(5000).emit("chats", chatPayload);
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending
+    }
+  };
+
+  const handleCopy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1000);
+    } catch (error) {
+      console.error("Failed to copy text: ", error);
     }
   };
 
@@ -214,20 +220,80 @@ const ChatWindow = () => {
         </div>
 
         {/* AI Messages */}
-        <div className="flex-1 p-4 overflow-auto mb-2">
-          <div className="bg-gray-100 p-4 h-full rounded-lg shadow-inner overflow-auto">
-            {aiMessages.map((aiMessage, index) => (
-              <div key={index} className="flex mb-4">
-                <div className="relative bg-blue-500 text-white p-4 rounded-lg shadow-lg w-full">
-                  <p>{aiMessage}</p>
-                  <p className="text-right text-xs text-gray-200 mt-2">
-                    AI - {new Date().toLocaleTimeString()}
-                  </p>
+        {aiMessages.length ? (
+          <div className="flex-1 p-4 overflow-auto mb-2">
+            <div className="relative bg-gray-100 h-full rounded-lg shadow-inner overflow-auto">
+              <div className="flex justify-between sticky top-0 py-2 bg-gray-100 z-10 px-4">
+                <div className="justify-start">Recommendations</div>
+                <div className="flex justify-end">
+                  <button onClick={() => setAiMessages([])}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-6 h-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
-            ))}
+              <div className="p-4">
+                {aiMessages.map((aiMessage, index) => (
+                  <div className="mb-4">
+                    <div key={index} className="flex mb-2">
+                      <div className="relative bg-blue-500 text-white p-4 rounded-lg shadow-lg w-full">
+                        <p>{aiMessage}</p>
+                        <p className="text-right text-xs text-gray-200 mt-2">
+                          AI - {new Date().toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex">
+                      <button onClick={() => handleCopy(aiMessage)}>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="w-6 h-6"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M8 2a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H8zm0 2h8v10H8V4zM4 8a2 2 0 012-2h1v2H6v10h8v-1h2v1a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                      <button>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="w-6 h-6"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M12 4a8 8 0 00-8 8H2l3.5 3.5L9 12H6.7A5.3 5.3 0 1112 17.3a5.3 5.3 0 01-5.3-5.3h-2A7.3 7.3 0 0012 19.3a7.3 7.3 0 000-14.6z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    {copied ? <div>Copied!</div> : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          ""
+        )}
       </div>
 
       {/* Input */}

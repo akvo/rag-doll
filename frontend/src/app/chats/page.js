@@ -12,11 +12,11 @@ const Chats = () => {
     socket.connect();
 
     function onConnect() {
-      console.log("FE Connected");
+      console.info("FE Connected");
     }
 
     function onDisconnect() {
-      console.log("FE Disconnected");
+      console.info("FE Disconnected");
     }
 
     socket.on("connect", onConnect);

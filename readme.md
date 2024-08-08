@@ -30,8 +30,11 @@ pulling models as needed.
 | `.env` | default | description |
 |---|---|---|
 | `ASSISTANT_ROLE` | _CHANGEME_ | The system prompt to the LLM. Describe the assistant's role here. |
+| `RAG_PROMPT`     | "{}. In your answer, use the following information if it is related: {}" | The RAG enabled prompt for the LLM. The first placeholder is for the client question and the second placeholder is where the RAG context is added. |
+| `RAGLESS_PROMPT` | "{}" | The prompt in case there is no usable RAG context. The first and only placeholder is where the client's question is added. |
 | `OPENAI_API_KEY` | _CHANGEME_ | The API key for authenticating with OpenAI services. |
-| `OPENAI_CHAT_MODEL` | `gpt-3.5` / `gpt-4` | The LLM model that is used to handle chat messages. Read more about [OpenAI models](https://platform.openai.com/docs/models) |
+| `OPENAI_CHAT_MODEL` | `gpt-4o` | The LLM model that is used to handle chat messages. Read more about [OpenAI models](https://platform.openai.com/docs/models) |
+| `CHROMADB_DISTANCE_CUTOFF` | `1.5` | The minimum vector distance needed for a chunk for the chunk to be included in the prompt as RAG context. Chunks with a higher distance are discarded from the RAG query results. |
 
 Note: The __OPENAI_API_KEY__ does not need to be explicitly called in
 [assistant.py](https://github.com/akvo/rag-doll/blob/master/assistant/assistant.py)
@@ -39,16 +42,29 @@ because the openai library automatically reads it from the environment variables
 when `openai.OpenAI()` is instantiated.
 
 
-## Librarian
+## EPPO Librarian
 
-The librarian is responsible for getting the knowledge base data into the vector
-database. It runs at startup, recreating the data set that is to be used for the
-retrieval part of the system.
+The EPPO librarian is responsible for getting the EPPO Global Database data
+sheet data into the vector database. It runs at startup, recreating the data set
+that is to be used for the retrieval part of the system.
+
+The [EPPO Global Database](https://gd.eppo.int/) is a collection of technical
+resources that researchers can use in their work. As quoted from their website:
+*EPPO Global Database is maintained by the Secretariat of the European and
+Mediterranean Plant Protection Organization (EPPO). The aim of the database is
+to provide all pest-specific information that has been produced or collected by
+EPPO. The database contents are constantly being updated by the EPPO
+Secretariat.*
 
 | `.env` | default | description |
 |---|---|---|
-| `LIBRARIAN_CORPUS` | _CHANGEME_ | The full path to a gzipped Apache Parquet file with corpus data. |
-| `LIBRARIAN_COLLECTION` | knowledge-base | The name of the ChromaDB collection where the corpus will be stored. |
+| `EPPO_LIBRARIAN_COLLECTION` | EPPO-datasheets | The name of the ChromaDB collection where the EPPO datasheets will be stored. |
+| `EPPO_COUNTRY_ORGANISM_URL` | https://gd.eppo.int/country/{country}/organisms.csv | The URL to the per-country organism list on the EPPO database. Use `{country}` as placeholder for the country to query for. |
+| `EPPO_DATASHEET_URL` | https://gd.eppo.int/taxon/{eppo_code}/datasheet | The URL to the organism datasheet in the EPPO database. Use `{eppo_code}` as placeholder for the EPPO code. |
+| `EPPO_COUNTRIES` | _CHANGEME_ | A comma-separated list of ISO 3166-1 alpha-2 country codes of countries that you are interested in. |
+
+EPPO is not completely clear on what license they expect. They do not restrict
+accessing the datasheets. They do ask for citation, which we provide.
 
 
 ## ChromaDB Vector Database
@@ -112,21 +128,26 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `WEBDOMAIN` | "http://localhost" | The base URL of the web application |
 | `MAGIC_LINK_CHAT_TEMPLATE` | _CHANGEME_ | A template for magic link message, e.g. "You can login into APP_NAME by clicking this link: {magic_link}" |
 
+### Twilio Channel
 
-### Twilio
+In the backend, we handle Twilio's send and receive messages through a service
+called `TwilioClient`. Currently, we only support WhatsApp text messages.
 
-In the backend, we handle Twilio's send and receive messages through a service called TwilioClient. Currently, we only support WhatsApp text messages.
+When started, `TwilioClient` listens to incoming messages from Twilio using a
+webhook. `TwilioClient` will use the frontend port proxy to point to the Twilio
+callback URL. In Twilio, configure the sandbox webhook URL to be the external
+URL for your `TwilioClient` routes.
 
-When started, TwilioClient listens to incoming messages from Twilio using a webhook. TwilioClient will use the frontend port proxy to point to the Twilio callback URL. In Twilio, configure the Sandbox webhook URL to be the external URL for your TwilioClient routes.
-
-The TwilioClient connects to the message queue to interact with the rest of the system, notably the assistant. Incoming messages are forwarded to the `RABBITMQ_QUEUE_USER_CHATS` queue and replies coming from the `RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
+The `TwilioClient` connects to the message queue to interact with the rest of
+the system, notably the assistant. Incoming messages are forwarded to the
+`RABBITMQ_QUEUE_USER_CHATS` queue and replies coming from the
+`RABBITMQ_QUEUE_USER_CHAT_REPLIES` queue are posted back to the user via Twilio.
 
 | `.env` | default | description |
 |---|---|---|
 | `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
 | `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
 | `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
-
 
 ### Slack Channel
 

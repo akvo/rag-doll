@@ -65,7 +65,9 @@ class RabbitMQClient:
             await self.connect()
             self.channel = await self.connection.channel()
             self.exchange = await self.channel.declare_exchange(
-                self.RABBITMQ_EXCHANGE_USER_CHATS, aio_pika.ExchangeType.TOPIC
+                self.RABBITMQ_EXCHANGE_USER_CHATS,
+                aio_pika.ExchangeType.DIRECT,
+                durable=True,
             )
         except Exception as e:
             logger.error(f"Error initializing RabbitMQ client: {e}")
@@ -90,7 +92,7 @@ class RabbitMQClient:
         self,
         message: aio_pika.IncomingMessage,
         routing_key: str,
-        callback: Callable = None,
+        callback: Callable,
     ):
         try:
             async with message.process():

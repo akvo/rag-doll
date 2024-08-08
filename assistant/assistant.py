@@ -52,7 +52,7 @@ def query_collection(
     collection: chromadb.Collection, prompt: str
 ) -> list[str]:
     logger.info(
-        f"    -> will query: {collection} for {prompt}"
+        f"[ASSISTANT] -> will query: {collection} for {prompt}"
         f" with cut-off {CHROMADB_DISTANCE_CUTOFF}"
     )
 
@@ -70,7 +70,7 @@ def query_collection(
     ]
 
     logger.info(
-        f"    -> accepted {len(filtered_documents)} of "
+        f"[ASSISTANT] -> accepted {len(filtered_documents)} of "
         f"{len(query_result["documents"][0])} query results: distances:"
         f"{query_result["distances"][0]}, cut-off: {CHROMADB_DISTANCE_CUTOFF}"
     )
@@ -101,7 +101,7 @@ class LLM:
         response = self.llm_client.chat.completions.create(
             model=self.chat_model, messages=self.messages
         )
-        logger.info(f"OPENAI RESPONSE: {response}")
+        logger.info(f"[ASSISTANT] -> OPENAI RESPONSE: {response}")
         message = response.choices[0].message
         self.append_message(message.role, message.content)
         return {
@@ -127,7 +127,7 @@ def queue_message_and_llm_response_to_reply(
     queue_message: dict, llm_response: dict
 ) -> str:
     try:
-        logger.info(f"Formatting message assistant: {queue_message}")
+        logger.info(f"[ASSISTANT] -> Formatting message: {queue_message}")
         conversation_envelope = queue_message.get('conversation_envelope', {})
         timestamp = float(llm_response["created_at"])
         iso_timestamp = datetime.fromtimestamp(
@@ -150,26 +150,26 @@ def queue_message_and_llm_response_to_reply(
             "text": llm_response["message"],
             "conversation_envelope": conversation_envelope
         }
-        logger.info(f"Message assistant ready: {reply}")
+        logger.info(f"[ASSISTANT] -> Message ready: {reply}")
         return json.dumps(reply)
 
     except Exception as e:
-        logger.error(f"Error formatting message {type(e)}: {e}")
+        logger.error(f"[ASSISTANT] -> Error formatting message {type(e)}: {e}")
 
 
 async def publish_reliably(queue_message: str) -> None:
     try:
-        logger.info(f"Sending message from assistant: {queue_message}")
+        logger.info(f"[ASSISTANT] -> Sending message: {queue_message}")
         await rabbitmq_client.producer(
             body=queue_message,
             routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
         )
     except Exception as e:
-        logger.error(f"Error send message to queue {type(e)}: {e}")
+        logger.error(f"[ASSISTANT] -> Error send to queue {type(e)}: {e}")
 
 
 async def on_message(body: str) -> None:
-    logger.info(f"    -> message: {body}")
+    logger.info(f"[ASSISTANT] -> message received: {body}")
     from_client = json.loads(body)
 
     # query the knowledge base for RAG context
@@ -187,7 +187,7 @@ async def on_message(body: str) -> None:
 
     # then send that prompt over to the LLM
     llm_response = llm.chat(prompt)
-    logger.info(f"    -> LLM replied: {llm_response}")
+    logger.info(f"[ASSISTANT] -> LLM replied: {llm_response}")
     reply_message = queue_message_and_llm_response_to_reply(
         queue_message=from_client, llm_response=llm_response
     )
@@ -207,7 +207,7 @@ async def main():
         while True:
             await asyncio.sleep(1)
     except KeyboardInterrupt:
-        logger.info("Shutting down...")
+        logger.info("[ASSISTANT] -> RabbitMQ Shutting down...")
         await rabbitmq_client.disconnect()
 
 

@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
         rabbitmq_client.consume(
             queue_name=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
             routing_key=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
-            callback=user_chat_replies_callback,
+            callback=assistant_chat_replies_callback,
         )
     )
     yield

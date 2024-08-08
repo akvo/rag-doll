@@ -135,21 +135,22 @@ def queue_message_and_llm_response_to_reply(
             timestamp, tz=timezone.utc
         ).isoformat()
         reply = {
-            "id": (
-                f'{queue_message['id']}-reply' if queue_message.get('id')
-                else conversation_envelope.get('message_id')
-            ),
-            "timestamp": iso_timestamp,
-            "platform": (
-                queue_message['platform'] if queue_message.get('platform')
-                else conversation_envelope.get("platform")
-            ),
-            "to": (
-                queue_message['from'] if queue_message.get('from')
-                else conversation_envelope.get("client_phone_number")
-            ),
-            "text": llm_response["message"],
-            "conversation_envelope": conversation_envelope
+            "conversation_envelope": {
+                "message_id": conversation_envelope.get('message_id'),
+                "client_phone_number": conversation_envelope.get(
+                    "client_phone_number"
+                ),
+                "user_phone_number": conversation_envelope.get(
+                    "user_phone_number"
+                ),
+                "sender_role": "assistant",
+                "platform": conversation_envelope.get("platform"),
+                "timestamp": iso_timestamp
+            },
+            "body": llm_response["message"],
+            "media": [],
+            "context": [],
+            "transformation_log": [llm_response["message"]]
         }
         logger.info(f"[ASSISTANT] -> Message ready: {reply}")
         return json.dumps(reply)

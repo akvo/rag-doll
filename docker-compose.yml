@@ -16,30 +16,41 @@ services:
     environment:
       <<: *rabbitmq_client_env
       ASSISTANT_ROLE: ${ASSISTANT_ROLE}
+      RAG_PROMPT: ${RAG_PROMPT}
+      RAGLESS_PROMPT: ${RAGLESS_PROMPT}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL}
+      CHROMADB_HOST: ${CHROMADB_HOST}
+      CHROMADB_PORT: ${CHROMADB_PORT}
+      CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
+      CHROMADB_DISTANCE_CUTOFF: ${CHROMADB_DISTANCE_CUTOFF}
     depends_on:
       - rabbitmq
+      - chromadb
     command: ["./run.sh"]
     volumes:
       - ./assistant:/app:delegated
+      - ./packages/Akvo_rabbitmq_client:/lib/Akvo_rabbitmq_client:delegated
 
-  librarian:
+  eppo-librarian:
     image: python:3.12.3
     working_dir: /app
     environment:
+      EPPO_COUNTRY_ORGANISM_URL: ${EPPO_COUNTRY_ORGANISM_URL}
+      EPPO_DATASHEET_URL: ${EPPO_DATASHEET_URL}
+      EPPO_COUNTRIES: ${EPPO_COUNTRIES}
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
-      CHROMADB_COLLECTION: ${LIBRARIAN_COLLECTION}
+      CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
     depends_on:
       - chromadb
     command: ["./run.sh"]
     volumes:
-      - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
-      - ./librarian:/app:delegated
+      - ./eppo-librarian:/app:delegated
+    restart: no
 
   chromadb:
-    image: chromadb/chroma
+    image: chromadb/chroma:0.5.5
     ports:
       - ${CHROMADB_PORT}:${CHROMADB_PORT}
     environment:

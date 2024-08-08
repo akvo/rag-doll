@@ -1,23 +1,66 @@
 import os
 import json
-from openai import OpenAI
-import pika
+import asyncio
 import logging
+import chromadb
 from time import sleep
+from openai import OpenAI
+from Akvo_rabbitmq_client import rabbitmq_client
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-ROLE_USER = "user"
-ROLE_SYSTEM = "system"
-ROLE_ASSISTANT = "assistant"
-MSG_MESSAGE = "message"
-MSG_ROLE = "role"
-MSG_CONTENT = "content"
-MSG_RESPONSE = "response"
-MSG_STATUS = "status"
-MSG_SUCCESS = "success"
+
+# ChromaDB section
+
+CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
+CHROMADB_PORT: int = os.getenv('CHROMADB_PORT')
+CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
+CHROMADB_DISTANCE_CUTOFF: float = float(os.getenv("CHROMADB_DISTANCE_CUTOFF"))
+
+def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.Collection:
+    '''
+        Connect to ChromaDB. The ChromaDB service takes a second or so to start,
+        so we have a crude retry loop. Once connected, we look up or create the
+        collection.
+    '''
+    chromadb_client = None
+    while chromadb_client == None:
+        try:
+            logger.info(f"trying http://{host}:{port}/{collection_name}...")
+            chromadb_client = chromadb.HttpClient(host=host, port=port, settings=chromadb.Settings(anonymized_telemetry=False))
+            return chromadb_client.get_or_create_collection(collection_name)
+        except Exception as e:
+            logger.warning(f"unable to connect to http://{host}:{port}/{collection_name}, retrying...: {type(e)}: {e}")
+            chromadb_client = None
+            sleep(1)
+
+
+def query_collection(collection: chromadb.Collection, prompt: str) -> list[str]:
+    logger.info(f"    -> will query: {collection} for {prompt}, with cut-off {CHROMADB_DISTANCE_CUTOFF}")
+
+    query_result = collection.query(
+        query_texts=[prompt],
+        n_results=5,
+        include=["documents", "distances"]
+    )
+    filtered_documents = [
+        doc for doc, dist in zip(query_result["documents"][0], query_result["distances"][0])
+        if dist < CHROMADB_DISTANCE_CUTOFF
+    ]
+
+    logger.info(f"    -> accepted {len(filtered_documents)} of {len(query_result["documents"][0])} query results: distances: {query_result["distances"][0]}, cut-off: {CHROMADB_DISTANCE_CUTOFF}")
+    return filtered_documents
+
+
+chromadb_collection = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB_COLLECTION)
 
 # --- LLM section
+
+ASSISTANT_ROLE    = os.getenv("ASSISTANT_ROLE")
+OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL")
+RAG_PROMPT        = os.getenv("RAG_PROMPT")
+RAGLESS_PROMPT    = os.getenv("RAGLESS_PROMPT")
 
 
 class LLM:
@@ -25,49 +68,29 @@ class LLM:
         self.chat_model = chat_model
         self.llm_client = OpenAI()
         self.messages = []
-        self.append_message(ROLE_SYSTEM, os.getenv("ASSISTANT_ROLE"))
+        self.append_message("system", ASSISTANT_ROLE)
 
     def chat(self, content: str) -> dict:
-        self.append_message(ROLE_USER, content)
+        self.append_message("user", content)
         response = self.llm_client.chat.completions.create(
             model=self.chat_model, messages=self.messages
         )
-        logging.info(f"OPENAI RESPONSE: {response.choices[0].message.content}")
+        logger.info(f"OPENAI RESPONSE: {response}")
         message = response.choices[0].message
         self.append_message(message.role, message.content)
         return message.content
 
     def append_message(self, role, content):
-        self.messages.append({MSG_ROLE: role, MSG_CONTENT: str(content)})
+        self.messages.append({"role": role, "content": str(content)})
 
 
-llm = LLM(os.getenv("OPENAI_CHAT_MODEL"))
+llm = LLM(OPENAI_CHAT_MODEL)
+
 
 # --- RabbitMQ Section
 
-
-def connect_and_create_queue(queue: str):
-    pika_credentials = pika.PlainCredentials(
-        os.getenv("RABBITMQ_USER"), os.getenv("RABBITMQ_PASS")
-    )
-    pika_parameters = pika.ConnectionParameters(
-        os.getenv("RABBITMQ_HOST"),
-        int(os.getenv("RABBITMQ_PORT")),
-        "/",
-        pika_credentials,
-    )
-    pika_connection = pika.BlockingConnection(pika_parameters)
-    q = pika_connection.channel()
-    q.queue_declare(queue=queue)
-    return q
-
-
-RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-user_chat_queue = connect_and_create_queue(RABBITMQ_QUEUE_USER_CHATS)
+RABBITMQ_QUEUE_USER_CHATS        = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
-user_chat_reply_queue = connect_and_create_queue(
-    RABBITMQ_QUEUE_USER_CHAT_REPLIES
-)
 
 
 def queue_message_and_llm_response_to_reply(
@@ -78,7 +101,7 @@ def queue_message_and_llm_response_to_reply(
         "timestamp": f"{llm_response['created_at'][:-1]}+00:00",  # noqa replace 'Z' with +00:00
         "platform": queue_message["platform"],
         "to": queue_message["from"],
-        "text": llm_response[MSG_MESSAGE][MSG_CONTENT],
+        "text": llm_response["message"]["content"],
     }
     return json.dumps(reply)
 
@@ -98,7 +121,7 @@ def publish_reliably(queue_message: str) -> None:
             )
             return
         except Exception as e:
-            logging.warning(f"{type(e)}: {e}")
+            logger.warning(f"{type(e)}: {e}")
 
         sleep(5)
         user_chat_reply_queue = connect_and_create_queue(
@@ -106,35 +129,44 @@ def publish_reliably(queue_message: str) -> None:
         )
 
 
-def on_message(ch, method, properties, body) -> None:
-    logging.info(
-        "Message received: ch: {}, method: {}, properties: {}, body: {}".format(
-            ch, method, properties, body
-        )
-    )
-    queue_message = json.loads(body.decode("utf8"))
+async def on_message(body: str) -> None:
+    logger.info(f"    -> message: {body}")
+    from_client = json.loads(body)
 
-    llm_response = llm.chat(queue_message["text"])
-    logging.info(f"LLM replied: {llm_response}")
+    # query the knowledge base for RAG context
+    rag_context = query_collection(chromadb_collection, from_client["body"])
+
+    # if there is context, add it to the prompt
+    if len(rag_context) > 0:
+        prompt = RAG_PROMPT.format(from_client['body'], collection_query_result)
+    else:
+        prompt = RAGLESS_PROMPT.format(from_client['body'])
+
+    # then send that prompt over to the LLM
+    llm_response = llm.chat(prompt)
+    logger.info(f"LLM replied: {llm_response}")
 
     publish_reliably(
-        queue_message_and_llm_response_to_reply(queue_message, llm_response)
+        queue_message_and_llm_response_to_reply(from_client, llm_response)
     )
 
 
-while True:
+async def main():
+    await rabbitmq_client.initialize()
+
+    await rabbitmq_client.consume(
+        queue_name=RABBITMQ_QUEUE_USER_CHATS,
+        routing_key=RABBITMQ_QUEUE_USER_CHATS,
+        callback=on_message,
+    )
+
     try:
-        user_chat_queue.basic_consume(
-            queue=RABBITMQ_QUEUE_USER_CHATS,
-            auto_ack=True,
-            on_message_callback=on_message,
-        )
-        user_chat_queue.start_consuming()
-    except Exception as e:
-        logging.warning(
-            "reconnecting {}: {}: {}".format(
-                RABBITMQ_QUEUE_USER_CHATS, type(e), e
-            )
-        )
-        sleep(5)
-        user_chat_queue = connect_and_create_queue(RABBITMQ_QUEUE_USER_CHATS)
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Shutting down...")
+        await rabbitmq_client.disconnect()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+

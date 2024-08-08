@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Rag Doll API",
     root_path="/api",
-    description="This is a very fancy project.",
+    description="A Retrieval Augmented Generator project.",
     contact={
         "name": "Akvo",
         "url": "https://akvo.org",
@@ -81,9 +81,9 @@ app.include_router(twilio_routes.router, tags=["twilio"])
 
 @app.get("/health-check", tags=["dev"])
 def read_root(session: Session = Depends(get_session)):
-    # Test select 1
+    # Test database connectivity
     session.exec(text("SELECT 1"))
-    return {"Hello": "World"}
+    return {"status": "ok"}
 
 
 app.mount("/", app=sio_app)

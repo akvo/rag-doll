@@ -3,6 +3,8 @@ services:
     build: assistant
     environment:
       ASSISTANT_ROLE: ${ASSISTANT_ROLE}
+      RAG_PROMPT: ${RAG_PROMPT}
+      RAGLESS_PROMPT: ${RAGLESS_PROMPT}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASS: ${RABBITMQ_PASS}
       RABBITMQ_QUEUE_USER_CHATS: ${RABBITMQ_QUEUE_USER_CHATS}
@@ -11,22 +13,29 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL}
-    depends_on:
-      - rabbitmq
-
-  librarian:
-    build: librarian
-    environment:
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
-      CHROMADB_COLLECTION: ${LIBRARIAN_COLLECTION}
+      CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
+      CHROMADB_DISTANCE_CUTOFF: ${CHROMADB_DISTANCE_CUTOFF}
+    depends_on:
+      - rabbitmq
+      - chromadb
+
+  eppo-librarian:
+    build: eppo-librarian
+    environment:
+      EPPO_COUNTRY_ORGANISM_URL: ${EPPO_COUNTRY_ORGANISM_URL}
+      EPPO_DATASHEET_URL: ${EPPO_DATASHEET_URL}
+      EPPO_COUNTRIES: ${EPPO_COUNTRIES}
+      CHROMADB_HOST: ${CHROMADB_HOST}
+      CHROMADB_PORT: ${CHROMADB_PORT}
+      CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
     depends_on:
       - chromadb
-    volumes:
-      - ${LIBRARIAN_CORPUS}:/data-sets/corpus.parquet.gz:ro
+    restart: no
 
   chromadb:
-    image: chromadb/chroma
+    image: chromadb/chroma:0.5.5
     ports:
       - ${CHROMADB_PORT}:${CHROMADB_PORT}
     environment:

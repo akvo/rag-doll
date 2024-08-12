@@ -1,5 +1,6 @@
 import os
 import socketio
+import aio_pika
 import logging
 import json
 
@@ -25,9 +26,7 @@ from utils.util import get_value_or_raise_error
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
-    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
-)
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
 SOCKETIO_PATH = ""
 
 sio_server = socketio.AsyncServer(
@@ -108,9 +107,7 @@ def handle_incoming_message(session: Session, message: dict):
     client_phone_number = get_value_or_raise_error(
         conversation_envelope, "client_phone_number"
     )
-    sender_role = get_value_or_raise_error(
-        conversation_envelope, "sender_role"
-    )
+    sender_role = get_value_or_raise_error(conversation_envelope, "sender_role")
 
     prev_conversation_exist = session.exec(
         select(Chat_Session)
@@ -207,12 +204,10 @@ async def chat_message(sid, msg):
                 sio_session, "user_phone_number"
             )
 
-            queue_message = (
-                check_conversation_exist_and_generate_queue_message(
-                    session=session,
-                    msg=msg,
-                    user_phone_number=user_phone_number,
-                )
+            queue_message = check_conversation_exist_and_generate_queue_message(
+                session=session,
+                msg=msg,
+                user_phone_number=user_phone_number,
             )
 
             if queue_message:
@@ -260,3 +255,13 @@ async def user_chats_callback(body: str):
         raise e
     finally:
         session.close()
+
+
+@sio_server.on("whisper")
+async def assistant_chat_reply(sid, msg):
+    print(sid, msg)
+
+
+async def assistant_chat_replies_callback(body: str):
+    message = json.loads(body)
+    await sio_server.emit("whisper", message)

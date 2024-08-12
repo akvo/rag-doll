@@ -22,19 +22,10 @@ const ChatWindow = () => {
   const textareaRef = useRef(null);
   const [message, setMessage] = useState("");
   const [aiMessages, setAiMessages] = useState([
-    "AI suggested message...",
-    <>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis eget
-      sollicitudin augue. Curabitur quis risus ut nulla consectetur gravida.
-      Nunc sit amet turpis tempor, rutrum mi vel, molestie purus. Lorem ipsum
-      dolor sit amet, consectetur adipiscing elit. In hac habitasse platea
-      dictumst. Donec dignissim mi ut eros elementum fringilla. Phasellus
-      maximus feugiat nunc. Aliquam erat volutpat. Cras dictum tortor bibendum
-      velit dapibus, in rutrum mi porttitor. In malesuada odio at augue
-      efficitur maximus. Nullam elementum est a sagittis consectetur. Nullam ac
-      sem dolor. Pellentesque quis sagittis augue. Quisque lobortis sed eros ut
-      dignissim. Curabitur fringilla hendrerit dui, vitae consequat dolor
-    </>,
+    {
+      body: "AI suggested message...",
+      date: "2024-08-08T03:34:10.579180",
+    },
   ]);
   const [chatHistory, setChatHistory] = useState([]);
   const [chats, setChats] = useState([]);
@@ -68,6 +59,21 @@ const ChatWindow = () => {
       socket.off("chats", onChats);
     };
   }, []);
+
+  useEffect(() => {
+    function onWhisper(value) {
+      console.log(value, "socket whisper");
+      if (value) {
+        setAiMessages(() => [
+          { body: value.body, date: value.conversation_envelope.timestamp },
+        ]);
+      }
+    }
+    socket.on("whisper", onWhisper);
+    return () => {
+      socket.off("whisper", onWhisper);
+    };
+  });
 
   useLayoutEffect(() => {
     const messagesContainer = document.getElementById("messagesContainer");
@@ -261,12 +267,17 @@ const ChatWindow = () => {
         {/* AI Messages */}
         <div className="flex-1 p-4 overflow-auto mb-2">
           <div className="bg-gray-100 p-4 h-full rounded-lg shadow-inner overflow-auto">
-            {aiMessages.map((aiMessage, index) => (
+            {aiMessages.map((ai, index) => (
               <div key={index} className="flex mb-4">
                 <div className="relative bg-blue-500 text-white p-4 rounded-lg shadow-lg w-full">
-                  <p>{aiMessage}</p>
+                  {ai.body.split("\n")?.map((line, index) => (
+                    <Fragment key={index}>
+                      {line}
+                      <br />
+                    </Fragment>
+                  ))}
                   <p className="text-right text-xs text-gray-200 mt-2">
-                    AI - {new Date().toLocaleTimeString()}
+                    AI - {formatChatTime(ai.date)}
                   </p>
                 </div>
               </div>

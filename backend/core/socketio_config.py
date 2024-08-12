@@ -1,6 +1,5 @@
 import os
 import socketio
-import aio_pika
 import logging
 import json
 

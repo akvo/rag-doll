@@ -25,7 +25,9 @@ const UserChat = ({ message, timestamp }) => (
           </Fragment>
         ))}
       </p>
-      <p className="text-right text-xs text-gray-200 mt-2">{timestamp}</p>
+      <p className="text-right text-xs text-gray-200 mt-2">
+        {formatChatTime(timestamp)}
+      </p>
     </div>
   </div>
 );
@@ -42,7 +44,9 @@ const ClientChat = ({ message, timestamp }) => (
           </Fragment>
         ))}
       </p>
-      <p className="text-right text-xs text-gray-400 mt-2">{timestamp}</p>
+      <p className="text-right text-xs text-gray-400 mt-2">
+        {formatChatTime(timestamp)}
+      </p>
     </div>
   </div>
 );

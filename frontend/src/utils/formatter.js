@@ -37,7 +37,8 @@ export const generateMessage = ({
 };
 
 export const formatChatTime = (timeString) => {
-  const date = new Date(`${timeString}Z`);
+  const tz = timeString.includes("+00:00") ? "" : "+00:00";
+  const date = new Date(`${timeString}${tz}`);
   const now = new Date();
 
   const diffInMilliseconds = now.getTime() - date.getTime();

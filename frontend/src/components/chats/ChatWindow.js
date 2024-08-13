@@ -175,7 +175,7 @@ const AiMessages = ({ chats, setAiMessages }) => {
   );
 };
 
-const ChatWindow = () => {
+const ChatWindow = ({ chats, setChats, aiMessages, setAiMessages }) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
 
@@ -183,14 +183,7 @@ const ChatWindow = () => {
 
   const textareaRef = useRef(null);
   const [message, setMessage] = useState("");
-  const [aiMessages, setAiMessages] = useState([
-    {
-      body: "AI suggested message...",
-      date: "2024-08-08T03:34:10.579180",
-    },
-  ]);
   const [chatHistory, setChatHistory] = useState([]);
-  const [chats, setChats] = useState([]);
 
   // Load previous chats from /api/chat-details/{clientId}
   useEffect(() => {
@@ -206,39 +199,8 @@ const ChatWindow = () => {
     fetchChats();
   }, [clientId]);
 
-  useEffect(() => {
-    function onChats(value) {
-      console.info(value, "socket chats");
-      if (
-        value.conversation_envelope.client_phone_number === clientPhoneNumber
-      ) {
-        setChats((previous) => [...previous, value]);
-      }
-    }
-    socket.on("chats", onChats);
-
-    return () => {
-      socket.off("chats", onChats);
-    };
-  }, []);
-
-  useEffect(() => {
-    function onWhisper(value) {
-      console.log(value, "socket whisper");
-      if (value) {
-        setAiMessages(() => [
-          { body: value.body, date: value.conversation_envelope.timestamp },
-        ]);
-      }
-    }
-    socket.on("whisper", onWhisper);
-    return () => {
-      socket.off("whisper", onWhisper);
-    };
-  });
-
+  // Trigger on chats change to scroll to the bottom
   useLayoutEffect(() => {
-    // Trigger on chats change to scroll to the bottom
     const messagesContainer = document.getElementById("messagesContainer");
     if (messagesContainer) {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -314,26 +276,31 @@ const ChatWindow = () => {
   };
 
   const renderChats = () => {
-    return chats.map((c, ci) => {
-      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
-        return (
-          <UserChat
-            key={`user-${ci}`}
-            message={c.body}
-            timestamp={c.conversation_envelope.timestamp}
-          />
-        );
-      }
-      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
-        return (
-          <ClientChat
-            key={`client-${ci}`}
-            message={c.body}
-            timestamp={c.conversation_envelope.timestamp}
-          />
-        );
-      }
-    });
+    return chats
+      .filter(
+        (chat) =>
+          chat.conversation_envelope.client_phone_number === clientPhoneNumber
+      )
+      .map((c, ci) => {
+        if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
+          return (
+            <UserChat
+              key={`user-${ci}`}
+              message={c.body}
+              timestamp={c.conversation_envelope.timestamp}
+            />
+          );
+        }
+        if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
+          return (
+            <ClientChat
+              key={`client-${ci}`}
+              message={c.body}
+              timestamp={c.conversation_envelope.timestamp}
+            />
+          );
+        }
+      });
   };
 
   return (

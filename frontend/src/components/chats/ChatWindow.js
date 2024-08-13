@@ -13,50 +13,41 @@ const SenderRoleEnum = {
   SYSTEM: "system",
 };
 
-const ChatMessages = ({ chats = [] }) => {
-  return chats.map((c, ci) => {
-    if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
-      return (
-        <div key={`user-${ci}`} className="flex mb-4 justify-end">
-          <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-            <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-            <p>
-              {c?.body?.split("\n")?.map((line, index) => (
-                <Fragment key={index}>
-                  {line}
-                  <br />
-                </Fragment>
-              ))}
-            </p>
-            <p className="text-right text-xs text-gray-200 mt-2">
-              {`10.${ci + 10} AM`}
-            </p>
-          </div>
-        </div>
-      );
-    }
-    if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
-      return (
-        <div key={`client-${ci}`} className="flex mb-4">
-          <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-            <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-            <p>
-              {c?.body?.split("\n")?.map((line, index) => (
-                <Fragment key={index}>
-                  {line}
-                  <br />
-                </Fragment>
-              ))}
-            </p>
-            <p className="text-right text-xs text-gray-400 mt-2">10:00 AM</p>
-          </div>
-        </div>
-      );
-    }
-  });
-};
+const UserChat = ({ message, timestamp }) => (
+  <div className="flex mb-4 justify-end">
+    <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+      <p>
+        {message?.split("\n")?.map((line, index) => (
+          <Fragment key={index}>
+            {line}
+            <br />
+          </Fragment>
+        ))}
+      </p>
+      <p className="text-right text-xs text-gray-200 mt-2">{timestamp}</p>
+    </div>
+  </div>
+);
 
-const AiMessages = ({ chats }) => {
+const ClientChat = ({ message, timestamp }) => (
+  <div className="flex mb-4">
+    <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+      <p>
+        {message?.split("\n")?.map((line, index) => (
+          <Fragment key={index}>
+            {line}
+            <br />
+          </Fragment>
+        ))}
+      </p>
+      <p className="text-right text-xs text-gray-400 mt-2">{timestamp}</p>
+    </div>
+  </div>
+);
+
+const AiMessages = ({ chats, setAiMessages }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async (text) => {
@@ -299,42 +290,43 @@ const ChatWindow = () => {
     return chatHistory.map((c, ci) => {
       if (c.sender_role === SenderRoleEnum.USER) {
         return (
-          <div key={`user-${ci}`} className="flex mb-4 justify-end">
-            <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-              <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-              <p>
-                {c.message.split("\n")?.map((line, index) => (
-                  <Fragment key={index}>
-                    {line}
-                    <br />
-                  </Fragment>
-                ))}
-              </p>
-              <p className="text-right text-xs text-gray-200 mt-2">
-                {formatChatTime(c.created_at)}
-              </p>
-            </div>
-          </div>
+          <UserChat
+            key={`user-history-${ci}`}
+            message={c.message}
+            timestamp={c.created_at}
+          />
         );
       }
       if (c.sender_role === SenderRoleEnum.CLIENT) {
         return (
-          <div key={`client-${ci}`} className="flex mb-4">
-            <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-              <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-              <p>
-                {c.message.split("\n")?.map((line, index) => (
-                  <Fragment key={index}>
-                    {line}
-                    <br />
-                  </Fragment>
-                ))}
-              </p>
-              <p className="text-right text-xs text-gray-400 mt-2">
-                {formatChatTime(c.created_at)}
-              </p>
-            </div>
-          </div>
+          <ClientChat
+            key={`client-history-${ci}`}
+            message={c.message}
+            timestamp={c.created_at}
+          />
+        );
+      }
+    });
+  };
+
+  const renderChats = () => {
+    return chats.map((c, ci) => {
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
+        return (
+          <UserChat
+            key={`user-${ci}`}
+            message={c.body}
+            timestamp={c.conversation_envelope.timestamp}
+          />
+        );
+      }
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
+        return (
+          <ClientChat
+            key={`client-${ci}`}
+            message={c.body}
+            timestamp={c.conversation_envelope.timestamp}
+          />
         );
       }
     });
@@ -384,11 +376,15 @@ const ChatWindow = () => {
           className="flex-1 p-4 overflow-auto border-b"
         >
           {renderChatHistory()}
-          <ChatMessages chats={chats} />
+          {renderChats()}
         </div>
 
         {/* AI Messages */}
-        {aiMessages.length ? <AiMessages chats={aiMessages} /> : ""}
+        {aiMessages.length ? (
+          <AiMessages chats={aiMessages} setAiMessages={setAiMessages} />
+        ) : (
+          ""
+        )}
       </div>
 
       {/* TextArea */}

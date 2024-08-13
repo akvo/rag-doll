@@ -25,15 +25,22 @@ const Chats = () => {
 
     function onChats(value) {
       console.info(value, "socket chats");
-      setNewMessage(value);
-      setChats((previous) => [...previous, value]);
+      if (value) {
+        setNewMessage(value);
+        setChats((previous) => [...previous, value]);
+      }
     }
 
     function onWhisper(value) {
       console.log(value, "socket whisper");
       if (value) {
-        setAiMessages(() => [
-          { body: value.body, date: value.conversation_envelope.timestamp },
+        setAiMessages((prev) => [
+          ...prev.filter(
+            (p) =>
+              p.conversation_envelope.client_phone_number !==
+              value.conversation_envelope.client_phone_number
+          ),
+          value,
         ]);
       }
     }

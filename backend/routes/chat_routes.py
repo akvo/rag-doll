@@ -79,7 +79,7 @@ async def get_chat_details_by_client_id(
     messages = session.exec(
         select(Chat)
         .where(Chat.chat_session_id == chat_session.id)
-        .order_by(Chat.created_at.desc(), Chat.id.desc())
+        .order_by(Chat.created_at.asc(), Chat.id.asc())
     ).all()
 
     return {

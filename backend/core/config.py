@@ -13,7 +13,11 @@ from routes import user_routes, chat_routes, twilio_routes, slack_routes
 from Akvo_rabbitmq_client import rabbitmq_client
 from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
-from core.socketio_config import sio_app, user_chats_callback
+from core.socketio_config import (
+    sio_app,
+    user_chats_callback,
+    assistant_chat_replies_callback,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -21,9 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
-    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
-)
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
 RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES"
 )
@@ -41,10 +43,6 @@ async def user_chat_replies_callback(body: str):
         await twilio_client.send_whatsapp_message(body=body)
     if platform == Platform_Enum.SLACK.value:
         await slackbot_client.send_message(body=body)
-
-
-async def assistant_chat_replies_callback(body: str):
-    logger.info(f"Message received from assistant: {body}")
 
 
 @asynccontextmanager

@@ -28,10 +28,11 @@ const ChatList = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleOnClickChat = ({ name, phone_number }) => {
+  const handleOnClickChat = ({ id, name, phone_number }) => {
     chatDispatch({
       type: "UPDATE",
       payload: {
+        clientId: id,
         clientName: name,
         clientPhoneNumber: phone_number,
       },
@@ -56,7 +57,9 @@ const ChatList = () => {
           chats: [...prev.chats, ...resData.chats].filter(
             (value, index, self) =>
               index ===
-              self.findIndex((t) => t.chat_session.id === value.chat_session.id)
+              self.findIndex(
+                (t) => t.chat_session.id === value.chat_session.id,
+              ),
           ),
           limit: prev.limit,
           offset: resData.offset,

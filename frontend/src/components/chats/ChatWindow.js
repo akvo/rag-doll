@@ -1,6 +1,13 @@
 "use client";
 
-import { useRef, useState, useEffect, useLayoutEffect, Fragment } from "react";
+import {
+  useRef,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  Fragment,
+  useCallback,
+} from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket, api } from "@/lib";
 import { formatChatTime, generateMessage } from "@/utils/formatter";
@@ -83,8 +90,8 @@ const AiMessages = ({ chats, setAiMessages }) => {
   // };
 
   return (
-    <div className="flex-1 p-4 overflow-auto mb-2">
-      <div className="relative bg-gray-100 h-full rounded-lg shadow-inner overflow-auto">
+    <div className="flex p-4 overflow-auto">
+      <div className="relative bg-gray-100 h-auto rounded-lg shadow-inner overflow-auto">
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-gray-100 z-10 px-4">
           <div className="justify-start">Recommendations</div>
           <div className="flex justify-end">
@@ -222,6 +229,13 @@ const ChatWindow = ({ chats, setChats, aiMessages, setAiMessages }) => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
 
+  const scrollToLastMessage = useCallback(() => {
+    const messagesContainer = document.getElementById("messagesContainer");
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }, []);
+
   // Load previous chats from /api/chat-details/{clientId}
   useEffect(() => {
     async function fetchChats() {
@@ -229,20 +243,18 @@ const ChatWindow = ({ chats, setChats, aiMessages, setAiMessages }) => {
         const res = await api.get(`/chat-details/${clientId}`);
         const data = await res.json();
         setChatHistory(data.messages);
+        scrollToLastMessage();
       } catch (error) {
         console.error(error);
       }
     }
     fetchChats();
-  }, [clientId]);
+  }, [clientId, scrollToLastMessage]);
 
   // Trigger on chats change to scroll to the bottom
   useLayoutEffect(() => {
-    const messagesContainer = document.getElementById("messagesContainer");
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-  }, [chats]);
+    scrollToLastMessage();
+  }, [chats, scrollToLastMessage]);
 
   const handleInput = () => {
     const textarea = textareaRef.current;

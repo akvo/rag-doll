@@ -27,6 +27,9 @@ const Chats = () => {
       console.info(value, "socket chats");
       if (value) {
         setNewMessage(value);
+      }
+      // set chats from socket if chat window opened
+      if (value && clientPhoneNumber) {
         setChats((previous) => [...previous, value]);
       }
     }

@@ -24,7 +24,6 @@ const MarkdownRenderer = ({ index, content, className }) => {
   return (
     <div key={index} className={`prose ${className}`}>
       <ReactMarkdown>{content}</ReactMarkdown>
-      <br />
     </div>
   );
 };
@@ -88,7 +87,7 @@ const AiMessages = ({ chats, setAiMessages }) => {
 
   return (
     <div className="flex p-4 overflow-auto">
-      <div className="relative bg-gray-100 h-auto rounded-lg shadow-inner overflow-auto">
+      <div className="w-full relative bg-gray-100 h-auto rounded-lg shadow-inner overflow-auto">
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-gray-100 z-10 px-4">
           <div className="justify-start">Recommendations</div>
           <div className="flex justify-end">

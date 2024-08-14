@@ -11,7 +11,7 @@ import { formatChatTime } from "@/utils/formatter";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
-const ChatList = ({ newMessage }) => {
+const ChatList = ({ newMessage, setClients }) => {
   const router = useRouter();
   const userDispatch = useUserDispatch();
   const authDispatch = useAuthDispatch();
@@ -52,6 +52,7 @@ const ChatList = ({ newMessage }) => {
       const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
       if (res.status === 200) {
         const resData = await res.json();
+        setClients(resData.chats.map((c) => c.chat_session));
         setChatItems((prev) => {
           const updatedChats = [...prev.chats, ...resData.chats].reduce(
             (acc, incomingChat) => {

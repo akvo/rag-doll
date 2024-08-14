@@ -32,10 +32,7 @@ const chatButtonType = (type) => {
         text: "Chats",
         onClick: () => {
           chatDispatch({
-            type: "UPDATE",
-            payload: {
-              clientId: null,
-            },
+            type: "CLEAR",
           });
         },
       };

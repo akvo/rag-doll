@@ -5,6 +5,7 @@ const ChatContext = createContext(null);
 const ChatDispatchContext = createContext(null);
 
 const initialChatState = {
+  clientId: null,
   clientName: null,
   clientPhoneNumber: null,
 };

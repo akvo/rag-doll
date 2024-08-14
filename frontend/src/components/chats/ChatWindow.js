@@ -71,9 +71,10 @@ const AiMessages = ({ chats, setAiMessages }) => {
 
   useEffect(() => {
     setLoading(true);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
+    return () => clearTimeout(timer);
   }, [chats]);
 
   const handleCopy = async ({ body }) => {

@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useChatContext } from "@/context/ChatContextProvider";
-import { ChatWindow, ChatList } from "@/components";
+import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
+import { ChatWindow, ChatList, ChatNotification } from "@/components";
 import { socket } from "@/lib";
 
 const Chats = () => {
+  const chatDispatch = useChatDispatch();
   const { clientPhoneNumber } = useChatContext();
   const [chats, setChats] = useState([]);
   const [aiMessages, setAiMessages] = useState([]);
   const [newMessage, setNewMessage] = useState(null);
+  const [clients, setClients] = useState([]);
+
+  // TODO :: Handle reload list for new unregistered client chat incoming
 
   // Handle socketio
   useEffect(() => {
@@ -61,15 +65,47 @@ const Chats = () => {
     };
   });
 
-  return clientPhoneNumber ? (
-    <ChatWindow
-      chats={chats}
-      setChats={setChats}
-      aiMessages={aiMessages}
-      setAiMessages={setAiMessages}
-    />
-  ) : (
-    <ChatList newMessage={newMessage} />
+  // handle on click notification
+  const handleOnClickNotification = (sender) => {
+    const findClient = clients.find((c) => c.phone_number === sender);
+    console.log(findClient, clients);
+    if (findClient) {
+      chatDispatch({
+        type: "UPDATE",
+        payload: {
+          clientId: findClient.id,
+          clientName: findClient.name || findClient.phone_number,
+          clientPhoneNumber: findClient.phone_number,
+        },
+      });
+    }
+  };
+
+  return (
+    <div className="w-full h-full">
+      {newMessage &&
+      newMessage?.conversation_envelope?.client_phone_number !==
+        clientPhoneNumber ? (
+        <ChatNotification
+          sender={newMessage?.conversation_envelope?.client_phone_number}
+          message={newMessage?.body}
+          timestamp={newMessage?.conversation_envelope?.timestamp}
+          onClick={handleOnClickNotification}
+        />
+      ) : (
+        ""
+      )}
+      {clientPhoneNumber ? (
+        <ChatWindow
+          chats={chats}
+          setChats={setChats}
+          aiMessages={aiMessages}
+          setAiMessages={setAiMessages}
+        />
+      ) : (
+        <ChatList newMessage={newMessage} setClients={setClients} />
+      )}
+    </div>
   );
 };
 

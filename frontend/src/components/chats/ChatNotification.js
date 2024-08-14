@@ -3,11 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { formatChatTime } from "@/utils/formatter";
 
-const ChatNotification = ({ sender, message, timestamp, onClick }) => {
-  const [visible, setVisible] = useState(false);
-
+const ChatNotification = ({
+  visible,
+  setVisible,
+  sender,
+  message,
+  timestamp,
+  onClick,
+}) => {
   useEffect(() => {
-    setVisible(true);
     const timer = setTimeout(() => setVisible(false), 3000);
     return () => clearTimeout(timer);
   }, [message]);

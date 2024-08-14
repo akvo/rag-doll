@@ -13,6 +13,9 @@ const Chats = () => {
   const [newMessage, setNewMessage] = useState(null);
   const [clients, setClients] = useState([]);
   const [reloadChatList, setReloadChatList] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  // TODO :: Handle reload list for new unregistered client chat incoming
 
   // Handle socketio
   useEffect(() => {
@@ -35,6 +38,17 @@ const Chats = () => {
         );
         setReloadChatList(!findClient);
         setNewMessage(value);
+        if (clientPhoneNumber) {
+          const showNotif =
+            clientPhoneNumber &&
+            value?.conversation_envelope?.client_phone_number !==
+              clientPhoneNumber
+              ? true
+              : false;
+          setVisible(showNotif);
+        } else {
+          setVisible(true);
+        }
       }
       // set chats from socket if chat window opened
       if (value && clientPhoneNumber) {
@@ -87,18 +101,15 @@ const Chats = () => {
 
   return (
     <div className="w-full h-full">
-      {newMessage &&
-      newMessage?.conversation_envelope?.client_phone_number !==
-        clientPhoneNumber ? (
-        <ChatNotification
-          sender={newMessage?.conversation_envelope?.client_phone_number}
-          message={newMessage?.body}
-          timestamp={newMessage?.conversation_envelope?.timestamp}
-          onClick={handleOnClickNotification}
-        />
-      ) : (
-        ""
-      )}
+      <ChatNotification
+        visible={visible}
+        setVisible={setVisible}
+        sender={newMessage?.conversation_envelope?.client_phone_number}
+        message={newMessage?.body}
+        timestamp={newMessage?.conversation_envelope?.timestamp}
+        onClick={handleOnClickNotification}
+      />
+
       {clientPhoneNumber ? (
         <ChatWindow
           chats={chats}

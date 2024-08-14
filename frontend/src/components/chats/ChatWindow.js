@@ -68,6 +68,9 @@ const AiMessages = ({ chats, setAiMessages }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // TODO :: Start loading when new socket chats coming
+    // TODO :: Show whisper if not close yet after back to chat list
+    // TODO :: Add expand collapse for whisper window
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
@@ -87,7 +90,7 @@ const AiMessages = ({ chats, setAiMessages }) => {
 
   return (
     <div className="flex p-4 overflow-auto">
-      <div className="w-full relative bg-gray-100 h-auto rounded-lg shadow-inner overflow-auto">
+      <div className="w-full relative bg-gray-100 max-h-72 rounded-lg shadow-inner overflow-auto">
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-gray-100 z-10 px-4">
           <div className="justify-start">Recommendations</div>
           <div className="flex justify-end">

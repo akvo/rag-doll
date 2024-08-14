@@ -60,23 +60,15 @@ const ClientChat = ({ message, timestamp }) => (
   </div>
 );
 
-const AiMessages = ({ chats, setAiMessages }) => {
+const AiMessages = ({ chats, setAiMessages, loadingWhisper }) => {
   const chatContext = useChatContext();
   const { clientPhoneNumber } = chatContext;
 
   const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // TODO :: Start loading when new socket chats coming
-    // TODO :: Show whisper if not close yet after back to chat list
-    // TODO :: Add expand collapse for whisper window
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [chats]);
+  // TODO :: Start loading when new socket chats coming (WIP)
+  // TODO :: Show whisper if not close yet after back to chat list
+  // TODO :: Add expand collapse for whisper window
 
   const handleCopy = async ({ body }) => {
     try {
@@ -88,16 +80,21 @@ const AiMessages = ({ chats, setAiMessages }) => {
     }
   };
 
+  const onClose = () => {
+    setAiMessages((prev) =>
+      prev.filter(
+        (p) => p.conversation_envelope.client_phone_number !== clientPhoneNumber
+      )
+    );
+  };
+
   return (
     <div className="flex p-4 overflow-auto">
       <div className="w-full relative bg-gray-100 max-h-72 rounded-lg shadow-inner overflow-auto">
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-gray-100 z-10 px-4">
           <div className="justify-start">Recommendations</div>
           <div className="flex justify-end">
-            <button
-              onClick={() => setAiMessages([])}
-              className="bg-gray-300 rounded-full p-1"
-            >
+            <button onClick={onClose} className="bg-gray-300 rounded-full p-1">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -117,7 +114,7 @@ const AiMessages = ({ chats, setAiMessages }) => {
         </div>
         <div className="p-4">
           {/* AI Loading */}
-          {loading ? (
+          {loadingWhisper.includes(clientPhoneNumber) ? (
             <div className="flex items-center justify-center h-60">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
@@ -197,7 +194,13 @@ const AiMessages = ({ chats, setAiMessages }) => {
   );
 };
 
-const ChatWindow = ({ chats, setChats, aiMessages, setAiMessages }) => {
+const ChatWindow = ({
+  chats,
+  setChats,
+  aiMessages,
+  setAiMessages,
+  loadingWhisper,
+}) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
 
@@ -382,11 +385,11 @@ const ChatWindow = ({ chats, setChats, aiMessages, setAiMessages }) => {
         </div>
 
         {/* AI Messages */}
-        {aiMessages.length ? (
-          <AiMessages chats={aiMessages} setAiMessages={setAiMessages} />
-        ) : (
-          ""
-        )}
+        <AiMessages
+          chats={aiMessages}
+          setAiMessages={setAiMessages}
+          loadingWhisper={loadingWhisper}
+        />
       </div>
 
       {/* TextArea */}

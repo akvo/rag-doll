@@ -10,12 +10,9 @@ const Chats = () => {
   const { clientPhoneNumber } = useChatContext();
   const [chats, setChats] = useState([]);
   const [aiMessages, setAiMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState(null);
+  const [newMessage, setNewMessage] = useState([]);
   const [clients, setClients] = useState([]);
   const [reloadChatList, setReloadChatList] = useState(false);
-  const [visible, setVisible] = useState(false);
-
-  // TODO :: Handle reload list for new unregistered client chat incoming
 
   // Handle socketio
   useEffect(() => {
@@ -37,18 +34,14 @@ const Chats = () => {
             c.phone_number === value.conversation_envelope.client_phone_number
         );
         setReloadChatList(!findClient);
-        setNewMessage(value);
-        if (clientPhoneNumber) {
-          const showNotif =
-            clientPhoneNumber &&
-            value?.conversation_envelope?.client_phone_number !==
-              clientPhoneNumber
-              ? true
-              : false;
-          setVisible(showNotif);
-        } else {
-          setVisible(true);
-        }
+        setNewMessage((previous) => [
+          ...previous.filter(
+            (p) =>
+              p.conversation_envelope.message_id !==
+              value?.conversation_envelope?.message_id
+          ),
+          value,
+        ]);
       }
       // set chats from socket if chat window opened
       if (value && clientPhoneNumber) {
@@ -57,7 +50,7 @@ const Chats = () => {
     }
 
     function onWhisper(value) {
-      console.log(value, "socket whisper");
+      console.info(value, "socket whisper");
       if (value) {
         setAiMessages((prev) => [
           ...prev.filter(
@@ -86,7 +79,6 @@ const Chats = () => {
   // handle on click notification
   const handleOnClickNotification = (sender) => {
     const findClient = clients.find((c) => c.phone_number === sender);
-    console.log(findClient, clients);
     if (findClient) {
       chatDispatch({
         type: "UPDATE",
@@ -101,15 +93,41 @@ const Chats = () => {
 
   return (
     <div className="w-full h-full">
-      <ChatNotification
-        visible={visible}
-        setVisible={setVisible}
-        sender={newMessage?.conversation_envelope?.client_phone_number}
-        message={newMessage?.body}
-        timestamp={newMessage?.conversation_envelope?.timestamp}
-        onClick={handleOnClickNotification}
-      />
-
+      <div className="absolute right-4 top-4 flex flex-col gap-2">
+        {newMessage.map((nm, index) => {
+          let showNotif = false;
+          if (clientPhoneNumber) {
+            showNotif =
+              clientPhoneNumber &&
+              nm?.conversation_envelope?.client_phone_number !==
+                clientPhoneNumber
+                ? true
+                : false;
+          } else {
+            showNotif = true;
+          }
+          return (
+            <ChatNotification
+              key={`chat-notification-${index}`}
+              visible={showNotif}
+              setVisible={() => {
+                setNewMessage((prev) =>
+                  prev.filter(
+                    (p) =>
+                      p.conversation_envelope.message_id !==
+                      nm?.conversation_envelope?.message_id
+                  )
+                );
+              }}
+              sender={nm?.conversation_envelope?.client_phone_number}
+              message={nm?.body}
+              timestamp={nm?.conversation_envelope?.timestamp}
+              onClick={handleOnClickNotification}
+              setNewMessage={setNewMessage}
+            />
+          );
+        })}
+      </div>
       {clientPhoneNumber ? (
         <ChatWindow
           chats={chats}

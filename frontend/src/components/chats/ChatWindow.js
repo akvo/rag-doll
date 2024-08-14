@@ -5,7 +5,6 @@ import {
   useState,
   useEffect,
   useLayoutEffect,
-  Fragment,
   useCallback,
 } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";

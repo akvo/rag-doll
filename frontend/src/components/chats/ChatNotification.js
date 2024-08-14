@@ -12,7 +12,9 @@ const ChatNotification = ({
   onClick,
 }) => {
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(false), 3000);
+    const timer = setTimeout(() => {
+      setVisible();
+    }, 1500);
     return () => clearTimeout(timer);
   }, [message]);
 
@@ -20,7 +22,7 @@ const ChatNotification = ({
 
   return (
     <div
-      className={`fixed right-4 top-4 max-w-xs md:max-w-sm p-4 bg-gray-800 opacity-75 text-white rounded-lg shadow-md cursor-pointer transition-all transform ${
+      className={`max-w-xs md:max-w-sm p-4 bg-gray-800 opacity-75 text-white rounded-lg shadow-md cursor-pointer transition-all transform ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
       onClick={() => onClick(sender)}

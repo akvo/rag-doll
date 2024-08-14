@@ -137,19 +137,21 @@ const ChatList = ({
 
   // Update last message for incoming message
   useEffect(() => {
-    if (newMessage) {
+    if (newMessage.length) {
       setChatItems((prev) => {
         const updatedChatItems = prev.chats.map((chat) => {
-          if (
-            chat.chat_session.phone_number ===
-            newMessage.conversation_envelope.client_phone_number
-          ) {
+          const findNewMessage = newMessage.find(
+            (nm) =>
+              nm.conversation_envelope.client_phone_number ===
+              chat.chat_session.phone_number
+          );
+          if (findNewMessage) {
             return {
               ...chat,
               last_message: {
                 ...chat.last_message,
-                created_at: newMessage.conversation_envelope.timestamp,
-                message: newMessage.body,
+                created_at: findNewMessage.conversation_envelope.timestamp,
+                message: findNewMessage.body,
               },
             };
           }

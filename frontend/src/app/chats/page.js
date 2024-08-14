@@ -12,8 +12,7 @@ const Chats = () => {
   const [aiMessages, setAiMessages] = useState([]);
   const [newMessage, setNewMessage] = useState(null);
   const [clients, setClients] = useState([]);
-
-  // TODO :: Handle reload list for new unregistered client chat incoming
+  const [reloadChatList, setReloadChatList] = useState(false);
 
   // Handle socketio
   useEffect(() => {
@@ -30,6 +29,11 @@ const Chats = () => {
     function onChats(value) {
       console.info(value, "socket chats");
       if (value) {
+        const findClient = clients.find(
+          (c) =>
+            c.phone_number === value.conversation_envelope.client_phone_number
+        );
+        setReloadChatList(!findClient);
         setNewMessage(value);
       }
       // set chats from socket if chat window opened
@@ -103,7 +107,12 @@ const Chats = () => {
           setAiMessages={setAiMessages}
         />
       ) : (
-        <ChatList newMessage={newMessage} setClients={setClients} />
+        <ChatList
+          newMessage={newMessage}
+          setClients={setClients}
+          reloadChatList={reloadChatList}
+          setReloadChatList={setReloadChatList}
+        />
       )}
     </div>
   );

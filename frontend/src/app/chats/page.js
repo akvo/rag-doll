@@ -9,12 +9,9 @@ const Chats = () => {
   const chatDispatch = useChatDispatch();
   const { clientPhoneNumber } = useChatContext();
   const [chats, setChats] = useState([]);
-  const [aiMessages, setAiMessages] = useState([]);
   const [newMessage, setNewMessage] = useState([]);
   const [clients, setClients] = useState([]);
   const [reloadChatList, setReloadChatList] = useState(false);
-  const [showWhisper, setShowWhisper] = useState([]);
-  const [loadingWhisper, setLoadingWhisper] = useState([]);
   const [whisperChats, setWhisperChats] = useState([]);
 
   // Handle socketio
@@ -52,19 +49,6 @@ const Chats = () => {
             loading: true,
           },
         ]);
-
-        setShowWhisper((prev) => [
-          ...new Set([
-            ...prev,
-            value.conversation_envelope.client_phone_number,
-          ]),
-        ]);
-        setLoadingWhisper((prev) => [
-          ...new Set([
-            ...prev,
-            value.conversation_envelope.client_phone_number,
-          ]),
-        ]);
         // EOL to handle show & loading whisper
 
         setNewMessage((previous) => [
@@ -101,20 +85,6 @@ const Chats = () => {
             return prev;
           });
         });
-
-        setLoadingWhisper((prev) =>
-          prev.filter(
-            (p) => p !== value.conversation_envelope.client_phone_number
-          )
-        );
-        setAiMessages((prev) => [
-          ...prev.filter(
-            (p) =>
-              p.conversation_envelope.client_phone_number !==
-              value.conversation_envelope.client_phone_number
-          ),
-          value,
-        ]);
       }
     }
 
@@ -187,11 +157,6 @@ const Chats = () => {
         <ChatWindow
           chats={chats}
           setChats={setChats}
-          aiMessages={aiMessages}
-          setAiMessages={setAiMessages}
-          loadingWhisper={loadingWhisper}
-          showWhisper={showWhisper}
-          setShowWhisper={setShowWhisper}
           whisperChats={whisperChats}
           setWhisperChats={setWhisperChats}
         />

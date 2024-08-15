@@ -26,9 +26,9 @@ const UserChat = ({ message, timestamp }) => (
   <div className="flex mb-4 justify-end">
     <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
       <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-      {message?.split("\n")?.map((line, index) => (
+      {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer
-          index={`user-${index}`}
+          key={`user-${i}`}
           content={line}
           className={`prose-headings:text-white prose-strong:text-white prose-p:text-white prose-a:text-white prose-li:text-white prose-ol:text-white prose-ul:text-white prose-code:text-white text-white`}
         />
@@ -44,8 +44,8 @@ const ClientChat = ({ message, timestamp }) => (
   <div className="flex mb-4">
     <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
       <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-      {message?.split("\n")?.map((line, index) => (
-        <MarkdownRenderer index={`client-${index}`} content={line} />
+      {message?.split("\n")?.map((line, i) => (
+        <MarkdownRenderer key={`client-${i}`} content={line} />
       ))}
       <p className="text-right text-xs text-gray-400 mt-2">
         {formatChatTime(timestamp)}
@@ -54,17 +54,7 @@ const ClientChat = ({ message, timestamp }) => (
   </div>
 );
 
-const ChatWindow = ({
-  chats,
-  setChats,
-  aiMessages,
-  setAiMessages,
-  loadingWhisper,
-  showWhisper,
-  setShowWhisper,
-  whisperChats,
-  setWhisperChats,
-}) => {
+const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
 
@@ -250,11 +240,6 @@ const ChatWindow = ({
 
         {/* AI Messages */}
         <Whisper
-          aiMessages={aiMessages}
-          setAiMessages={setAiMessages}
-          loadingWhisper={loadingWhisper}
-          showWhisper={showWhisper}
-          setShowWhisper={setShowWhisper}
           whisperChats={whisperChats}
           setWhisperChats={setWhisperChats}
         />

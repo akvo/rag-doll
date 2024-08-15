@@ -15,6 +15,7 @@ const Chats = () => {
   const [reloadChatList, setReloadChatList] = useState(false);
   const [showWhisper, setShowWhisper] = useState([]);
   const [loadingWhisper, setLoadingWhisper] = useState([]);
+  const [whisperChats, setWhisperChats] = useState([]);
 
   // Handle socketio
   useEffect(() => {
@@ -38,6 +39,20 @@ const Chats = () => {
         setReloadChatList(!selectedClient);
 
         // to handle show & loading whisper
+        setWhisperChats((prev) => [
+          ...prev.filter(
+            (p) =>
+              p.clientPhoneNumber !==
+              value.conversation_envelope.client_phone_number
+          ),
+          {
+            clientPhoneNumber: value.conversation_envelope.client_phone_number,
+            message: null,
+            timestamp: null,
+            loading: true,
+          },
+        ]);
+
         setShowWhisper((prev) => [
           ...new Set([
             ...prev,
@@ -70,6 +85,23 @@ const Chats = () => {
     function onWhisper(value) {
       console.info(value, "socket whisper");
       if (value) {
+        setWhisperChats((prev) => {
+          return prev.map((p) => {
+            if (
+              p.clientPhoneNumber ===
+              value.conversation_envelope.client_phone_number
+            ) {
+              return {
+                ...p,
+                message: value.body,
+                timestamp: value.conversation_envelope.timestamp,
+                loading: false,
+              };
+            }
+            return prev;
+          });
+        });
+
         setLoadingWhisper((prev) =>
           prev.filter(
             (p) => p !== value.conversation_envelope.client_phone_number
@@ -160,6 +192,8 @@ const Chats = () => {
           loadingWhisper={loadingWhisper}
           showWhisper={showWhisper}
           setShowWhisper={setShowWhisper}
+          whisperChats={whisperChats}
+          setWhisperChats={setWhisperChats}
         />
       ) : (
         <ChatList

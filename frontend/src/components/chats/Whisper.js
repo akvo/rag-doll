@@ -11,6 +11,8 @@ const Whisper = ({
   loadingWhisper,
   showWhisper,
   setShowWhisper,
+  whisperChats,
+  setWhisperChats,
 }) => {
   const chatContext = useChatContext();
   const { clientPhoneNumber } = chatContext;
@@ -18,18 +20,31 @@ const Whisper = ({
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const whispers = useMemo(
-    () =>
-      aiMessages.filter(
-        (chat) =>
-          chat.conversation_envelope.client_phone_number === clientPhoneNumber
-      ),
-    [aiMessages, clientPhoneNumber]
+  // const whispers = useMemo(
+  //   () =>
+  //     aiMessages.filter(
+  //       (chat) =>
+  //         chat.conversation_envelope.client_phone_number === clientPhoneNumber
+  //     ),
+  //   [aiMessages, clientPhoneNumber]
+  // );
+
+  const currentWhisper = useMemo(
+    () => whisperChats.find((c) => c.clientPhoneNumber === clientPhoneNumber),
+    [whisperChats, clientPhoneNumber]
   );
 
-  const handleCopy = async ({ body }) => {
+  const whispers = useMemo(
+    () =>
+      whisperChats.filter(
+        (chat) => chat.clientPhoneNumber === clientPhoneNumber
+      ),
+    [whisperChats, clientPhoneNumber]
+  );
+
+  const handleCopy = async ({ message }) => {
     try {
-      await navigator.clipboard.writeText(body);
+      await navigator.clipboard.writeText(message);
       setCopied(true);
       setTimeout(() => setCopied(false), 1000);
     } catch (error) {
@@ -37,12 +52,18 @@ const Whisper = ({
     }
   };
 
+  // const onClose = () => {
+  //   setShowWhisper((prev) => prev.filter((p) => p !== clientPhoneNumber));
+  //   setAiMessages((prev) =>
+  //     prev.filter(
+  //       (p) => p.conversation_envelope.client_phone_number !== clientPhoneNumber
+  //     )
+  //   );
+  // };
+
   const onClose = () => {
-    setShowWhisper((prev) => prev.filter((p) => p !== clientPhoneNumber));
-    setAiMessages((prev) =>
-      prev.filter(
-        (p) => p.conversation_envelope.client_phone_number !== clientPhoneNumber
-      )
+    setWhisperChats((prev) =>
+      prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
     );
   };
 
@@ -50,14 +71,18 @@ const Whisper = ({
     setExpanded(!expanded);
   };
 
-  if (!showWhisper.includes(clientPhoneNumber) && whispers.length === 0) {
+  // if (!showWhisper.includes(clientPhoneNumber) && whispers.length === 0) {
+  //   return null;
+  // }
+
+  if (!currentWhisper && whispers.length === 0) {
     return null;
   }
 
   return (
     <div className="flex p-4 overflow-auto">
       <div
-        className={`w-full relative h- bg-gray-100 rounded-lg shadow-inner overflow-auto ${
+        className={`w-full relative h- bg-gray-100 rounded-lg shadow-inner overflow-auto min-h-64 ${
           expanded ? "max-h-3/4" : "h-64"
         }`}
       >
@@ -103,7 +128,7 @@ const Whisper = ({
         </div>
         <div className="p-4">
           {/* AI Loading */}
-          {loadingWhisper.includes(clientPhoneNumber) ? (
+          {currentWhisper?.loading ? (
             <div className="flex h-48 items-center justify-center">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
@@ -119,7 +144,7 @@ const Whisper = ({
               <div key={index} className="mb-4">
                 <div className="flex mb-2">
                   <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg w-full">
-                    {chat.body.split("\n")?.map((line, index) => (
+                    {chat.message.split("\n")?.map((line, index) => (
                       <MarkdownRenderer key={`ai-${index}`} content={line} />
                     ))}
                     <div className="flex justify-between items-center border-t border-gray-600 pt-2">
@@ -132,7 +157,7 @@ const Whisper = ({
                           {copied ? (
                             <svg
                               id="Layer_1"
-                              data-name="Layer 1"
+                              dataName="Layer 1"
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 100.32 122.88"
                               className="w-4 h-4"
@@ -142,11 +167,11 @@ const Whisper = ({
                           ) : (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              shape-rendering="geometricPrecision"
-                              text-rendering="geometricPrecision"
-                              image-rendering="optimizeQuality"
-                              fill-rule="evenodd"
-                              clip-rule="evenodd"
+                              shapeRendering="geometricPrecision"
+                              textRendering="geometricPrecision"
+                              imageRendering="optimizeQuality"
+                              fillRule="evenodd"
+                              clipRule="evenodd"
                               viewBox="0 0 438 512.37"
                               className="w-4 h-4"
                             >
@@ -166,7 +191,7 @@ const Whisper = ({
                         </p>
                       </div>
                       <p className="text-xs text-gray-500">
-                        {formatChatTime(chat.conversation_envelope.timestamp)}
+                        {formatChatTime(chat.timestamp)}
                       </p>
                     </div>
                   </div>

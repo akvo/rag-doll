@@ -62,6 +62,8 @@ const ChatWindow = ({
   loadingWhisper,
   showWhisper,
   setShowWhisper,
+  whisperChats,
+  setWhisperChats,
 }) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
@@ -242,8 +244,8 @@ const ChatWindow = ({
           id="messagesContainer"
           className="flex-1 p-4 overflow-auto border-b"
         >
-          {renderChatHistory()}
-          {renderChats()}
+          {renderChatHistory}
+          {renderChats}
         </div>
 
         {/* AI Messages */}
@@ -253,6 +255,8 @@ const ChatWindow = ({
           loadingWhisper={loadingWhisper}
           showWhisper={showWhisper}
           setShowWhisper={setShowWhisper}
+          whisperChats={whisperChats}
+          setWhisperChats={setWhisperChats}
         />
       </div>
 

@@ -6,6 +6,7 @@ import {
   useEffect,
   useLayoutEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket, api } from "@/lib";
@@ -147,7 +148,7 @@ const ChatWindow = ({
     }
   };
 
-  const renderChatHistory = () => {
+  const renderChatHistory = useMemo(() => {
     return chatHistory.map((c, ci) => {
       if (c.sender_role === SenderRoleEnum.USER) {
         return (
@@ -168,9 +169,9 @@ const ChatWindow = ({
         );
       }
     });
-  };
+  }, [chatHistory]);
 
-  const renderChats = () => {
+  const renderChats = useMemo(() => {
     return chats
       .filter(
         (chat) =>
@@ -196,7 +197,7 @@ const ChatWindow = ({
           );
         }
       });
-  };
+  }, [chats]);
 
   return (
     <div className="flex flex-col w-full h-screen bg-gray-200">

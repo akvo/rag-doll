@@ -31,11 +31,11 @@ const Chats = () => {
     function onChats(value) {
       console.info(value, "socket chats");
       if (value) {
-        const findClient = clients.find(
+        const selectedClient = clients.find(
           (c) =>
             c.phone_number === value.conversation_envelope.client_phone_number
         );
-        setReloadChatList(!findClient);
+        setReloadChatList(!selectedClient);
 
         // to handle show & loading whisper
         setShowWhisper((prev) => [

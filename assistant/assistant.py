@@ -16,20 +16,20 @@ logger = logging.getLogger(__name__)
 
 # ChromaDB section
 
-CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
-CHROMADB_PORT: int = os.getenv('CHROMADB_PORT')
-CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
+CHROMADB_HOST: str = os.getenv("CHROMADB_HOST")
+CHROMADB_PORT: int = os.getenv("CHROMADB_PORT")
+CHROMADB_COLLECTION: str = os.getenv("CHROMADB_COLLECTION")
 CHROMADB_DISTANCE_CUTOFF: float = float(os.getenv("CHROMADB_DISTANCE_CUTOFF"))
 
 
 def connect_to_chromadb(
     host: str, port: int, collection_name: str
 ) -> chromadb.Collection:
-    '''
-        Connect to ChromaDB. The ChromaDB service takes a
-        second or so to start, so we have a crude retry loop.
-        Once connected, we look up or create the collection.
-    '''
+    """
+    Connect to ChromaDB. The ChromaDB service takes a
+    second or so to start, so we have a crude retry loop.
+    Once connected, we look up or create the collection.
+    """
     chromadb_client = None
     while chromadb_client is None:
         url = f"http://{host}:{port}/{collection_name}"
@@ -38,41 +38,38 @@ def connect_to_chromadb(
             chromadb_client = chromadb.HttpClient(
                 host=host,
                 port=port,
-                settings=chromadb.Settings(anonymized_telemetry=False)
+                settings=chromadb.Settings(anonymized_telemetry=False),
             )
             return chromadb_client.get_or_create_collection(collection_name)
         except Exception as e:
             logger.warning(
-                f"unable to connect to {url}, retrying...: {type(e)}: {e}")
+                f"unable to connect to {url}, retrying...: {type(e)}: {e}"
+            )
             chromadb_client = None
             sleep(1)
 
 
-def query_collection(
-    collection: chromadb.Collection, prompt: str
-) -> list[str]:
+def query_collection(collection: chromadb.Collection, prompt: str) -> list[str]:
     logger.info(
         f"[ASSISTANT] -> will query: {collection} for {prompt}"
         f" with cut-off {CHROMADB_DISTANCE_CUTOFF}"
     )
 
     query_result = collection.query(
-        query_texts=[prompt],
-        n_results=5,
-        include=["documents", "distances"]
+        query_texts=[prompt], n_results=5, include=["documents", "distances"]
     )
     filtered_documents = [
-        doc for doc, dist in zip(
-            query_result["documents"][0],
-            query_result["distances"][0]
+        doc
+        for doc, dist in zip(
+            query_result["documents"][0], query_result["distances"][0]
         )
         if dist < CHROMADB_DISTANCE_CUTOFF
     ]
 
     logger.info(
         f"[ASSISTANT] -> accepted {len(filtered_documents)} of "
-        f"{len(query_result["documents"][0])} query results: distances:"
-        f"{query_result["distances"][0]}, cut-off: {CHROMADB_DISTANCE_CUTOFF}"
+        f"{len(query_result['documents'][0])} query results: distances:"
+        f"{query_result['distances'][0]}, cut-off: {CHROMADB_DISTANCE_CUTOFF}"
     )
     return filtered_documents, query_result
 
@@ -104,10 +101,7 @@ class LLM:
         logger.info(f"[ASSISTANT] -> OPENAI RESPONSE: {response}")
         message = response.choices[0].message
         self.append_message(message.role, message.content)
-        return {
-            "message": message.content,
-            "created_at": response.created
-        }
+        return {"message": message.content, "created_at": response.created}
 
     def append_message(self, role, content):
         self.messages.append({"role": role, "content": str(content)})
@@ -129,14 +123,14 @@ def queue_message_and_llm_response_to_reply(
 ) -> str:
     try:
         logger.info(f"[ASSISTANT] -> Formatting message: {queue_message}")
-        conversation_envelope = queue_message.get('conversation_envelope', {})
+        conversation_envelope = queue_message.get("conversation_envelope", {})
         timestamp = float(llm_response["created_at"])
         iso_timestamp = datetime.fromtimestamp(
             timestamp, tz=timezone.utc
         ).isoformat()
         reply = {
             "conversation_envelope": {
-                "message_id": conversation_envelope.get('message_id'),
+                "message_id": conversation_envelope.get("message_id"),
                 "client_phone_number": conversation_envelope.get(
                     "client_phone_number"
                 ),
@@ -145,12 +139,12 @@ def queue_message_and_llm_response_to_reply(
                 ),
                 "sender_role": "assistant",
                 "platform": conversation_envelope.get("platform"),
-                "timestamp": iso_timestamp
+                "timestamp": iso_timestamp,
             },
             "body": llm_response["message"],
             "media": [],
             "context": [],
-            "transformation_log": [llm_response["message"]]
+            "transformation_log": [llm_response["message"]],
         }
         logger.info(f"[ASSISTANT] -> Message ready: {reply}")
         return json.dumps(reply)
@@ -181,11 +175,9 @@ async def on_message(body: str) -> None:
 
     # if there is context, add it to the prompt
     if len(rag_context) > 0:
-        prompt = RAG_PROMPT.format(
-            from_client['body'], query_result
-        )
+        prompt = RAG_PROMPT.format(from_client["body"], query_result)
     else:
-        prompt = RAGLESS_PROMPT.format(from_client['body'])
+        prompt = RAGLESS_PROMPT.format(from_client["body"])
 
     # then send that prompt over to the LLM
     llm_response = llm.chat(prompt)

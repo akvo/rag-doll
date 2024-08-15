@@ -103,14 +103,14 @@ const Chats = () => {
 
   // handle on click notification
   const handleOnClickNotification = (sender) => {
-    const findClient = clients.find((c) => c.phone_number === sender);
-    if (findClient) {
+    const selectedClient = clients.find((c) => c.phone_number === sender);
+    if (selectedClient) {
       chatDispatch({
         type: "UPDATE",
         payload: {
-          clientId: findClient.id,
-          clientName: findClient.name || findClient.phone_number,
-          clientPhoneNumber: findClient.phone_number,
+          clientId: selectedClient.id,
+          clientName: selectedClient.name || selectedClient.phone_number,
+          clientPhoneNumber: selectedClient.phone_number,
         },
       });
     }

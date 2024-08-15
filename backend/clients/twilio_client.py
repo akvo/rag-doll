@@ -132,6 +132,12 @@ class TwilioClient:
             chunks = self.chunk_text_by_paragraphs(
                 text, MAX_WHATSAPP_MESSAGE_LENGTH
             )
+            # save sent message history here
+            save_chat_history(
+                session=session,
+                conversation_envelope=conversation_envelope,
+                message_body=text,
+            )
             for chunk in chunks:
                 response = self.twilio_client.messages.create(
                     from_=self.TWILIO_WHATSAPP_FROM,
@@ -142,13 +148,6 @@ class TwilioClient:
                     logger.error(
                         f"Failed to send message to WhatsApp number "
                         f"{phone}: {response.error_message}"
-                    )
-                else:
-                    # save sent message history here
-                    save_chat_history(
-                        session=session,
-                        conversation_envelope=conversation_envelope,
-                        message_body=chunk,
                     )
                 time.sleep(0.5)
             logger.info(f"Message sent to WhatsApp: {text}")

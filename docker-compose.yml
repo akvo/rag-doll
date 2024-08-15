@@ -32,6 +32,8 @@ services:
     volumes:
       - ./assistant:/app:delegated
       - ./packages/Akvo_rabbitmq_client:/lib/Akvo_rabbitmq_client:delegated
+      - ./.cache/assistant:/root/.cache:delegated
+      - ./setup.cfg:/app/setup.cfg:ro
 
   eppo-librarian:
     image: python:3.12.3

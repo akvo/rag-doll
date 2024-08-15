@@ -132,12 +132,13 @@ class TwilioClient:
             chunks = self.chunk_text_by_paragraphs(
                 text, MAX_WHATSAPP_MESSAGE_LENGTH
             )
-            # save sent message history here
-            save_chat_history(
-                session=session,
-                conversation_envelope=conversation_envelope,
-                message_body=text,
-            )
+            if not os.getenv("TESTING"):
+                # save sent message history here
+                save_chat_history(
+                    session=session,
+                    conversation_envelope=conversation_envelope,
+                    message_body=text,
+                )
             for chunk in chunks:
                 response = self.twilio_client.messages.create(
                     from_=self.TWILIO_WHATSAPP_FROM,

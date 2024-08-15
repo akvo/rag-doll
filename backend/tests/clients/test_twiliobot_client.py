@@ -135,7 +135,7 @@ def test_send_whatsapp_message_success(
         {
             "conversation_envelope": {
                 "message_id": "message_id",
-                "client_phone_number": None,
+                "client_phone_number": "+1234567899",
                 "user_phone_number": "+1234567890",
                 "sender_role": "system",
                 "platform": "WHATSAPP",
@@ -154,7 +154,7 @@ def test_send_whatsapp_message_success(
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,
         body="Hello, this is a test message.",
-        to="whatsapp:+1234567890",
+        to="whatsapp:+1234567899",
     )
 
 

@@ -1,3 +1,18 @@
+const formatDateToISOString = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-indexed
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
+
+  // Microseconds are not directly available, so we'll pad the milliseconds to match the desired format
+  const microseconds = milliseconds.padEnd(6, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${microseconds}`;
+};
+
 export const generateMessage = ({
   message_id,
   client_phone_number,
@@ -17,6 +32,11 @@ export const generateMessage = ({
   }
   if (transformation_log === null) {
     transformation_log = [body];
+  }
+  if (timestamp === null) {
+    const now = new Date();
+    const formattedDate = formatDateToISOString(now);
+    timestamp = formattedDate;
   }
 
   const message = {

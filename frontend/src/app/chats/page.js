@@ -13,6 +13,7 @@ const Chats = () => {
   const [newMessage, setNewMessage] = useState([]);
   const [clients, setClients] = useState([]);
   const [reloadChatList, setReloadChatList] = useState(false);
+  const [showWhisper, setShowWhisper] = useState([]);
   const [loadingWhisper, setLoadingWhisper] = useState([]);
 
   // Handle socketio
@@ -35,12 +36,22 @@ const Chats = () => {
             c.phone_number === value.conversation_envelope.client_phone_number
         );
         setReloadChatList(!findClient);
+
+        // to handle show & loading whisper
+        setShowWhisper((prev) => [
+          ...new Set([
+            ...prev,
+            value.conversation_envelope.client_phone_number,
+          ]),
+        ]);
         setLoadingWhisper((prev) => [
           ...new Set([
             ...prev,
             value.conversation_envelope.client_phone_number,
           ]),
         ]);
+        // EOL to handle show & loading whisper
+
         setNewMessage((previous) => [
           ...previous.filter(
             (p) =>
@@ -147,6 +158,8 @@ const Chats = () => {
           aiMessages={aiMessages}
           setAiMessages={setAiMessages}
           loadingWhisper={loadingWhisper}
+          showWhisper={showWhisper}
+          setShowWhisper={setShowWhisper}
         />
       ) : (
         <ChatList

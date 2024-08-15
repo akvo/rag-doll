@@ -1,3 +1,18 @@
+const formatDateToISOString = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-indexed
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
+
+  // Microseconds are not directly available, so we'll pad the milliseconds to match the desired format
+  const microseconds = milliseconds.padEnd(6, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${microseconds}`;
+};
+
 export const generateMessage = ({
   message_id,
   client_phone_number,
@@ -18,6 +33,11 @@ export const generateMessage = ({
   if (transformation_log === null) {
     transformation_log = [body];
   }
+  if (timestamp === null) {
+    const now = new Date();
+    const formattedDate = formatDateToISOString(now);
+    timestamp = formattedDate;
+  }
 
   const message = {
     conversation_envelope: {
@@ -37,7 +57,8 @@ export const generateMessage = ({
 };
 
 export const formatChatTime = (timeString) => {
-  const date = new Date(`${timeString}Z`);
+  const tz = timeString && timeString.includes("+00:00") ? "" : "+00:00";
+  const date = new Date(`${timeString}${tz}`);
   const now = new Date();
 
   const diffInMilliseconds = now.getTime() - date.getTime();
@@ -75,4 +96,11 @@ export const formatChatTime = (timeString) => {
       timeZone: browserTimeZone,
     });
   }
+};
+
+export const trimMessage = (text, maxLength = 90) => {
+  if (text.length > maxLength) {
+    return text.slice(0, maxLength) + "...";
+  }
+  return text;
 };

@@ -1,10 +1,19 @@
 "use client";
 
-import { useRef, useState, useEffect, useLayoutEffect, Fragment } from "react";
+import {
+  useRef,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket, api } from "@/lib";
 import { formatChatTime, generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
+import Whisper from "./Whisper";
+import MarkdownRenderer from "./MarkdownRenderer";
 
 const SenderRoleEnum = {
   USER: "user",
@@ -13,7 +22,39 @@ const SenderRoleEnum = {
   SYSTEM: "system",
 };
 
-const ChatWindow = () => {
+const UserChat = ({ message, timestamp }) => (
+  <div className="flex mb-4 justify-end">
+    <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+      {message?.split("\n")?.map((line, i) => (
+        <MarkdownRenderer
+          key={`user-${i}`}
+          content={line}
+          className={`prose-headings:text-white prose-strong:text-white prose-p:text-white prose-a:text-white prose-li:text-white prose-ol:text-white prose-ul:text-white prose-code:text-white text-white`}
+        />
+      ))}
+      <p className="text-right text-xs text-gray-200 mt-2">
+        {formatChatTime(timestamp)}
+      </p>
+    </div>
+  </div>
+);
+
+const ClientChat = ({ message, timestamp }) => (
+  <div className="flex mb-4">
+    <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+      {message?.split("\n")?.map((line, i) => (
+        <MarkdownRenderer key={`client-${i}`} content={line} />
+      ))}
+      <p className="text-right text-xs text-gray-400 mt-2">
+        {formatChatTime(timestamp)}
+      </p>
+    </div>
+  </div>
+);
+
+const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
 
@@ -21,14 +62,14 @@ const ChatWindow = () => {
 
   const textareaRef = useRef(null);
   const [message, setMessage] = useState("");
-  const [aiMessages, setAiMessages] = useState([
-    {
-      body: "AI suggested message...",
-      date: "2024-08-08T03:34:10.579180",
-    },
-  ]);
   const [chatHistory, setChatHistory] = useState([]);
-  const [chats, setChats] = useState([]);
+
+  const scrollToLastMessage = useCallback(() => {
+    const messagesContainer = document.getElementById("messagesContainer");
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }, []);
 
   // Load previous chats from /api/chat-details/{clientId}
   useEffect(() => {
@@ -37,56 +78,27 @@ const ChatWindow = () => {
         const res = await api.get(`/chat-details/${clientId}`);
         const data = await res.json();
         setChatHistory(data.messages);
+        scrollToLastMessage();
       } catch (error) {
         console.error(error);
       }
     }
     fetchChats();
-  }, [clientId]);
+  }, [clientId, scrollToLastMessage]);
 
-  useEffect(() => {
-    function onChats(value) {
-      console.log(value, "socket chats");
-      if (
-        value.conversation_envelope.client_phone_number === clientPhoneNumber
-      ) {
-        setChats((previous) => [...previous, value]);
-      }
-    }
-    socket.on("chats", onChats);
-
-    return () => {
-      socket.off("chats", onChats);
-    };
-  }, []);
-
-  useEffect(() => {
-    function onWhisper(value) {
-      console.log(value, "socket whisper");
-      if (value) {
-        setAiMessages(() => [
-          { body: value.body, date: value.conversation_envelope.timestamp },
-        ]);
-      }
-    }
-    socket.on("whisper", onWhisper);
-    return () => {
-      socket.off("whisper", onWhisper);
-    };
-  });
-
+  // Trigger on chats change to scroll to the bottom
   useLayoutEffect(() => {
-    const messagesContainer = document.getElementById("messagesContainer");
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-    // Trigger on chats change to scroll to the bottom
-  }, [chats]);
+    scrollToLastMessage();
+  }, [chats, scrollToLastMessage]);
 
-  const handleInput = (event) => {
+  const handleInput = () => {
     const textarea = textareaRef.current;
+    const maxHeight = 250;
     textarea.style.height = "auto"; // Reset height to auto
-    textarea.style.height = `${textarea.scrollHeight}px`; // Set height based on scroll height
+    textarea.style.height =
+      textarea.scrollHeight <= maxHeight
+        ? `${textarea.scrollHeight}px`
+        : `${maxHeight}px`; // Set height based on scroll height
   };
 
   const handleChange = (event) => {
@@ -121,7 +133,6 @@ const ChatWindow = () => {
         body: message,
         transformation_log: null,
       });
-      console.log(chatPayload, "chatPayload");
       setChats((previous) => [...previous, chatPayload]);
       socket.timeout(5000).emit("chats", chatPayload);
       setMessage(""); // Clear the textarea after sending
@@ -129,93 +140,56 @@ const ChatWindow = () => {
     }
   };
 
-  const renderChatHistory = () => {
+  const renderChatHistory = useMemo(() => {
     return chatHistory.map((c, ci) => {
       if (c.sender_role === SenderRoleEnum.USER) {
         return (
-          <div key={`user-${ci}`} className="flex mb-4 justify-end">
-            <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-              <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-              <p>
-                {c.message.split("\n")?.map((line, index) => (
-                  <Fragment key={index}>
-                    {line}
-                    <br />
-                  </Fragment>
-                ))}
-              </p>
-              <p className="text-right text-xs text-gray-200 mt-2">
-                {formatChatTime(c.created_at)}
-              </p>
-            </div>
-          </div>
+          <UserChat
+            key={`user-history-${ci}`}
+            message={c.message}
+            timestamp={c.created_at}
+          />
         );
       }
       if (c.sender_role === SenderRoleEnum.CLIENT) {
         return (
-          <div key={`client-${ci}`} className="flex mb-4">
-            <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-              <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-              <p>
-                {c.message.split("\n")?.map((line, index) => (
-                  <Fragment key={index}>
-                    {line}
-                    <br />
-                  </Fragment>
-                ))}
-              </p>
-              <p className="text-right text-xs text-gray-400 mt-2">
-                {formatChatTime(c.created_at)}
-              </p>
-            </div>
-          </div>
+          <ClientChat
+            key={`client-history-${ci}`}
+            message={c.message}
+            timestamp={c.created_at}
+          />
         );
       }
     });
-  };
+  }, [chatHistory]);
 
-  const renderChatMessages = () => {
-    return chats.map((c, ci) => {
-      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
-        return (
-          <div key={`user-${ci}`} className="flex mb-4 justify-end">
-            <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-              <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-              <p>
-                {c?.body?.split("\n")?.map((line, index) => (
-                  <Fragment key={index}>
-                    {line}
-                    <br />
-                  </Fragment>
-                ))}
-              </p>
-              <p className="text-right text-xs text-gray-200 mt-2">
-                {`10.${ci + 10} AM`}
-              </p>
-            </div>
-          </div>
-        );
-      }
-      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
-        return (
-          <div key={`client-${ci}`} className="flex mb-4">
-            <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-              <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-              <p>
-                {c?.body?.split("\n")?.map((line, index) => (
-                  <Fragment key={index}>
-                    {line}
-                    <br />
-                  </Fragment>
-                ))}
-              </p>
-              <p className="text-right text-xs text-gray-400 mt-2">10:00 AM</p>
-            </div>
-          </div>
-        );
-      }
-    });
-  };
+  const renderChats = useMemo(() => {
+    return chats
+      .filter(
+        (chat) =>
+          chat.conversation_envelope.client_phone_number === clientPhoneNumber
+      )
+      .map((c, ci) => {
+        if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
+          return (
+            <UserChat
+              key={`user-${ci}`}
+              message={c.body}
+              timestamp={c.conversation_envelope.timestamp}
+            />
+          );
+        }
+        if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
+          return (
+            <ClientChat
+              key={`client-${ci}`}
+              message={c.body}
+              timestamp={c.conversation_envelope.timestamp}
+            />
+          );
+        }
+      });
+  }, [chats]);
 
   return (
     <div className="flex flex-col w-full h-screen bg-gray-200">
@@ -260,41 +234,26 @@ const ChatWindow = () => {
           id="messagesContainer"
           className="flex-1 p-4 overflow-auto border-b"
         >
-          {renderChatHistory()}
-          {renderChatMessages()}
+          {renderChatHistory}
+          {renderChats}
         </div>
 
         {/* AI Messages */}
-        <div className="flex-1 p-4 overflow-auto mb-2">
-          <div className="bg-gray-100 p-4 h-full rounded-lg shadow-inner overflow-auto">
-            {aiMessages.map((ai, index) => (
-              <div key={index} className="flex mb-4">
-                <div className="relative bg-blue-500 text-white p-4 rounded-lg shadow-lg w-full">
-                  {ai.body.split("\n")?.map((line, index) => (
-                    <Fragment key={index}>
-                      {line}
-                      <br />
-                    </Fragment>
-                  ))}
-                  <p className="text-right text-xs text-gray-200 mt-2">
-                    AI - {formatChatTime(ai.date)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Whisper
+          whisperChats={whisperChats}
+          setWhisperChats={setWhisperChats}
+        />
       </div>
 
-      {/* Input */}
-      <div className="flex p-4 bg-white border-t items-center fixed bottom-16 w-full">
+      {/* TextArea */}
+      <div className="flex p-4 bg-white border-t items-center fixed bottom-16 w-full z-20">
         <textarea
           ref={textareaRef}
           value={message}
           onChange={handleChange}
           onInput={handleInput}
           placeholder="Type a message..."
-          className="w-full px-4 py-2 border rounded-lg resize-none overflow-hidden"
+          className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto"
           rows={1}
         />
         <button

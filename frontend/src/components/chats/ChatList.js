@@ -1,17 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useChatDispatch } from "@/context/ChatContextProvider";
 import { useAuthDispatch } from "@/context/AuthContextProvider";
 import { useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
 import { deleteCookie } from "@/lib/cookies";
-import { formatChatTime } from "@/utils/formatter";
+import { formatChatTime, trimMessage } from "@/utils/formatter";
 
-const initialChatItems = { total_chats: 0, chats: [], limit: 10, offset: 0 };
+const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
-const ChatList = () => {
+const ChatList = ({
+  newMessage,
+  setClients,
+  reloadChatList,
+  setReloadChatList,
+}) => {
   const router = useRouter();
   const userDispatch = useUserDispatch();
   const authDispatch = useAuthDispatch();
@@ -47,36 +52,73 @@ const ChatList = () => {
     setOffset((prevOffset) => prevOffset + limit);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
-      if (res.status === 200) {
-        const resData = await res.json();
-        setChatItems((prev) => ({
+  const fetchData = useCallback(async () => {
+    const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
+    if (res.status === 200) {
+      const resData = await res.json();
+      setClients(resData.chats.map((c) => c.chat_session));
+      setChatItems((prev) => {
+        const updatedChats = [...prev.chats, ...resData.chats].reduce(
+          (acc, incomingChat) => {
+            const existingChatIndex = acc.findIndex(
+              (chat) => chat.chat_session.id === incomingChat.chat_session.id
+            );
+
+            if (existingChatIndex > -1) {
+              // Update the existing chat if the incoming chat's last_read is more recent
+              if (
+                new Date(acc[existingChatIndex].chat_session.last_read) <=
+                new Date(incomingChat.chat_session.last_read)
+              ) {
+                acc[existingChatIndex] = incomingChat;
+              }
+            } else {
+              // Add the new chat if the chat session ID is unique
+              acc.push(incomingChat);
+            }
+
+            return acc;
+          },
+          [...prev.chats]
+        );
+
+        // Sort the chats by the last_message's created_at date in descending order
+        const sortedChats = updatedChats.sort(
+          (a, b) =>
+            new Date(b.last_message.created_at) -
+            new Date(a.last_message.created_at)
+        );
+
+        return {
           ...prev,
-          chats: [...prev.chats, ...resData.chats].filter(
-            (value, index, self) =>
-              index ===
-              self.findIndex(
-                (t) => t.chat_session.id === value.chat_session.id,
-              ),
-          ),
+          chats: sortedChats,
           limit: prev.limit,
           offset: resData.offset,
-        }));
-      }
-      if (res.status === 401 || res.status === 403) {
-        userDispatch({
-          type: "DELETE",
-        });
-        authDispatch({ type: "DELETE" });
-        deleteCookie("AUTH_TOKEN");
-        router.replace("/login");
-      }
-    };
-    fetchData();
+        };
+      });
+    }
+    if (res.status === 401 || res.status === 403) {
+      userDispatch({
+        type: "DELETE",
+      });
+      authDispatch({ type: "DELETE" });
+      deleteCookie("AUTH_TOKEN");
+      router.replace("/login");
+    }
   }, [offset]);
 
+  useEffect(() => {
+    fetchData();
+  }, [offset, fetchData]);
+
+  useEffect(() => {
+    if (reloadChatList) {
+      fetchData();
+      setReloadChatList(false);
+    }
+  }, [reloadChatList]);
+
+  // Handle infinite scroll
   useEffect(() => {
     const handleScroll = () => {
       if (chatListRef.current) {
@@ -92,6 +134,37 @@ const ChatList = () => {
       chatListRef?.current?.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  // Update last message for incoming message
+  useEffect(() => {
+    if (newMessage.length) {
+      setChatItems((prev) => {
+        const updatedChatItems = prev.chats.map((chat) => {
+          const findNewMessage = newMessage.find(
+            (nm) =>
+              nm.conversation_envelope.client_phone_number ===
+              chat.chat_session.phone_number
+          );
+          if (findNewMessage) {
+            return {
+              ...chat,
+              last_message: {
+                ...chat.last_message,
+                created_at: findNewMessage.conversation_envelope.timestamp,
+                message: findNewMessage.body,
+              },
+            };
+          }
+          return chat;
+        });
+
+        return {
+          ...prev,
+          chats: updatedChatItems,
+        };
+      });
+    }
+  }, [newMessage]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -190,7 +263,7 @@ const ChatList = () => {
                     </p>
                   </div>
                   <p className="text-gray-600 text-sm">
-                    {last_message.message}
+                    {trimMessage(last_message.message)}
                   </p>
                 </div>
               </div>

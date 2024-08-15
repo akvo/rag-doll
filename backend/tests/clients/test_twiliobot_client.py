@@ -14,8 +14,8 @@ def twilio_client():
 def test_chunk_text_by_paragraphs(twilio_client):
     text = (
         "This is a test paragraph.\n\nThis is another test paragraph that is"
+        " longer than the previous one to check chunking functionality."
     )
-    text += " longer than the previous one to check chunking functionality."
     max_length = 50
     chunks = twilio_client.chunk_text_by_paragraphs(text, max_length)
     assert len(chunks) == 3
@@ -33,13 +33,13 @@ def test_validate_and_format_phone_number_valid(twilio_client):
 
 
 def test_validate_and_format_phone_number_invalid(twilio_client):
-    phone_number = "1234567890"  # Invalid format
+    phone_number = "1234567890"
     with pytest.raises(ValueError):
         twilio_client.validate_and_format_phone_number(phone_number)
 
 
 def test_validate_and_format_phone_number_parse_error(twilio_client):
-    phone_number = "invalid_number"  # Invalid number format
+    phone_number = "invalid_number"
     with pytest.raises(ValueError):
         twilio_client.validate_and_format_phone_number(phone_number)
 
@@ -52,7 +52,6 @@ def test_format_to_queue_message_valid(twilio_client):
         "NumMedia": 0,
     }
     formatted_message = twilio_client.format_to_queue_message(values)
-    assert isinstance(formatted_message, str)
     queue_message = json.loads(formatted_message)
     conversation_envelope = queue_message.get("conversation_envelope", {})
     timestamp = conversation_envelope.get("timestamp")
@@ -83,7 +82,6 @@ def test_format_to_queue_message_valid_with_voice_notes(twilio_client):
         "MediaContentType0": "audio/ogg",
     }
     formatted_message = twilio_client.format_to_queue_message(values)
-    assert isinstance(formatted_message, str)
     queue_message = json.loads(formatted_message)
     conversation_envelope = queue_message.get("conversation_envelope", {})
     timestamp = conversation_envelope.get("timestamp")
@@ -120,7 +118,7 @@ def test_format_to_queue_message_missing_fields(twilio_client):
 def test_format_to_queue_message_invalid_phone_number(twilio_client):
     values = {
         "MessageSid": "1234567890",
-        "From": "whatsapp:invalid_number",  # Invalid phone number format
+        "From": "whatsapp:invalid_number",
         "Body": "Test message",
         "NumMedia": 0,
     }
@@ -137,7 +135,7 @@ def test_send_whatsapp_message_success(
         {
             "conversation_envelope": {
                 "message_id": "message_id",
-                "client_phone_number": None,
+                "client_phone_number": "+1234567899",
                 "user_phone_number": "+1234567890",
                 "sender_role": "system",
                 "platform": "WHATSAPP",
@@ -153,11 +151,10 @@ def test_send_whatsapp_message_success(
 
     twilio_client.send_whatsapp_message(message_body)
 
-    assert mock_messages.create.called
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,
         body="Hello, this is a test message.",
-        to="whatsapp:+1234567890",
+        to="whatsapp:+1234567899",
     )
 
 
@@ -188,14 +185,12 @@ def test_send_whatsapp_message_twilio_error(
 
     twilio_client.send_whatsapp_message(message_body)
 
-    assert mock_messages.create.called
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,
         body="Hello, this is a test message.",
         to="whatsapp:+1234567899",
     )
 
-    # Check that the error was logged
     mock_logger.error.assert_any_call(
         "Error sending message to Twilio: HTTP 400 error: Twilio error"
     )
@@ -212,7 +207,6 @@ def test_send_whatsapp_message_json_decode_error(
 
     assert not mock_messages.create.called
 
-    # Check that the error was logged
     mock_logger.error.assert_any_call(
         "Error decoding JSON message: Expecting value: line 1 column 1 (char 0)"
     )
@@ -243,12 +237,10 @@ def test_send_whatsapp_message_unexpected_error(
 
     twilio_client.send_whatsapp_message(message_body)
 
-    assert mock_messages.create.called
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,
         body="Hello, this is a test message.",
         to="whatsapp:+1234567899",
     )
 
-    # Check that the error was logged
     mock_logger.error.assert_any_call("Unexpected error: Unexpected error")

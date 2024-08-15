@@ -10,7 +10,6 @@ from time import sleep
 from lxml.html import HtmlElement
 from nltk.tokenize import sent_tokenize
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -23,7 +22,7 @@ EPPO_COUNTRIES: list[str] = os.getenv('EPPO_COUNTRIES').replace(' ', '').split('
 # feel, we start with 5 sentences per chunk, with one sentence overlap. We will
 # have to fine tune that over time. We simply use all other columns as metadata.
 
-CHUNK_SIZE=5 # XXX move to .env
+CHUNK_SIZE: int = 5 # XXX move to .env
 OVERLAP_SIZE: int = 1
 
 CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
@@ -34,7 +33,8 @@ CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
 COL_EPPO_CODE: str = 'EPPOCode'
 COL_COUNTRY: str   = 'ISO 3166-1 2-character country code'
 COL_URL: str       = 'EPPO datasheet url'
-COL_TEXT_EN: str   = 'datasheet (English)'
+COL_TEXT_EN: str   = 'datasheet (en)'
+COL_CHUNK: str     = 'chunk (en)'
 
 
 def download_eppo_code_registry(url: str, countries: list[str]) -> pd.DataFrame:
@@ -52,10 +52,15 @@ def download_eppo_code_registry(url: str, countries: list[str]) -> pd.DataFrame:
         else:
             merged_df = pd.concat([merged_df, country_df], ignore_index=True)
 
-    return merged_df.groupby(COL_EPPO_CODE).agg({
+    df = merged_df.groupby(COL_EPPO_CODE).agg({
         COL_EPPO_CODE: 'first',
         COL_COUNTRY: lambda x: ', '.join(x.unique())
     }).reset_index(drop=True)
+
+    df[COL_EPPO_CODE] = df[COL_EPPO_CODE].astype('category')
+    df[COL_COUNTRY] = df[COL_COUNTRY].astype('category')
+
+    return df
 
 
 def download_country_organisms(url: str, country: str) -> pd.DataFrame:
@@ -89,7 +94,7 @@ def clean_datasheet(tree: HtmlElement) -> HtmlElement:
         not want in the knowledge base. This function prunes such useless
         elements from the tree, as well as comments.
     '''
-    for xpath in ['//head', '//header', '//footer', '//script', '//noscript', '//style', '//div[contains(@class, "quicksearch")]', '//div[contains(@class, "navbar")]', '//div[contains(@class, "btn")]', '//div[contains(@class, "modal")]']:
+    for xpath in ['//head', '//header', '//footer', '//script', '//noscript', '//style', '//div[contains(@class, "quicksearch")]', '//div[contains(@class, "navbar")]', '//*[contains(@class, "btn")]', '//div[contains(@class, "modal")]', '//*[contains(@class, "hidden-print")]']:
         elements = tree.xpath(xpath)
         for element in elements:
             element.getparent().remove(element)
@@ -120,7 +125,14 @@ def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
             COL_TEXT_EN: datasheet_text,
         })
 
-    return df.apply(download_and_extract_text, axis=1)
+    df = df.apply(download_and_extract_text, axis=1)
+
+    df[COL_EPPO_CODE] = df[COL_EPPO_CODE].astype('category')
+    df[COL_COUNTRY]   = df[COL_COUNTRY].astype('category')
+    df[COL_URL]       = df[COL_URL].astype('string')
+    df[COL_TEXT_EN]   = df[COL_TEXT_EN].astype('string')
+
+    return df
 
 
 def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.Collection:
@@ -207,6 +219,8 @@ def add_chunks_to_chromadb(df, text_column, chroma_collection):
         build_chunks_from_sentences(datasheet_text, eppo_code, row[COL_COUNTRY], datasheet_url, chroma_collection)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
     # download the NLTK sentence splitter
     nltk.download('punkt')
 

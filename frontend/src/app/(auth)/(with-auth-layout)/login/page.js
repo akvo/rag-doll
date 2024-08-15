@@ -13,6 +13,7 @@ const Login = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [error, setError] = useState("");
   const [phoneNumber, setPhoneNumber] = useState(null);
+  const [disabled, setDisabled] = useState(false);
 
   const handleShowNotification = () => {
     setShowNotification(true);
@@ -24,6 +25,7 @@ const Login = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setDisabled(true);
 
     if (!phoneNumber) {
       setError("Phone number required.");
@@ -56,9 +58,11 @@ const Login = () => {
         setError("Error, please try again later.");
         handleShowNotification();
       }
+      setDisabled(false);
     } catch (error) {
       setError("Error, please try again later.");
       handleShowNotification();
+      setDisabled(false);
     }
   };
 
@@ -89,10 +93,38 @@ const Login = () => {
 
         <div>
           <button
+            disabled={disabled}
             type="submit"
-            className="flex w-full justify-center rounded-md bg-green-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            className={`flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              disabled
+                ? "bg-green-300 cursor-not-allowed"
+                : "bg-green-500 hover:bg-green-600 focus:ring-green-500"
+            }`}
           >
-            Sign in
+            {disabled ? (
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zM12 24c6.627 0 12-5.373 12-12h-4a8 8 0 01-8 8v4z"
+                ></path>
+              </svg>
+            ) : (
+              "Sign in"
+            )}
           </button>
         </div>
       </form>

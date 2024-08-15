@@ -7,7 +7,7 @@ import { useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
 import { deleteCookie } from "@/lib/cookies";
-import { formatChatTime } from "@/utils/formatter";
+import { formatChatTime, trimMessage } from "@/utils/formatter";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -263,7 +263,7 @@ const ChatList = ({
                     </p>
                   </div>
                   <p className="text-gray-600 text-sm">
-                    {last_message.message}
+                    {trimMessage(last_message.message)}
                   </p>
                 </div>
               </div>

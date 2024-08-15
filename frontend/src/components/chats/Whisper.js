@@ -52,16 +52,16 @@ const Whisper = ({ whisperChats, setWhisperChats }) => {
   return (
     <div className="flex p-4 overflow-auto">
       <div
-        className={`w-full relative h- bg-gray-100 rounded-lg shadow-inner overflow-auto min-h-64 ${
-          expanded ? "max-h-3/4" : "h-64"
+        className={`w-full relative h- bg-blue-300 border-blue-300 border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-40 ${
+          expanded ? "max-h-3/4" : "h-40"
         }`}
       >
-        <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-gray-100 z-10 px-4">
+        <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-blue-300 z-10 px-4">
           <div className="justify-start">Recommendations</div>
           <div className="flex space-x-2">
             <button
               onClick={toggleExpand}
-              className="bg-gray-300 rounded-full p-1"
+              className="bg-gray-100 rounded-full p-1"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -78,7 +78,7 @@ const Whisper = ({ whisperChats, setWhisperChats }) => {
                 />
               </svg>
             </button>
-            <button onClick={onClose} className="bg-gray-300 rounded-full p-1">
+            {/* <button onClick={onClose} className="bg-gray-100 rounded-full p-1">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -93,13 +93,13 @@ const Whisper = ({ whisperChats, setWhisperChats }) => {
                   d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
-            </button>
+            </button> */}
           </div>
         </div>
         <div className="p-4">
           {/* AI Loading */}
           {currentWhisper?.loading ? (
-            <div className="flex h-48 items-center justify-center">
+            <div className="flex h-18 items-center justify-center">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce delay-150"></div>
@@ -113,7 +113,7 @@ const Whisper = ({ whisperChats, setWhisperChats }) => {
             whispers.map((chat, index) => (
               <div key={index} className="mb-4">
                 <div className="flex mb-2">
-                  <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg w-full">
+                  <div className="relative bg-gray-100 p-4 rounded-lg shadow-lg w-full">
                     {chat.message.split("\n")?.map((line, index) => (
                       <MarkdownRenderer key={`ai-${index}`} content={line} />
                     ))}
@@ -127,7 +127,6 @@ const Whisper = ({ whisperChats, setWhisperChats }) => {
                           {copied ? (
                             <svg
                               id="Layer_1"
-                              dataName="Layer 1"
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 100.32 122.88"
                               className="w-4 h-4"

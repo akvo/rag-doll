@@ -23,3 +23,4 @@ slack_sdk==3.30.0
 pytest-aiohttp==1.0.5
 pydub==0.25.1
 SpeechRecognition==3.10.4
+fastapi-cache2==0.2.2

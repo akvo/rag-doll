@@ -19,31 +19,39 @@ from sqlmodel import Session, select
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
-from typing import Dict
 from utils.util import get_value_or_raise_error
+from fastapi_cache import FastAPICache
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
 SOCKETIO_PATH = ""
 
-sio_server = socketio.AsyncServer(
-    async_mode="asgi",
-)
-
+sio_server = socketio.AsyncServer(async_mode="asgi")
 sio_app = socketio.ASGIApp(
     socketio_server=sio_server, socketio_path=SOCKETIO_PATH
 )
 
 cookie = SimpleCookie()
 
-# In memory cache using dictionary
-# TODO :: maybe we want to use another way?
-user_sid_map: Dict[str, str] = {}
 USER_CACHE_KEY = "USER_"
+
+
+async def set_user_session(user_id: str, sid: str):
+    await FastAPICache.get_backend().set(f"{USER_CACHE_KEY}{user_id}", sid)
+
+
+async def get_user_session(user_id: str):
+    return await FastAPICache.get_backend().get(f"{USER_CACHE_KEY}{user_id}")
+
+
+async def delete_user_session(user_id: str):
+    await FastAPICache.get_backend().delete(f"{USER_CACHE_KEY}{user_id}")
 
 
 def check_conversation_exist_and_generate_queue_message(
@@ -170,8 +178,8 @@ async def sio_connect(sid, environ):
         user_id = decoded_token.get("uid")
         async with sio_server.session(sid) as sio_session:
             sio_session["user_phone_number"] = user_phone_number
-            user_sid_map[f"{USER_CACHE_KEY}{user_id}"] = sid
-        logger.info(f"User sid[{sid}] connected: {user_sid_map}")
+            await set_user_session(user_id, sid)
+        logger.info(f"User sid[{sid}] connected: {user_id}")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
         raise ConnectionRefusedError("Authentication failed")
@@ -183,9 +191,10 @@ async def sio_connect(sid, environ):
 @sio_server.on("disconnect")
 async def sio_disconnect(sid):
     async with sio_server.session(sid) as sio_session:
-        user_phone_number = sio_session["user_phone_number"]
-        if user_phone_number in user_sid_map:
-            del user_sid_map[user_phone_number]
+        user_phone_number = sio_session.get("user_phone_number")
+        if user_phone_number:
+            user_id = user_phone_number  # Adjust if needed
+            await delete_user_session(user_id)
     logger.info(f"User sid[{sid}] disconnected")
 
 
@@ -221,14 +230,20 @@ async def chat_message(sid, msg):
                     body=json.dumps(queue_message),
                     routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
                 )
+                return {
+                    "success": True,
+                    "data": "Message processed and sent to RabbitMQ",
+                }
             else:
-                logger.error(
+                error_message = (
                     f"Conversation not exist: user[{user_phone_number}], "
                     f"client[{client_phone_number}]"
                 )
+                logger.error(error_message)
+                return {"success": False, "error": error_message}
     except Exception as e:
         logger.error(f"Error handling chats event: {e}")
-        raise e
+        return {"success": False, "error": str(e)}
     finally:
         session.close()
 
@@ -247,7 +262,7 @@ async def user_chats_callback(body: str):
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = user_sid_map.get(f"{USER_CACHE_KEY}{user_id}")
+        user_sid = await get_user_session(user_id)
 
         logger.info(
             f"Send user_chats_callback to {USER_CACHE_KEY}{user_id} "

@@ -59,8 +59,23 @@ class TextConverter:
         return re.sub(r"_(.+?)_", r"_\1_", content)
 
     def _convert_bold_to_whatsapp(self, content: str) -> str:
+        # Convert bold formatting
         content = re.sub(r"\*\*(.+?)\*\*", r"*\1*", content)
+
+        # Replace hyphens, but not inside URLs
+        def replace_hyphens(match):
+            url = match.group(0)
+            return url.replace("-", "%HYPHEN%")
+
+        # Temporarily protect hyphens inside URLs
+        content = re.sub(r"http[s]?://[^\s]+", replace_hyphens, content)
+
+        # Replace remaining hyphens with asterisks
         content = content.replace("-", "*")
+
+        # Restore hyphens in URLs
+        content = content.replace("%HYPHEN%", "-")
+
         return content
 
     def _convert_links_to_plaintext(self, content: str) -> str:

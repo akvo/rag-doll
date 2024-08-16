@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import time
 import phonenumbers
 import requests
 import urllib.request
@@ -102,21 +101,6 @@ class TwilioClient:
             self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN
         )
 
-    def chunk_text_by_paragraphs(self, text: str, max_length: int) -> list[str]:
-        paragraphs = text.split("\n\n")
-        chunks = []
-        for paragraph in paragraphs:
-            paragraph = TextConverter(paragraph)
-            paragraph = paragraph.format_whatsapp()
-            if len(paragraph) <= max_length:
-                chunks.append(paragraph)
-            else:
-                for start_index in range(0, len(paragraph), max_length):
-                    end_index = start_index + max_length
-                    chunk = paragraph[start_index:end_index]
-                    chunks.append(chunk)
-        return chunks
-
     def send_whatsapp_message(self, body: str) -> None:
         try:
             session = Session(engine)
@@ -129,9 +113,6 @@ class TwilioClient:
             phone = conversation_envelope.get(
                 "client_phone_number"
             ) or conversation_envelope.get("user_phone_number")
-            chunks = self.chunk_text_by_paragraphs(
-                text, MAX_WHATSAPP_MESSAGE_LENGTH
-            )
             if not os.getenv("TESTING"):
                 # save sent message history here
                 save_chat_history(
@@ -139,18 +120,16 @@ class TwilioClient:
                     conversation_envelope=conversation_envelope,
                     message_body=text,
                 )
-            for chunk in chunks:
-                response = self.twilio_client.messages.create(
-                    from_=self.TWILIO_WHATSAPP_FROM,
-                    body=chunk,
-                    to=f"whatsapp:{phone}",
+            response = self.twilio_client.messages.create(
+                from_=self.TWILIO_WHATSAPP_FROM,
+                body=TextConverter(text).format_whatsapp(),
+                to=f"whatsapp:{phone}",
+            )
+            if response.error_code is not None:
+                logger.error(
+                    f"Failed to send message to WhatsApp number "
+                    f"{phone}: {response.error_message}"
                 )
-                if response.error_code is not None:
-                    logger.error(
-                        f"Failed to send message to WhatsApp number "
-                        f"{phone}: {response.error_message}"
-                    )
-                time.sleep(0.5)
             logger.info(f"Message sent to WhatsApp: {text}")
 
         except JSONDecodeError as e:

@@ -11,19 +11,6 @@ def twilio_client():
     return TwilioClient()
 
 
-def test_chunk_text_by_paragraphs(twilio_client):
-    text = (
-        "This is a test paragraph.\n\nThis is another test paragraph that is"
-        " longer than the previous one to check chunking functionality."
-    )
-    max_length = 50
-    chunks = twilio_client.chunk_text_by_paragraphs(text, max_length)
-    assert len(chunks) == 3
-    assert chunks[0] == "This is a test paragraph."
-    assert chunks[1] == "This is another test paragraph that is longer than"
-    assert chunks[2] == " the previous one to check chunking functionality."
-
-
 def test_validate_and_format_phone_number_valid(twilio_client):
     phone_number = "+6281234567890"
     formatted_phone = twilio_client.validate_and_format_phone_number(

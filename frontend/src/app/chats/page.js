@@ -26,65 +26,86 @@ const Chats = () => {
       console.info("FE Disconnected");
     }
 
-    function onChats(value) {
+    function onChats(value, callback) {
       console.info(value, "socket chats");
-      if (value) {
-        const selectedClient = clients.find(
-          (c) =>
-            c.phone_number === value.conversation_envelope.client_phone_number
-        );
-        setReloadChatList(!selectedClient);
+      try {
+        if (value) {
+          const selectedClient = clients.find(
+            (c) =>
+              c.phone_number === value.conversation_envelope.client_phone_number
+          );
+          setReloadChatList(!selectedClient);
 
-        // to handle show & loading whisper
-        setWhisperChats((prev) => [
-          ...prev.filter(
-            (p) =>
-              p.clientPhoneNumber !==
-              value.conversation_envelope.client_phone_number
-          ),
-          {
-            clientPhoneNumber: value.conversation_envelope.client_phone_number,
-            message: null,
-            timestamp: null,
-            loading: true,
-          },
-        ]);
-        // EOL to handle show & loading whisper
+          // to handle show & loading whisper
+          setWhisperChats((prev) => [
+            ...prev.filter(
+              (p) =>
+                p.clientPhoneNumber !==
+                value.conversation_envelope.client_phone_number
+            ),
+            {
+              clientPhoneNumber:
+                value.conversation_envelope.client_phone_number,
+              message: null,
+              timestamp: null,
+              loading: true,
+            },
+          ]);
+          // EOL to handle show & loading whisper
 
-        setNewMessage((previous) => [
-          ...previous.filter(
-            (p) =>
-              p.conversation_envelope.message_id !==
-              value?.conversation_envelope?.message_id
-          ),
-          value,
-        ]);
-      }
-      // set chats from socket if chat window opened
-      if (value && clientPhoneNumber) {
-        setChats((previous) => [...previous, value]);
+          setNewMessage((previous) => [
+            ...previous.filter(
+              (p) =>
+                p.conversation_envelope.message_id !==
+                value?.conversation_envelope?.message_id
+            ),
+            value,
+          ]);
+        }
+        // set chats from socket if chat window opened
+        if (value && clientPhoneNumber) {
+          setChats((previous) => [...previous, value]);
+        }
+
+        if (callback) {
+          callback({ success: true, message: "Message received by FE" });
+        }
+      } catch (err) {
+        if (callback) {
+          callback({ success: false, message: "Message not received by FE" });
+        }
       }
     }
 
-    function onWhisper(value) {
+    function onWhisper(value, callback) {
       console.info(value, "socket whisper");
-      if (value) {
-        setWhisperChats((prev) => {
-          return prev.map((p) => {
-            if (
-              p.clientPhoneNumber ===
-              value.conversation_envelope.client_phone_number
-            ) {
-              return {
-                ...p,
-                message: value.body,
-                timestamp: value.conversation_envelope.timestamp,
-                loading: false,
-              };
-            }
-            return prev;
+      try {
+        if (value) {
+          setWhisperChats((prev) => {
+            return prev.map((p) => {
+              if (
+                p.clientPhoneNumber ===
+                value.conversation_envelope.client_phone_number
+              ) {
+                return {
+                  ...p,
+                  message: value.body,
+                  timestamp: value.conversation_envelope.timestamp,
+                  loading: false,
+                };
+              }
+              return prev;
+            });
           });
-        });
+
+          if (callback) {
+            callback({ success: true, message: "Whisper received by FE" });
+          }
+        }
+      } catch (err) {
+        if (callback) {
+          callback({ success: false, message: "Whisper not received by FE" });
+        }
       }
     }
 
@@ -99,7 +120,7 @@ const Chats = () => {
       socket.off("whisper", onWhisper);
       socket.off("disconnect", onDisconnect);
     };
-  });
+  }, [clients, clientPhoneNumber]);
 
   // handle on click notification
   const handleOnClickNotification = (sender) => {

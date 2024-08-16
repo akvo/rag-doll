@@ -18,6 +18,8 @@ from core.socketio_config import (
     user_chats_callback,
     assistant_chat_replies_callback,
 )
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
 
 
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
+    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
+)
 RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES"
 )
@@ -47,6 +51,9 @@ async def user_chat_replies_callback(body: str):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Use FastAPICache with in-memory backend
+    FastAPICache.init(InMemoryBackend())
+
     await rabbitmq_client.initialize()
     loop = asyncio.get_running_loop()
     loop.create_task(

@@ -138,7 +138,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       textareaRef.current.style.height = "auto"; // Reset the height after sending
       try {
         const response = await socket
-          .timeout(2000)
+          .timeout(5000)
           .emitWithAck("chats", chatPayload);
         console.info(`Success send message: ${JSON.stringify(response)}`);
       } catch (err) {

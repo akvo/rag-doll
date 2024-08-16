@@ -248,6 +248,10 @@ async def chat_message(sid, msg):
         session.close()
 
 
+async def emit_chats_callback(value):
+    logger.info(f"Emit chats callback {value}")
+
+
 async def user_chats_callback(body: str):
     try:
         session = Session(engine)
@@ -269,12 +273,18 @@ async def user_chats_callback(body: str):
             f"{user_sid}: {message}"
         )
 
-        await sio_server.emit("chats", message, to=user_sid)
+        await sio_server.emit(
+            "chats", message, to=user_sid, callback=emit_chats_callback
+        )
     except Exception as e:
         logger.error(f"Error handling user_chats_callback: {e}")
         raise e
     finally:
         session.close()
+
+
+async def emit_whisper_callback(value):
+    logger.info(f"Emit whisper callback {value}")
 
 
 @sio_server.on("whisper")
@@ -284,4 +294,4 @@ async def assistant_chat_reply(sid, msg):
 
 async def assistant_chat_replies_callback(body: str):
     message = json.loads(body)
-    await sio_server.emit("whisper", message)
+    await sio_server.emit("whisper", message, callback=emit_whisper_callback)

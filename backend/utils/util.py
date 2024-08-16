@@ -19,3 +19,49 @@ def get_value_or_raise_error(data_dict, key, error_msg=None):
             error_msg = f"Key '{key}' not found in message"
         raise KeyError(error_msg)
     return value
+
+
+class TextConverter:
+    def __init__(self, text: str):
+        self.text = text
+
+    def format_whatsapp(self) -> str:
+        content = self.text
+        content = self._convert_bold_to_whatsapp(content)
+        content = self._convert_headers_to_uppercase_bold(content)
+        content = self._convert_italics_to_whatsapp(content)
+        content = self._convert_links_to_plaintext(content)
+        return content
+
+    def format_slack(self) -> str:
+        """Format text for Slack (future implementation)."""
+        # Placeholder for future Slack-specific formatting
+        pass
+
+    def _convert_headers_to_uppercase_bold(self, content: str) -> str:
+        content = re.sub(
+            r"#### (.+)", lambda m: f"*{m.group(1).upper()}*", content
+        )
+        content = re.sub(
+            r"### (.+)", lambda m: f"*{m.group(1).upper()}*", content
+        )
+        content = re.sub(
+            r"## (.+)", lambda m: f"*{m.group(1).upper()}*", content
+        )
+        content = re.sub(
+            r"# (.+)",
+            lambda m: f"*{m.group(1).upper()}*\n",
+            content,
+        )
+        return content
+
+    def _convert_italics_to_whatsapp(self, content: str) -> str:
+        return re.sub(r"_(.+?)_", r"_\1_", content)
+
+    def _convert_bold_to_whatsapp(self, content: str) -> str:
+        content = re.sub(r"\*\*(.+?)\*\*", r"*\1*", content)
+        content = content.replace("-", "*")
+        return content
+
+    def _convert_links_to_plaintext(self, content: str) -> str:
+        return re.sub(r"\[(.+?)\]\((https?://[^\s]+)\)", r"\1 (\2)", content)

@@ -111,6 +111,8 @@ platform WhatsApp format... E.164 numbers
 | `RABBITMQ_PASS` | _CHANGEME_ | The default password for accessing queues. Use a generated string. |
 | `RABBITMQ_QUEUE_USER_CHATS` | user_chats | The queue for chat messages that the user typed. |
 | `RABBITMQ_QUEUE_USER_CHAT_REPLIES` | user_chat_replies | The queue for chat messages that the assisant got from the LLM. |
+| `RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER` | assistant_chat_listener | The queue for assistant to listen incoming client chat. |
+| `RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES` | assistant_chat_replies | The queue for assistant to push message for the backend service. |
 | `RABBITMQ_EXCHANGE_USER_CHATS` | user_chats_exchange | The topic exchange that routes messages to queues. |
 | `RABBITMQ_HOST` | rabbitmq | The host that RabbitMQ runs on. |
 | `RABBITMQ_PORT` | 5672 | The AMQP port of RabbitMQ. |
@@ -205,7 +207,7 @@ export default nextConfig;
 ```
 
 In the production environment, the interaction between the frontend and backend is handled differently to optimize performance and security. Instead of using the proxy setup defined in the development configuration, the frontend and backend services communicate through an Nginx server. The Nginx configuration, located in the frontend folder, acts as a reverse proxy, efficiently routing requests from the frontend to the backend.
- 
+
 
 ## PostgreSQL
 

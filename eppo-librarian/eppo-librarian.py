@@ -22,8 +22,8 @@ EPPO_COUNTRIES: list[str] = os.getenv('EPPO_COUNTRIES').replace(' ', '').split('
 # feel, we start with 5 sentences per chunk, with one sentence overlap. We will
 # have to fine tune that over time. We simply use all other columns as metadata.
 
-CHUNK_SIZE: int = 5 # XXX move to .env
-OVERLAP_SIZE: int = 1
+CHUNK_SIZE: int = int(os.getenv('CHUNK_SIZE'))
+OVERLAP_SIZE: int = int(os.getenv('OVERLAP_SIZE'))
 
 CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
 CHROMADB_PORT: int = os.getenv('CHROMADB_PORT')
@@ -209,20 +209,25 @@ if __name__ == "__main__":
     # download the NLTK sentence splitter
     nltk.download('punkt')
 
+    logger.info("loading eppo codes...")
     eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)
     logger.info(eppo_code_df.info())
     logger.info(eppo_code_df.head())
 
+    logger.info("loading datasheets...")
     datasheets_df = download_datasheets(eppo_code_df)
     logger.info(datasheets_df.info())
     logger.info(datasheets_df.head())
 
+    logger.info("generating chunks...")
     chunks_df = make_chunks(datasheets_df, CHUNK_SIZE, OVERLAP_SIZE)
     logger.info(chunks_df.info())
     logger.info(chunks_df.head())
 
+    logger.info("storing chunks...")
     knowledgebase = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB_COLLECTION)
     add_chunks_to_chromadb(chunks_df, datasheets_df, COL_CHUNK, knowledgebase)
+    logger.info("all done.")
 
 # And with that, the librarian is done. The searchable text has been updated and
 # is ready to be queried.

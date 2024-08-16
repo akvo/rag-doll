@@ -232,7 +232,7 @@ async def chat_message(sid, msg):
                 )
                 return {
                     "success": True,
-                    "data": "Message processed and sent to RabbitMQ",
+                    "message": "Message processed and sent to RabbitMQ",
                 }
             else:
                 error_message = (
@@ -240,10 +240,10 @@ async def chat_message(sid, msg):
                     f"client[{client_phone_number}]"
                 )
                 logger.error(error_message)
-                return {"success": False, "error": error_message}
+                return {"success": False, "message": error_message}
     except Exception as e:
         logger.error(f"Error handling chats event: {e}")
-        return {"success": False, "error": str(e)}
+        return {"success": False, "message": str(e)}
     finally:
         session.close()
 

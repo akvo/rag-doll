@@ -99,7 +99,7 @@ const Chats = () => {
       socket.off("whisper", onWhisper);
       socket.off("disconnect", onDisconnect);
     };
-  });
+  }, [clients, clientPhoneNumber]);
 
   // handle on click notification
   const handleOnClickNotification = (sender) => {

@@ -111,7 +111,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
     });
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (message.trim()) {
       let chatBreakdown = {};
       const lastChat = chats.slice(-1)[0];
@@ -134,9 +134,16 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
         transformation_log: null,
       });
       setChats((previous) => [...previous, chatPayload]);
-      socket.timeout(5000).emit("chats", chatPayload);
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending
+      try {
+        const response = await socket
+          .timeout(2000)
+          .emitWithAck("chats", chatPayload);
+        console.info(`Success send message: ${JSON.stringify(response)}`);
+      } catch (err) {
+        console.error(`Failed send message: ${JSON.stringify(err)}`);
+      }
     }
   };
 

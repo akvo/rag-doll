@@ -51,7 +51,7 @@ async def get_user_session(user_id: str):
 
 
 async def delete_user_session(user_id: str):
-    await FastAPICache.get_backend().delete(f"{USER_CACHE_KEY}{user_id}")
+    await FastAPICache.get_backend().clear(f"{USER_CACHE_KEY}{user_id}")
 
 
 def check_conversation_exist_and_generate_queue_message(

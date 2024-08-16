@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { api } from "@/lib";
 import { Notification } from "@/components";
 import "react-phone-number-input/style.css";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 
 const Login = () => {
-  const router = useRouter();
   const [showNotification, setShowNotification] = useState(false);
-  const [error, setError] = useState("");
+  const [notificationContent, setNotificationContent] = useState("");
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [disabled, setDisabled] = useState(false);
 
@@ -19,8 +17,8 @@ const Login = () => {
     setShowNotification(true);
     setTimeout(() => {
       setShowNotification(false);
-      setError("");
-    }, 1000);
+      setNotificationContent("");
+    }, 3000);
   };
 
   const handleSubmit = async (event) => {
@@ -28,13 +26,13 @@ const Login = () => {
     setDisabled(true);
 
     if (!phoneNumber) {
-      setError("Phone number required.");
+      setNotificationContent("Phone number required.");
       handleShowNotification();
       return;
     }
 
     if (!isValidPhoneNumber(phoneNumber)) {
-      setError("Invalid phone number.");
+      setNotificationContent("Invalid phone number.");
       handleShowNotification();
       return;
     }
@@ -45,22 +43,20 @@ const Login = () => {
       );
       const resData = await res.json();
       if (res.status === 200) {
-        const regex = /https?:\/\/[^\/]+(\/.+)/;
-        const match = resData.match(regex);
-        if (match && match[1]) {
-          // TODO :: Here we should not navigate to verify, user will clik the link from a message they received
-          router.replace(match[1]);
-        }
+        setNotificationContent(
+          "Verification link sent to your WhatsApp. Please use it to verify your login."
+        );
+        handleShowNotification();
       } else if (res.status === 404) {
-        setError("Phone number not found.");
+        setNotificationContent("Phone number not found.");
         handleShowNotification();
       } else {
-        setError("Error, please try again later.");
+        setNotificationContent("notificationContent, please try again later.");
         handleShowNotification();
       }
       setDisabled(false);
-    } catch (error) {
-      setError("Error, please try again later.");
+    } catch (notificationContent) {
+      setNotificationContent("notificationContent, please try again later.");
       handleShowNotification();
       setDisabled(false);
     }
@@ -139,7 +135,7 @@ const Login = () => {
         </Link>
       </p>
 
-      <Notification message={error} show={showNotification} />
+      <Notification message={notificationContent} show={showNotification} />
     </>
   );
 };

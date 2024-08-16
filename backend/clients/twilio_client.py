@@ -27,7 +27,7 @@ from pydub import AudioSegment
 from base64 import b64encode
 from sqlmodel import Session, select
 from core.database import engine
-from utils.util import get_value_or_raise_error
+from utils.util import get_value_or_raise_error, TextConverter
 
 
 logging.basicConfig(level=logging.INFO)
@@ -102,12 +102,12 @@ class TwilioClient:
             self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN
         )
 
-    def chunk_text_by_paragraphs(
-        self, text: str, max_length: int
-    ) -> list[str]:
+    def chunk_text_by_paragraphs(self, text: str, max_length: int) -> list[str]:
         paragraphs = text.split("\n\n")
         chunks = []
         for paragraph in paragraphs:
+            paragraph = TextConverter(paragraph)
+            paragraph = paragraph.format_whatsapp()
             if len(paragraph) <= max_length:
                 chunks.append(paragraph)
             else:
@@ -258,9 +258,7 @@ class TwilioClient:
             logger.info("Audio transcription: " + text)
             return text
         except sr.UnknownValueError:
-            logger.error(
-                "Google Speech Recognition could not understand audio"
-            )
+            logger.error("Google Speech Recognition could not understand audio")
             return None
         except sr.RequestError as e:
             logger.error(

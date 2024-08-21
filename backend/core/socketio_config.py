@@ -286,7 +286,7 @@ async def client_to_user(body: str):
         user_sid = await get_user_session(user_id)
 
         logger.info(
-            f"Send user_chats_callback to {USER_CACHE_KEY}{user_id} "
+            f"Send client->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
         )
 

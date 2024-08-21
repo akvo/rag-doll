@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 
 from fastapi import (
     APIRouter,
@@ -50,7 +51,7 @@ async def receive_whatsapp_message(
         )
         values.update(data.model_dump())
         body = twilio_client.format_to_queue_message(values)
-        await client_to_user(body=body)
+        asyncio.create_task(client_to_user(body=body))
         await rabbitmq_client.initialize()
         await rabbitmq_client.producer(
             body=body,

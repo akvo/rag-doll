@@ -21,8 +21,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES = os.getenv(
-    "RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES"
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
+    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
 
 
@@ -35,8 +35,8 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     loop.create_task(
         rabbitmq_client.consume(
-            queue_name=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
-            routing_key=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
+            queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
+            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             callback=assistant_to_user,
         )
     )

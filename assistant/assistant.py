@@ -113,8 +113,8 @@ llm = LLM(OPENAI_CHAT_MODEL)
 # --- RabbitMQ Section
 
 RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES = os.getenv(
-    "RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES"
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
+    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
 
 
@@ -158,7 +158,7 @@ async def publish_reliably(queue_message: str) -> None:
         logger.info(f"[ASSISTANT] -> Sending message: {queue_message}")
         await rabbitmq_client.producer(
             body=queue_message,
-            routing_key=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
+            routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
         )
     except Exception as e:
         logger.error(f"[ASSISTANT] -> Error send to queue {type(e)}: {e}")

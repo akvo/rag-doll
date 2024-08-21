@@ -3,7 +3,7 @@ import socketio
 import logging
 import json
 
-from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
+from Akvo_rabbitmq_client import queue_message_util
 from http.cookies import SimpleCookie
 from utils.jwt_handler import verify_jwt_token
 from models import (
@@ -21,16 +21,18 @@ from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
 from utils.util import get_value_or_raise_error
 from fastapi_cache import FastAPICache
+from clients.twilio_client import TwilioClient
+from clients.slack_client import SlackBotClient
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
-    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
-)
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
 SOCKETIO_PATH = ""
+
+twilio_client = TwilioClient()
+slackbot_client = SlackBotClient()
 
 sio_server = socketio.AsyncServer(async_mode="asgi")
 sio_app = socketio.ASGIApp(
@@ -116,9 +118,7 @@ def handle_incoming_message(session: Session, message: dict):
     client_phone_number = get_value_or_raise_error(
         conversation_envelope, "client_phone_number"
     )
-    sender_role = get_value_or_raise_error(
-        conversation_envelope, "sender_role"
-    )
+    sender_role = get_value_or_raise_error(conversation_envelope, "sender_role")
 
     prev_conversation_exist = session.exec(
         select(Chat_Session)
@@ -166,6 +166,16 @@ def handle_incoming_message(session: Session, message: dict):
     session.commit()
     session.flush()
     return user_id
+
+
+async def user_chat_replies_callback(body: str):
+    queue_message = json.loads(body)
+    conversation_envelope = queue_message.get("conversation_envelope", {})
+    platform = conversation_envelope.get("platform")
+    if platform == Platform_Enum.WHATSAPP.value:
+        await twilio_client.send_whatsapp_message(body=body)
+    if platform == Platform_Enum.SLACK.value:
+        await slackbot_client.send_message(body=body)
 
 
 @sio_server.on("connect")
@@ -216,20 +226,15 @@ async def chat_message(sid, msg):
                 sio_session, "user_phone_number"
             )
 
-            queue_message = (
-                check_conversation_exist_and_generate_queue_message(
-                    session=session,
-                    msg=msg,
-                    user_phone_number=user_phone_number,
-                )
+            queue_message = check_conversation_exist_and_generate_queue_message(
+                session=session,
+                msg=msg,
+                user_phone_number=user_phone_number,
             )
 
             if queue_message:
                 logger.info(f"Transform into queue message: {queue_message}")
-                await rabbitmq_client.producer(
-                    body=json.dumps(queue_message),
-                    routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                )
+                await user_chat_replies_callback(json.dumps(queue_message))
                 return {
                     "success": True,
                     "message": "Message processed and sent to RabbitMQ",
@@ -252,7 +257,7 @@ async def emit_chats_callback(value):
     logger.info(f"Emit chats callback {value}")
 
 
-async def user_chats_callback(body: str):
+async def client_to_user(body: str):
     try:
         session = Session(engine)
         message = json.loads(body)
@@ -292,6 +297,6 @@ async def assistant_chat_reply(sid, msg):
     print(sid, msg)
 
 
-async def assistant_chat_replies_callback(body: str):
+async def assistant_to_user_callback(body: str):
     message = json.loads(body)
     await sio_server.emit("whisper", message, callback=emit_whisper_callback)

@@ -112,9 +112,7 @@ llm = LLM(OPENAI_CHAT_MODEL)
 
 # --- RabbitMQ Section
 
-RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER = os.getenv(
-    "RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER"
-)
+RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES"
 )
@@ -194,8 +192,8 @@ async def main():
     await rabbitmq_client.initialize()
 
     await rabbitmq_client.consume(
-        queue_name=RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER,
-        routing_key=RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER,
+        queue_name=RABBITMQ_QUEUE_USER_CHATS,
+        routing_key=RABBITMQ_QUEUE_USER_CHATS,
         callback=on_message,
     )
 

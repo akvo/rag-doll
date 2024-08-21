@@ -13,6 +13,7 @@ from fastapi.security import HTTPBearer
 from pydantic import ValidationError
 from clients.twilio_client import IncomingMessage, TwilioClient
 from Akvo_rabbitmq_client import rabbitmq_client
+from core.socketio_config import client_to_user
 
 
 logging.basicConfig(level=logging.INFO)
@@ -22,9 +23,6 @@ router = APIRouter()
 security = HTTPBearer()
 
 RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER = os.getenv(
-    "RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER"
-)
 
 
 def get_rabbitmq_client():
@@ -52,14 +50,11 @@ async def receive_whatsapp_message(
         )
         values.update(data.model_dump())
         body = twilio_client.format_to_queue_message(values)
+        await client_to_user(body=body)
         await rabbitmq_client.initialize()
         await rabbitmq_client.producer(
             body=body,
             routing_key=RABBITMQ_QUEUE_USER_CHATS,
-        )
-        await rabbitmq_client.producer(
-            body=body,
-            routing_key=RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER,
         )
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 

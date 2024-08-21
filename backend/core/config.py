@@ -11,7 +11,7 @@ from routes import user_routes, chat_routes, twilio_routes, slack_routes
 from Akvo_rabbitmq_client import rabbitmq_client
 from core.socketio_config import (
     sio_app,
-    assistant_to_user_callback,
+    assistant_to_user,
 )
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
         rabbitmq_client.consume(
             queue_name=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
             routing_key=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
-            callback=assistant_to_user_callback,
+            callback=assistant_to_user,
         )
     )
     yield

@@ -297,6 +297,6 @@ async def assistant_chat_reply(sid, msg):
     print(sid, msg)
 
 
-async def assistant_to_user_callback(body: str):
+async def assistant_to_user(body: str):
     message = json.loads(body)
     await sio_server.emit("whisper", message, callback=emit_whisper_callback)

@@ -174,7 +174,13 @@ def handle_incoming_message(session: Session, message: dict):
     return user_id
 
 
-async def user_chat_replies_callback(body: str):
+async def user_to_client(body: str):
+    """
+    This function (functionally) routes messages that come in from the user to
+    the client. It is responsible to take all the steps needed. For user to
+    client routing, the message is posted onto the channel that the conversation
+    is happening on.
+    """
     queue_message = json.loads(body)
     conversation_envelope = queue_message.get("conversation_envelope", {})
     platform = conversation_envelope.get("platform")
@@ -240,7 +246,7 @@ async def chat_message(sid, msg):
 
             if queue_message:
                 logger.info(f"Transform into queue message: {queue_message}")
-                await user_chat_replies_callback(json.dumps(queue_message))
+                await user_to_client(json.dumps(queue_message))
                 return {
                     "success": True,
                     "message": "Message processed and sent to RabbitMQ",
@@ -316,5 +322,11 @@ async def assistant_chat_reply(sid, msg):
 
 
 async def assistant_to_user(body: str):
+    """
+    This function (functionally) routes messages that come in from the assistant
+    to the user. It is responsible to take all the steps needed. For assistant
+    to user routing, the message is marked as a whisper and posted to the
+    frontend.
+    """
     message = json.loads(body)
     await sio_server.emit("whisper", message, callback=emit_whisper_callback)

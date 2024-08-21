@@ -3,7 +3,7 @@ import socketio
 import logging
 import json
 
-from Akvo_rabbitmq_client import queue_message_util
+from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
 from http.cookies import SimpleCookie
 from utils.jwt_handler import verify_jwt_token
 from models import (
@@ -28,7 +28,13 @@ from clients.slack_client import SlackBotClient
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
+def get_rabbitmq_client():
+    return rabbitmq_client
+
+
 SOCKETIO_PATH = ""
 
 twilio_client = TwilioClient()
@@ -258,6 +264,12 @@ async def emit_chats_callback(value):
 
 
 async def client_to_user(body: str):
+    """
+    This function (functionally) routes messages that come in from clients to
+    the user. It is responsible to take all the steps needed. For client to user
+    routing, that means it should send the message to the assistant as well as
+    send it to the user's frontend.
+    """
     try:
         session = Session(engine)
         message = json.loads(body)
@@ -280,6 +292,12 @@ async def client_to_user(body: str):
 
         await sio_server.emit(
             "chats", message, to=user_sid, callback=emit_chats_callback
+        )
+
+        await rabbitmq_client.initialize()
+        await rabbitmq_client.producer(
+            body=body,
+            routing_key=RABBITMQ_QUEUE_USER_CHATS,
         )
     except Exception as e:
         logger.error(f"Error handling user_chats_callback: {e}")

@@ -131,7 +131,6 @@ class TwilioClient:
                     f"{phone}: {response.error_message}"
                 )
             logger.info(f"Message sent to WhatsApp: {text}")
-
         except JSONDecodeError as e:
             logger.error(f"Error decoding JSON message: {e}")
         except TwilioRestException as e:

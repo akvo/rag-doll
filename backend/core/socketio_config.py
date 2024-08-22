@@ -30,7 +30,11 @@ logger = logging.getLogger(__name__)
 
 
 RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv("RABBITMQ_QUEUE_USER_CHAT_REPLIES")
+RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
+    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
+)
+
+
 def get_rabbitmq_client():
     return rabbitmq_client
 
@@ -124,7 +128,9 @@ def handle_incoming_message(session: Session, message: dict):
     client_phone_number = get_value_or_raise_error(
         conversation_envelope, "client_phone_number"
     )
-    sender_role = get_value_or_raise_error(conversation_envelope, "sender_role")
+    sender_role = get_value_or_raise_error(
+        conversation_envelope, "sender_role"
+    )
 
     prev_conversation_exist = session.exec(
         select(Chat_Session)
@@ -194,7 +200,8 @@ async def user_to_client(body: str):
 async def sio_connect(sid, environ):
     try:
         cookie.load(environ["HTTP_COOKIE"])
-        auth_token = cookie["AUTH_TOKEN"].value
+        auth_token = cookie.get("AUTH_TOKEN")
+        auth_token = auth_token.value if auth_token else None
         decoded_token = verify_jwt_token(auth_token)
         user_phone_number = decoded_token.get("uphone_number")
         user_id = decoded_token.get("uid")
@@ -238,10 +245,12 @@ async def chat_message(sid, msg):
                 sio_session, "user_phone_number"
             )
 
-            queue_message = check_conversation_exist_and_generate_queue_message(
-                session=session,
-                msg=msg,
-                user_phone_number=user_phone_number,
+            queue_message = (
+                check_conversation_exist_and_generate_queue_message(
+                    session=session,
+                    msg=msg,
+                    user_phone_number=user_phone_number,
+                )
             )
 
             if queue_message:

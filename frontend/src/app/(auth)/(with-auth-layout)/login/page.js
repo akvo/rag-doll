@@ -41,7 +41,6 @@ const Login = () => {
       const res = await api.post(
         `login?phone_number=${encodeURIComponent(phoneNumber)}`
       );
-      const resData = await res.json();
       if (res.status === 200) {
         setNotificationContent(
           "Verification link sent to your WhatsApp. Please use it to verify your login."
@@ -51,12 +50,12 @@ const Login = () => {
         setNotificationContent("Phone number not found.");
         handleShowNotification();
       } else {
-        setNotificationContent("notificationContent, please try again later.");
+        setNotificationContent("Error, please try again later.");
         handleShowNotification();
       }
       setDisabled(false);
-    } catch (notificationContent) {
-      setNotificationContent("notificationContent, please try again later.");
+    } catch (error) {
+      setNotificationContent("Error, please try again later.");
       handleShowNotification();
       setDisabled(false);
     }

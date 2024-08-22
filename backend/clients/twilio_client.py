@@ -237,7 +237,9 @@ class TwilioClient:
             logger.info("Audio transcription: " + text)
             return text
         except sr.UnknownValueError:
-            logger.error("Google Speech Recognition could not understand audio")
+            logger.error(
+                "Google Speech Recognition could not understand audio"
+            )
             return None
         except sr.RequestError as e:
             logger.error(

@@ -11,7 +11,7 @@ from sqlmodel import create_engine, Session
 
 from core.config import app
 from core.database import get_db_url, get_session
-from routes.twilio_routes import get_rabbitmq_client, get_twilio_client
+from routes.twilio_routes import get_twilio_client
 from models import User, Client, Chat_Session, Chat, Sender_Role_Enum
 
 
@@ -134,17 +134,12 @@ class MockTwilioBotClient:
         pass
 
 
-def get_mock_rabbitmq_client():
-    return MockRabbitMQClient()
-
-
 def get_mock_twilio_client():
     return MockTwilioBotClient()
 
 
 @pytest.fixture
 def run_app():
-    app.dependency_overrides[get_rabbitmq_client] = get_mock_rabbitmq_client
     app.dependency_overrides[get_twilio_client] = get_mock_twilio_client
     yield
     app.dependency_overrides = {}

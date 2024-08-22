@@ -1,9 +1,10 @@
-import os
+import asyncio
 import logging
 
 from fastapi import APIRouter, Request
 from fastapi.security import HTTPBearer
 from clients.slack_client import SlackBotClient
+from core.socketio_config import client_to_user
 
 
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +32,7 @@ async def message(event, client):
             f"Receive Slack message in channel[{channel_id}] "
             f"by user[{user_id}]: {queue_msg}"
         )
-        asyncio.create_task(client_to_user(body=body))
+        asyncio.create_task(client_to_user(body=queue_msg))
         await slackbot_client.start_onboarding(user_id, channel_id)
     except Exception as e:
         logger.error(f"Error handling message event: {e}")

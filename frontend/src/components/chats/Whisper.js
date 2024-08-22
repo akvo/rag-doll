@@ -5,7 +5,13 @@ import { formatChatTime } from "@/utils/formatter";
 import { useChatContext } from "@/context/ChatContextProvider";
 import MarkdownRenderer from "./MarkdownRenderer";
 
-const Whisper = ({ whisperChats, setWhisperChats }) => {
+const Whisper = ({
+  whisperChats,
+  setWhisperChats,
+  textareaRef,
+  handleTextAreaDynamicHeight,
+  setMessage,
+}) => {
   const chatContext = useChatContext();
   const { clientPhoneNumber } = chatContext;
 
@@ -28,6 +34,11 @@ const Whisper = ({ whisperChats, setWhisperChats }) => {
   const handleCopy = async ({ message }) => {
     try {
       await navigator.clipboard.writeText(message);
+      if (textareaRef.current) {
+        textareaRef.current.value = message;
+        setMessage(message);
+        handleTextAreaDynamicHeight();
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 1000);
     } catch (error) {

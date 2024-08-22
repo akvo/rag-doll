@@ -91,7 +91,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
     scrollToLastMessage();
   }, [chats, scrollToLastMessage]);
 
-  const handleInput = () => {
+  const handleTextAreaDynamicHeight = () => {
     const textarea = textareaRef.current;
     const maxHeight = 250;
     textarea.style.height = "auto"; // Reset height to auto
@@ -249,6 +249,9 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
         <Whisper
           whisperChats={whisperChats}
           setWhisperChats={setWhisperChats}
+          textareaRef={textareaRef}
+          handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
+          setMessage={setMessage}
         />
       </div>
 
@@ -258,7 +261,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           ref={textareaRef}
           value={message}
           onChange={handleChange}
-          onInput={handleInput}
+          onInput={handleTextAreaDynamicHeight}
           placeholder="Type a message..."
           className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto"
           rows={1}

@@ -36,7 +36,7 @@ label {
   color: #000;
   font-size: 14px;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 400;
   line-height: normal;
 }
 
@@ -55,4 +55,5 @@ label {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  font-size: 16px;
 }

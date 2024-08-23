@@ -12,6 +12,7 @@ module.exports = {
         "akvo-green": "#006349",
       },
       textColor: {
+        "akvo-green-100": "#EBFEDE",
         "akvo-green": "#006349",
       },
     },

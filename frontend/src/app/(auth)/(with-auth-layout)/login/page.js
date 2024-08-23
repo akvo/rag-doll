@@ -5,7 +5,7 @@ import { api } from "@/lib";
 import { Notification } from "@/components";
 import "react-phone-number-input/style.css";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
-import { ButtonLoadingIcon } from "@/utils/icons";
+import { ButtonLoadingIcon, PhoneIcon } from "@/utils/icons";
 
 const Login = () => {
   const [showNotification, setShowNotification] = useState(false);
@@ -67,13 +67,10 @@ const Login = () => {
     <div className="mt-10">
       <form className="space-y-6 mt-8 max-w-sm" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="phone"
-            className="block text-sm font-medium text-gray-900 font-assistant"
-          >
+          <label htmlFor="phone" className="block">
             Phone Number
           </label>
-          <div className="mt-2">
+          <div className="mt-2 flex border-b-2 border-gray-400 items-center">
             <PhoneInput
               id="phone"
               name="phone"
@@ -83,16 +80,28 @@ const Login = () => {
               international
               defaultCountry="KE"
               initialValueFormat="international"
-              className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-500 sm:text-sm sm:leading-6"
+              className="block w-full p-2 text-gray-600"
             />
+            <PhoneIcon />
           </div>
+        </div>
+        <div className="mt-2">
+          <label className="inline-flex items-center cursor-pointer">
+            <input type="checkbox" className="sr-only peer" />
+            <div className="w-5 h-5 border-2 border-gray-300 rounded-md flex items-center justify-center bg-white relative peer-checked:bg-akvo-green">
+              <div className="absolute inset-0 flex items-center justify-center peer-checked:block">
+                <span className="text-white text-sm">✔</span>
+              </div>
+            </div>
+            <span className="ml-2">Remember me</span>
+          </label>
         </div>
 
         <div>
           <button
             disabled={disabled}
             type="submit"
-            className={`btn-login mt-96 flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            className={`btn-login mt-80 flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               disabled
                 ? "bg-akvo-green cursor-not-allowed"
                 : "bg-akvo-green hover:bg-green-700 focus:ring-green-700"

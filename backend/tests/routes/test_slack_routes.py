@@ -2,7 +2,7 @@ import pytest
 
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock
-from routes.slack_routes import slackbot_client, rabbitmq_client
+from routes.slack_routes import slackbot_client
 
 
 @pytest.fixture
@@ -15,11 +15,6 @@ def mock_slack_client(mocker):
     async def mock_message_event_handler(event, client):
         print("mock_message_event_handler called with event:", event)
         slackbot_client.format_to_queue_message(event=event)
-        await rabbitmq_client.initialize()
-        await rabbitmq_client.producer(
-            body="mock_queue_message",
-            routing_key="mock_queue_chats",
-        )
         await slackbot_client.start_onboarding("U67890", "C12345")
 
     mock_event_handler.side_effect = mock_message_event_handler
@@ -51,7 +46,6 @@ async def test_message_event(
     await slackbot_client.slack_app.event_handlers["message"][0](
         event, client=AsyncMock()
     )
-
     slackbot_client.format_to_queue_message.assert_called_once_with(
         event=event
     )

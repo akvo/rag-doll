@@ -131,7 +131,6 @@ class TwilioClient:
                     f"{phone}: {response.error_message}"
                 )
             logger.info(f"Message sent to WhatsApp: {text}")
-
         except JSONDecodeError as e:
             logger.error(f"Error decoding JSON message: {e}")
         except TwilioRestException as e:
@@ -237,7 +236,9 @@ class TwilioClient:
             logger.info("Audio transcription: " + text)
             return text
         except sr.UnknownValueError:
-            logger.error("Google Speech Recognition could not understand audio")
+            logger.error(
+                "Google Speech Recognition could not understand audio"
+            )
             return None
         except sr.RequestError as e:
             logger.error(

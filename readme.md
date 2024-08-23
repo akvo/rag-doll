@@ -62,6 +62,8 @@ Secretariat.*
 | `EPPO_COUNTRY_ORGANISM_URL` | https://gd.eppo.int/country/{country}/organisms.csv | The URL to the per-country organism list on the EPPO database. Use `{country}` as placeholder for the country to query for. |
 | `EPPO_DATASHEET_URL` | https://gd.eppo.int/taxon/{eppo_code}/datasheet | The URL to the organism datasheet in the EPPO database. Use `{eppo_code}` as placeholder for the EPPO code. |
 | `EPPO_COUNTRIES` | _CHANGEME_ | A comma-separated list of ISO 3166-1 alpha-2 country codes of countries that you are interested in. |
+| `CHUNK_SIZE` | 5 | For small data sets, a few sentences will have to do. |
+| `OVERLAP_SIZE` | 1 | The EPPO librarian uses rooftiling. This is the overlap. |
 
 EPPO is not completely clear on what license they expect. They do not restrict
 accessing the datasheets. They do ask for citation, which we provide.
@@ -111,8 +113,6 @@ platform WhatsApp format... E.164 numbers
 | `RABBITMQ_PASS` | _CHANGEME_ | The default password for accessing queues. Use a generated string. |
 | `RABBITMQ_QUEUE_USER_CHATS` | user_chats | The queue for chat messages that the user typed. |
 | `RABBITMQ_QUEUE_USER_CHAT_REPLIES` | user_chat_replies | The queue for chat messages that the assisant got from the LLM. |
-| `RABBITMQ_QUEUE_ASSISTANT_CHAT_LISTENER` | assistant_chat_listener | The queue for assistant to listen incoming client chat. |
-| `RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES` | assistant_chat_replies | The queue for assistant to push message for the backend service. |
 | `RABBITMQ_EXCHANGE_USER_CHATS` | user_chats_exchange | The topic exchange that routes messages to queues. |
 | `RABBITMQ_HOST` | rabbitmq | The host that RabbitMQ runs on. |
 | `RABBITMQ_PORT` | 5672 | The AMQP port of RabbitMQ. |

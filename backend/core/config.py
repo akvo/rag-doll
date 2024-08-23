@@ -1,5 +1,4 @@
 import os
-import json
 import asyncio
 import logging
 
@@ -8,15 +7,11 @@ from fastapi import FastAPI, Depends
 from core.database import get_session
 from sqlmodel import Session, text
 
-from models.chat import Platform_Enum
 from routes import user_routes, chat_routes, twilio_routes, slack_routes
 from Akvo_rabbitmq_client import rabbitmq_client
-from clients.twilio_client import TwilioClient
-from clients.slack_client import SlackBotClient
 from core.socketio_config import (
     sio_app,
-    user_chats_callback,
-    assistant_chat_replies_callback,
+    assistant_to_user,
 )
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
@@ -26,27 +21,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
-RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES = os.getenv(
-    "RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES"
-)
-
-
-twilio_client = TwilioClient()
-slackbot_client = SlackBotClient()
-
-
-async def user_chat_replies_callback(body: str):
-    queue_message = json.loads(body)
-    conversation_envelope = queue_message.get("conversation_envelope", {})
-    platform = conversation_envelope.get("platform")
-    if platform == Platform_Enum.WHATSAPP.value:
-        await twilio_client.send_whatsapp_message(body=body)
-    if platform == Platform_Enum.SLACK.value:
-        await slackbot_client.send_message(body=body)
 
 
 @asynccontextmanager
@@ -58,23 +35,9 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     loop.create_task(
         rabbitmq_client.consume(
-            queue_name=RABBITMQ_QUEUE_USER_CHATS,
-            routing_key=RABBITMQ_QUEUE_USER_CHATS,
-            callback=user_chats_callback,
-        )
-    )
-    loop.create_task(
-        rabbitmq_client.consume(
             queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-            callback=user_chat_replies_callback,
-        )
-    )
-    loop.create_task(
-        rabbitmq_client.consume(
-            queue_name=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
-            routing_key=RABBITMQ_QUEUE_ASSISTANT_CHAT_REPLIES,
-            callback=assistant_chat_replies_callback,
+            callback=assistant_to_user,
         )
     )
     yield

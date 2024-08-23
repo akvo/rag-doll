@@ -20,15 +20,15 @@ const Whisper = ({
 
   const currentWhisper = useMemo(
     () => whisperChats.find((c) => c.clientPhoneNumber === clientPhoneNumber),
-    [whisperChats, clientPhoneNumber]
+    [whisperChats, clientPhoneNumber],
   );
 
   const whispers = useMemo(
     () =>
       whisperChats.filter(
-        (chat) => chat.clientPhoneNumber === clientPhoneNumber
+        (chat) => chat.clientPhoneNumber === clientPhoneNumber,
       ),
-    [whisperChats, clientPhoneNumber]
+    [whisperChats, clientPhoneNumber],
   );
 
   const handleCopy = async ({ message }) => {
@@ -48,7 +48,7 @@ const Whisper = ({
 
   const onClose = () => {
     setWhisperChats((prev) =>
-      prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
+      prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber),
     );
   };
 
@@ -132,7 +132,7 @@ const Whisper = ({
                       <div className="flex justify-start">
                         <button
                           onClick={() => handleCopy(chat)}
-                          className="mr-2"
+                          className="mr-2 flex justify-start"
                         >
                           {/* Copy */}
                           {copied ? (
@@ -161,14 +161,14 @@ const Whisper = ({
                               />
                             </svg>
                           )}
+                          <p
+                            className={`text-xs font-medium ms-3 ${
+                              copied ? "text-green-600" : "text-gray-500"
+                            }`}
+                          >
+                            {copied ? "Copied!" : "Use this message"}
+                          </p>
                         </button>
-                        <p
-                          className={`text-xs font-medium ${
-                            copied ? "text-green-600" : "text-gray-500"
-                          }`}
-                        >
-                          {copied ? "Copied!" : "Copy"}
-                        </p>
                       </div>
                       <p className="text-xs text-gray-500">
                         {formatChatTime(chat.timestamp)}

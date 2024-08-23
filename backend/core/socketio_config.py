@@ -21,16 +21,28 @@ from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
 from utils.util import get_value_or_raise_error
 from fastapi_cache import FastAPICache
+from clients.twilio_client import TwilioClient
+from clients.slack_client import SlackBotClient
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
+
+
+def get_rabbitmq_client():
+    return rabbitmq_client
+
+
 SOCKETIO_PATH = ""
+
+twilio_client = TwilioClient()
+slackbot_client = SlackBotClient()
 
 sio_server = socketio.AsyncServer(async_mode="asgi")
 sio_app = socketio.ASGIApp(
@@ -168,11 +180,28 @@ def handle_incoming_message(session: Session, message: dict):
     return user_id
 
 
+async def user_to_client(body: str):
+    """
+    This function (functionally) routes messages that come in from the user to
+    the client. It is responsible to take all the steps needed. For user to
+    client routing, the message is posted onto the channel that the conversation
+    is happening on.
+    """
+    queue_message = json.loads(body)
+    conversation_envelope = queue_message.get("conversation_envelope", {})
+    platform = conversation_envelope.get("platform")
+    if platform == Platform_Enum.WHATSAPP.value:
+        twilio_client.send_whatsapp_message(body=body)
+    if platform == Platform_Enum.SLACK.value:
+        await slackbot_client.send_message(body=body)
+
+
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
     try:
         cookie.load(environ["HTTP_COOKIE"])
-        auth_token = cookie["AUTH_TOKEN"].value
+        auth_token = cookie.get("AUTH_TOKEN")
+        auth_token = auth_token.value if auth_token else None
         decoded_token = verify_jwt_token(auth_token)
         user_phone_number = decoded_token.get("uphone_number")
         user_id = decoded_token.get("uid")
@@ -226,10 +255,7 @@ async def chat_message(sid, msg):
 
             if queue_message:
                 logger.info(f"Transform into queue message: {queue_message}")
-                await rabbitmq_client.producer(
-                    body=json.dumps(queue_message),
-                    routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-                )
+                await user_to_client(json.dumps(queue_message))
                 return {
                     "success": True,
                     "message": "Message processed and sent to RabbitMQ",
@@ -252,7 +278,13 @@ async def emit_chats_callback(value):
     logger.info(f"Emit chats callback {value}")
 
 
-async def user_chats_callback(body: str):
+async def client_to_user(body: str):
+    """
+    This function (functionally) routes messages that come in from clients to
+    the user. It is responsible to take all the steps needed. For client to user
+    routing, that means it should send the message to the assistant as well as
+    send it to the user's frontend.
+    """
     try:
         session = Session(engine)
         message = json.loads(body)
@@ -269,12 +301,18 @@ async def user_chats_callback(body: str):
         user_sid = await get_user_session(user_id)
 
         logger.info(
-            f"Send user_chats_callback to {USER_CACHE_KEY}{user_id} "
+            f"Send client->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
         )
 
         await sio_server.emit(
             "chats", message, to=user_sid, callback=emit_chats_callback
+        )
+
+        await rabbitmq_client.initialize()
+        await rabbitmq_client.producer(
+            body=body,
+            routing_key=RABBITMQ_QUEUE_USER_CHATS,
         )
     except Exception as e:
         logger.error(f"Error handling user_chats_callback: {e}")
@@ -292,6 +330,12 @@ async def assistant_chat_reply(sid, msg):
     print(sid, msg)
 
 
-async def assistant_chat_replies_callback(body: str):
+async def assistant_to_user(body: str):
+    """
+    This function (functionally) routes messages that come in from the assistant
+    to the user. It is responsible to take all the steps needed. For assistant
+    to user routing, the message is marked as a whisper and posted to the
+    frontend.
+    """
     message = json.loads(body)
     await sio_server.emit("whisper", message, callback=emit_whisper_callback)

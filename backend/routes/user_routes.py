@@ -11,15 +11,15 @@ from models import User
 from models.chat import Sender_Role_Enum, Platform_Enum
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
-from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
+from clients.twilio_client import TwilioClient
+from Akvo_rabbitmq_client import queue_message_util
 
 
 router = APIRouter()
 webdomain = environ.get("WEBDOMAIN")
-RABBITMQ_QUEUE_USER_CHAT_REPLIES = environ.get(
-    "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
-)
 MAGIC_LINK_CHAT_TEMPLATE = environ.get("MAGIC_LINK_CHAT_TEMPLATE")
+
+twilio_client = TwilioClient()
 
 
 @router.post("/login")
@@ -38,7 +38,8 @@ async def send_login_link(
     login_code_uuid = uuid4()
     user.login_code = str(login_code_uuid)
     session.commit()
-    # send login link into queue
+
+    # format login link and message for the user
     link = f"{webdomain}/verify/{user.login_code}"
     message_body = queue_message_util.create_queue_message(
         message_id=str(uuid4()),
@@ -49,12 +50,8 @@ async def send_login_link(
         platform_enum=Platform_Enum,
         body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
     )
-    await rabbitmq_client.producer(
-        body=json.dumps(message_body),
-        routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
-    )
-    # return {"message": "Login link sent via WhatsApp"}
-    return f"{webdomain}/verify/{user.login_code}"
+    twilio_client.send_whatsapp_message(body=json.dumps(message_body))
+    return {"message": "Login link sent via WhatsApp"}
 
 
 @router.get("/verify/{login_code:path}")

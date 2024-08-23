@@ -14,6 +14,7 @@ import { formatChatTime, generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
 import MarkdownRenderer from "./MarkdownRenderer";
+import { BackIcon } from "@/utils/icons";
 
 const SenderRoleEnum = {
   USER: "user",
@@ -201,36 +202,22 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   return (
     <div className="flex flex-col w-full h-screen bg-gray-200">
       {/* Chat Header */}
-      <div className="flex items-center p-4 bg-white border-b">
+      <div className="flex items-center p-4 bg-white border-b h-24">
         <div className="mr-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6 cursor-pointer"
-            onClick={handleOnClickBack}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 19.5 8.25 12l7.5-7.5"
-            />
-          </svg>
+          <BackIcon />
         </div>
 
         <img
           src="https://via.placeholder.com/40"
           alt="User Avatar"
-          className="rounded-full mr-4 w-12"
+          className="rounded-full mr-4 w-10"
         />
 
         <div>
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-md font-semibold">
             {clientName || clientPhoneNumber}
           </h3>
-          <p className="text-sm text-gray-600">Online</p>
+          <p className="text-xs text-gray-600">Online</p>
         </div>
       </div>
 
@@ -256,7 +243,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       </div>
 
       {/* TextArea */}
-      <div className="flex p-4 bg-white border-t items-center fixed bottom-16 w-full z-20">
+      <div className="flex p-4 bg-white border-t items-center fixed bottom-20 w-full z-20">
         <textarea
           ref={textareaRef}
           value={message}

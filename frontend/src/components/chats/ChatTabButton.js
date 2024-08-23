@@ -1,11 +1,10 @@
 "use client";
 
-import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
+import { useChatDispatch } from "@/context/ChatContextProvider";
 import { usePathname, useRouter } from "next/navigation";
 import { ChatIcon, ReferenceIcon, AccountIcon } from "@/utils/icons";
 
 const chatButtonType = (type) => {
-  const { clientId } = useChatContext();
   const chatDispatch = useChatDispatch();
   const router = useRouter();
   const pathname = usePathname();
@@ -13,7 +12,7 @@ const chatButtonType = (type) => {
   switch (type) {
     case "chats":
       return {
-        active: clientId ? false : true,
+        active: pathname.includes("chats"),
         icon: <ChatIcon />,
         text: "Chats",
         onClick: () => {
@@ -48,11 +47,17 @@ const ChatTabButton = ({ type }) => {
     <button
       className={`flex flex-col items-center px-4 py-2 justify-center ${
         buttonEl.active && type ? "text-akvo-green" : "text-gray-600"
-      }  hover:text-green-600`}
+      }  hover:text-green-700`}
       onClick={() => (buttonEl?.onClick ? buttonEl.onClick() : null)}
     >
       {buttonEl.icon}
-      <div className="mt-1.5 text-sm">{buttonEl.text}</div>
+      <div
+        className={`mt-1.5 text-sm  ${
+          buttonEl.active && type ? "text-akvo-green" : "text-gray-600"
+        }`}
+      >
+        {buttonEl.text}
+      </div>
     </button>
   );
 };

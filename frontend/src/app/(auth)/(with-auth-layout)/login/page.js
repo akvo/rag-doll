@@ -68,7 +68,7 @@ const Login = () => {
         <div>
           <label
             htmlFor="phone"
-            className="block text-sm font-medium text-gray-900"
+            className="block text-sm font-medium text-gray-900 font-assistant"
           >
             Phone Number
           </label>

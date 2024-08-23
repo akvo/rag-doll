@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { formatChatTime } from "@/utils/formatter";
 import { useChatContext } from "@/context/ChatContextProvider";
 import MarkdownRenderer from "./MarkdownRenderer";
+import { ExpandIcon } from "@/utils/icons";
 
 const Whisper = ({
   whisperChats,
@@ -63,31 +64,29 @@ const Whisper = ({
   return (
     <div className="flex p-4 overflow-auto">
       <div
-        className={`w-full relative h- bg-blue-300 border-blue-300 border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-40 ${
+        className={`w-full relative h- bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-40 ${
           expanded ? "max-h-3/4" : "h-40"
         }`}
       >
-        <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-blue-300 z-10 px-4">
-          <div className="justify-start">Recommendations</div>
-          <div className="flex space-x-2">
+        <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-white z-10 px-4">
+          <div className="flex items-center">
+            <div>
+              <img
+                src="/images/whisper-logo.png"
+                alt="whisper-logo"
+                className="h-4 w-4"
+              />
+            </div>
+            <div className="ml-2 text-sm font-semibold">Sugested Resources</div>
+          </div>
+          <div className="flex">
             <button
               onClick={toggleExpand}
-              className="bg-gray-100 rounded-full p-1"
+              className={`w-5 h-5 bg-gray-100 rounded-full p-1 ${
+                expanded ? "rotate-180" : ""
+              }`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className={`w-4 h-4 ${expanded ? "rotate-180" : ""}`}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 15l-7.5-7.5L4.5 15"
-                />
-              </svg>
+              <ExpandIcon />
             </button>
             {/* <button onClick={onClose} className="bg-gray-100 rounded-full p-1">
               <svg

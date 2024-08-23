@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "@/lib";
 import { Notification } from "@/components";
 import "react-phone-number-input/style.css";
@@ -12,6 +12,15 @@ const Login = () => {
   const [notificationContent, setNotificationContent] = useState("");
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [disabled, setDisabled] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Check localStorage on component mount
+  useEffect(() => {
+    const savedPhoneNumber = localStorage.getItem("phoneNumber");
+    const savedPreference = localStorage.getItem("rememberMe") === "true";
+    setPhoneNumber(savedPhoneNumber || null);
+    setRememberMe(savedPreference);
+  }, []);
 
   const handleShowNotification = () => {
     setShowNotification(true);
@@ -48,6 +57,15 @@ const Login = () => {
           "Verification link sent to your WhatsApp. Please use it to verify your login."
         );
         handleShowNotification();
+
+        // Store phone number and preference in local storage if "Remember me" is checked
+        if (rememberMe) {
+          localStorage.setItem("phoneNumber", phoneNumber);
+          localStorage.setItem("rememberMe", "true");
+        } else {
+          localStorage.removeItem("phoneNumber");
+          localStorage.removeItem("rememberMe");
+        }
       } else if (res.status === 404) {
         setNotificationContent("Phone number not found.");
         handleShowNotification();
@@ -80,14 +98,19 @@ const Login = () => {
               international
               defaultCountry="KE"
               initialValueFormat="international"
-              className="block w-full p-2 text-gray-600"
+              className="block w-full p-2 text-gray-600 font-medium"
             />
             <PhoneIcon />
           </div>
         </div>
         <div className="mt-2">
           <label className="inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" />
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
             <div className="w-5 h-5 border-2 border-gray-300 rounded-md flex items-center justify-center bg-white relative peer-checked:bg-akvo-green">
               <div className="absolute inset-0 flex items-center justify-center peer-checked:block">
                 <span className="text-white text-sm">✔</span>

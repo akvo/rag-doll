@@ -25,16 +25,16 @@ const SenderRoleEnum = {
 
 const UserChat = ({ message, timestamp }) => (
   <div className="flex mb-4 justify-end">
-    <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-      <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+    <div className="relative bg-akvo-green-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-akvo-green-100 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer
           key={`user-${i}`}
           content={line}
-          className={`prose-headings:text-white prose-strong:text-white prose-p:text-white prose-a:text-white prose-li:text-white prose-ol:text-white prose-ul:text-white prose-code:text-white text-white`}
+          className={`prose-headings:text-gray-800 prose-strong:text-gray-800 prose-p:text-gray-800 prose-a:text-gray-800 prose-li:text-gray-800 prose-ol:text-gray-800 prose-ul:text-gray-800 prose-code:text-gray-800 text-gray-800`}
         />
       ))}
-      <p className="text-right text-xs text-gray-200 mt-2">
+      <p className="text-right text-xs mt-2 text-gray-800">
         {formatChatTime(timestamp)}
       </p>
     </div>
@@ -43,14 +43,12 @@ const UserChat = ({ message, timestamp }) => (
 
 const ClientChat = ({ message, timestamp }) => (
   <div className="flex mb-4">
-    <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+    <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
+      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer key={`client-${i}`} content={line} />
       ))}
-      <p className="text-right text-xs text-gray-400 mt-2">
-        {formatChatTime(timestamp)}
-      </p>
+      <p className="text-right text-xs mt-2">{formatChatTime(timestamp)}</p>
     </div>
   </div>
 );
@@ -210,19 +208,19 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
         <img
           src="https://via.placeholder.com/40"
           alt="User Avatar"
-          className="rounded-full mr-4 w-10"
+          className="rounded-full mr-4 w-12"
         />
 
         <div>
           <h3 className="text-md font-semibold">
             {clientName || clientPhoneNumber}
           </h3>
-          <p className="text-xs text-gray-600">Online</p>
+          <p className="text-xs text-gray-500">Online</p>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex flex-col h-3/4">
+      <div className="flex flex-col h-5/6 pb-4">
         {/* User Messages */}
         <div
           id="messagesContainer"
@@ -243,7 +241,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       </div>
 
       {/* TextArea */}
-      <div className="flex p-4 bg-white border-t items-center fixed bottom-20 w-full z-20">
+      <div className="flex p-4 bg-white border-t items-center fixed bottom-0 w-full z-20">
         <textarea
           ref={textareaRef}
           value={message}

@@ -20,15 +20,15 @@ const Whisper = ({
 
   const currentWhisper = useMemo(
     () => whisperChats.find((c) => c.clientPhoneNumber === clientPhoneNumber),
-    [whisperChats, clientPhoneNumber],
+    [whisperChats, clientPhoneNumber]
   );
 
   const whispers = useMemo(
     () =>
       whisperChats.filter(
-        (chat) => chat.clientPhoneNumber === clientPhoneNumber,
+        (chat) => chat.clientPhoneNumber === clientPhoneNumber
       ),
-    [whisperChats, clientPhoneNumber],
+    [whisperChats, clientPhoneNumber]
   );
 
   const handleCopy = async ({ message }) => {
@@ -48,7 +48,7 @@ const Whisper = ({
 
   const onClose = () => {
     setWhisperChats((prev) =>
-      prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber),
+      prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
     );
   };
 

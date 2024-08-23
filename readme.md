@@ -62,6 +62,8 @@ Secretariat.*
 | `EPPO_COUNTRY_ORGANISM_URL` | https://gd.eppo.int/country/{country}/organisms.csv | The URL to the per-country organism list on the EPPO database. Use `{country}` as placeholder for the country to query for. |
 | `EPPO_DATASHEET_URL` | https://gd.eppo.int/taxon/{eppo_code}/datasheet | The URL to the organism datasheet in the EPPO database. Use `{eppo_code}` as placeholder for the EPPO code. |
 | `EPPO_COUNTRIES` | _CHANGEME_ | A comma-separated list of ISO 3166-1 alpha-2 country codes of countries that you are interested in. |
+| `CHUNK_SIZE` | 5 | For small data sets, a few sentences will have to do. |
+| `OVERLAP_SIZE` | 1 | The EPPO librarian uses rooftiling. This is the overlap. |
 
 EPPO is not completely clear on what license they expect. They do not restrict
 accessing the datasheets. They do ask for citation, which we provide.

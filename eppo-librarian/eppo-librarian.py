@@ -10,7 +10,6 @@ from time import sleep
 from lxml.html import HtmlElement
 from nltk.tokenize import sent_tokenize
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -23,8 +22,8 @@ EPPO_COUNTRIES: list[str] = os.getenv('EPPO_COUNTRIES').replace(' ', '').split('
 # feel, we start with 5 sentences per chunk, with one sentence overlap. We will
 # have to fine tune that over time. We simply use all other columns as metadata.
 
-CHUNK_SIZE=5 # XXX move to .env
-OVERLAP_SIZE: int = 1
+CHUNK_SIZE: int = int(os.getenv('CHUNK_SIZE'))
+OVERLAP_SIZE: int = int(os.getenv('OVERLAP_SIZE'))
 
 CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
 CHROMADB_PORT: int = os.getenv('CHROMADB_PORT')
@@ -32,9 +31,10 @@ CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
 
 
 COL_EPPO_CODE: str = 'EPPOCode'
-COL_COUNTRY: str   = 'ISO 3166-1 2-character country code'
+COL_COUNTRY: str   = 'country code (ISO 3166-1)'
 COL_URL: str       = 'EPPO datasheet url'
-COL_TEXT_EN: str   = 'datasheet (English)'
+COL_TEXT_EN: str   = 'datasheet (en)'
+COL_CHUNK: str     = 'chunk (en)'
 
 
 def download_eppo_code_registry(url: str, countries: list[str]) -> pd.DataFrame:
@@ -89,7 +89,7 @@ def clean_datasheet(tree: HtmlElement) -> HtmlElement:
         not want in the knowledge base. This function prunes such useless
         elements from the tree, as well as comments.
     '''
-    for xpath in ['//head', '//header', '//footer', '//script', '//noscript', '//style', '//div[contains(@class, "quicksearch")]', '//div[contains(@class, "navbar")]', '//div[contains(@class, "btn")]', '//div[contains(@class, "modal")]']:
+    for xpath in ['//head', '//header', '//footer', '//script', '//noscript', '//style', '//div[contains(@class, "quicksearch")]', '//div[contains(@class, "navbar")]', '//*[contains(@class, "btn")]', '//div[contains(@class, "modal")]', '//*[contains(@class, "hidden-print")]']:
         elements = tree.xpath(xpath)
         for element in elements:
             element.getparent().remove(element)
@@ -123,6 +123,34 @@ def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
     return df.apply(download_and_extract_text, axis=1)
 
 
+def make_chunks(df: pd.DataFrame, chunk_size: int, overlap_size: int) -> pd.DataFrame:
+    """
+    Splits the text into chunks of sentences using a roof tiling method. By
+    splitting the datasheets into chunks we expect that the RAG queries
+    will return more useful data.
+    """
+    def create_chunks(text: str) -> list[str]:
+        sentences = sent_tokenize(text)
+        chunks = []
+        num_sentences = len(sentences)
+        for start_idx in range(0, num_sentences, chunk_size - overlap_size):
+            end_idx = min(start_idx + chunk_size, num_sentences)
+            chunk = ' '.join(sentences[start_idx:end_idx])
+            chunks.append(chunk)
+            if end_idx == num_sentences:
+                break
+        return chunks
+
+    all_chunks = []
+    for index, row in df.iterrows():
+        eppo_code = row[COL_EPPO_CODE]
+        chunks = create_chunks(row[COL_TEXT_EN])
+        for chunk in chunks:
+            all_chunks.append({COL_EPPO_CODE: eppo_code, COL_CHUNK: chunk})
+
+    return pd.DataFrame(all_chunks)
+
+
 def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.Collection:
     '''
         Connect to ChromaDB. The ChromaDB service takes a second or so to start,
@@ -141,85 +169,65 @@ def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.
             sleep(1)
 
 
-def add_chunk_to_chroma(chunk: str, eppo_code: str, countries: str, datasheet_url: str, uniquefier: int, chroma_collection: chromadb.Collection) -> None:
-    id = f"{eppo_code}:{uniquefier}"
-    chroma_collection.add(
-        ids=[id],
-        uris=[datasheet_url],
-        metadatas=[{'countries': countries, 'eppo_code': eppo_code}],
-        documents=['. '.join(chunk)],
-    )
+def add_chunks_to_chromadb(df: pd.DataFrame, metadata_df: pd.DataFrame, chunk_column: str, collection: chromadb.Collection) -> None:
+    """
+    Adds the chunks from the DataFrame to ChromaDB, associating metadata
+    from the metadata DataFrame. Ensures unique keys by appending a uniquefier.
 
+    Deletes existing entries for each EPPO code before adding new ones.
+    Note: This may introduce a race condition where relevant data is deleted
+    just before it could be queried.
 
-def build_chunks_from_sentences(text: str, eppo_code: str, countries: str, datasheet_url: str, chroma_collection: chromadb.Collection) -> None:
-    '''
-        Break the text up into chunks and push the chunks into ChromaDB.
-        ChromaDB handles the vectorisation using its default embedding model.
-        That is good enough to get started. We rooftile the chunks based on
-        `CHUNK_SIZE` and `OVERLAP_SIZE`.
+    Parameters:
+        df (pd.DataFrame): DataFrame containing the chunks and EPPO codes.
+        metadata_df (pd.DataFrame): DataFrame containing metadata for each EPPO code.
+        chunk_column (str): The column name in `df` that contains the chunks.
+        collection (chromadb.Collection): The ChromaDB collection to which the chunks will be added.
+    """
 
-        Here we also construct the unique identifier for each chunk, using the
-        EPPO code, the country and a numeric uniquefier.
-    '''
-    sentences:  list[str] = sent_tokenize(text)
-    this_chunk: list[str] = []
-    next_chunk: list[str] = []
-
-    uniquefier: int = 0
-
-    logger.info(f"building chunks from {len(sentences)} sentences for {eppo_code}:{countries}")
-
-    for sentence in sentences:
-        if len(this_chunk) >= CHUNK_SIZE:
-            # done with the first chunk, add to overlap?
-            if len(next_chunk) == OVERLAP_SIZE:
-                add_chunk_to_chroma(this_chunk, eppo_code, countries, datasheet_url, uniquefier, chroma_collection)
-                uniquefier = uniquefier + 1
-                this_chunk = next_chunk
-                next_chunk = []
-            else:
-                # this chunk is full, but we still need more overlap
-                this_chunk.append(sentence)
-                next_chunk.append(sentence)
-        else:
-            # not enough in this chunk just yet
-            this_chunk.append(sentence)
-
-    if len(this_chunk) > 0:
-        add_chunk_to_chroma(this_chunk, eppo_code, countries, datasheet_url, uniquefier, chroma_collection)
-        uniquefier = uniquefier + 1
-    if len(next_chunk) > 0:
-        add_chunk_to_chroma(this_chunk, eppo_code, countries, datasheet_url, uniquefier, chroma_collection)
-        uniquefier = uniquefier + 1
-
-
-def add_chunks_to_chromadb(df, text_column, chroma_collection):
-    for index, row in df.iterrows():
-        eppo_code: str = row[COL_EPPO_CODE]
+    for _, row in metadata_df.iterrows():
+        eppo_code = row[COL_EPPO_CODE]
         datasheet_url = row[COL_URL]
-        datasheet_text = row[text_column]
+        countries = row[COL_COUNTRY]
 
-        # before adding the data sheet, delete all chunks for this data sheet.
-        # There is a race condition with querying the knowledge base, but for
-        # now this is a decent solution.
-        chroma_collection.delete(where={"eppo_code": eppo_code})
+        eppo_chunks = df[df[COL_EPPO_CODE] == eppo_code][chunk_column].tolist()
+        if len(eppo_chunks) > 0:
+            collection.delete(where={"eppo_code": eppo_code})
+            collection.add(
+                ids=[f"{eppo_code}:{i}" for i in range(len(eppo_chunks))],
+                uris=[datasheet_url]*len(eppo_chunks),
+                metadatas=[{'countries': countries, 'eppo_code': eppo_code}]*len(eppo_chunks),
+                documents=eppo_chunks,
+            )
+        else:
+            logger.info(f"skipping {eppo_code}, no chunks. See also {datasheet_url}")
 
-        build_chunks_from_sentences(datasheet_text, eppo_code, row[COL_COUNTRY], datasheet_url, chroma_collection)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
     # download the NLTK sentence splitter
     nltk.download('punkt')
 
+    logger.info("loading eppo codes...")
     eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)
     logger.info(eppo_code_df.info())
     logger.info(eppo_code_df.head())
 
+    logger.info("loading datasheets...")
     datasheets_df = download_datasheets(eppo_code_df)
     logger.info(datasheets_df.info())
     logger.info(datasheets_df.head())
 
+    logger.info("generating chunks...")
+    chunks_df = make_chunks(datasheets_df, CHUNK_SIZE, OVERLAP_SIZE)
+    logger.info(chunks_df.info())
+    logger.info(chunks_df.head())
+
+    logger.info("storing chunks...")
     knowledgebase = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB_COLLECTION)
-    add_chunks_to_chromadb(datasheets_df, COL_TEXT_EN, knowledgebase)
+    add_chunks_to_chromadb(chunks_df, datasheets_df, COL_CHUNK, knowledgebase)
+    logger.info("all done.")
 
 # And with that, the librarian is done. The searchable text has been updated and
 # is ready to be queried.

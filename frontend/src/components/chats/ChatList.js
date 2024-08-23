@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib";
 import { deleteCookie } from "@/lib/cookies";
 import { formatChatTime, trimMessage } from "@/utils/formatter";
+import { ThreeDotIcon } from "@/utils/icons";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -181,32 +182,21 @@ const ChatList = ({
 
   return (
     <div
-      className="w-full h-screen bg-gray-100 overflow-y-scroll flex-shrink-0"
+      className="w-full h-screen bg-white overflow-y-scroll flex-shrink-0"
       ref={chatListRef}
     >
-      <div className="sticky top-0 left-0 right-0 bg-white border-b border-gray-200 z-10">
-        <div className="mx-auto p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Chats</h2>
-            <div className="relative">
+      <div className="sticky top-0 left-0 right-0 bg-gray-100 z-10 px-2 border-b border-gray-100">
+        <div className="mx-auto py-4 px-6">
+          <div className="flex items-center justify-center h-16">
+            <h2 className="text-xl text-akvo-green font-semibold">
+              AGRICONNECT
+            </h2>
+            {/* <div className="relative">
               <button
                 className="p-2 text-gray-600 focus:outline-none"
                 onClick={toggleDropdown}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-6 h-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6h.01M12 12h.01M12 18h.01M12 6a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01M12 12a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01M12 18a.75.75 0 0 1-.75-.75H12a.75.75 0 0 1 0 1.5h-.01"
-                  />
-                </svg>
+                <ThreeDotIcon />
               </button>
               {isDropdownOpen && (
                 <div
@@ -226,21 +216,14 @@ const ChatList = ({
                   </ul>
                 </div>
               )}
-            </div>
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full px-4 py-2 border rounded-lg"
-            />
+            </div> */}
           </div>
         </div>
       </div>
 
-      <div className="pt-2 pb-20 w-full">
+      <div className="pb-20 w-full">
         {/* Chat List */}
-        <div className="bg-white overflow-hidden">
+        <div className="bg-white overflow-hidden  px-2">
           {chatItems.chats.map(({ chat_session, last_message }) => (
             <div
               key={`chat-list-${chat_session.id}`}
@@ -255,7 +238,7 @@ const ChatList = ({
                 />
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <h3 className="text-lg font-semibold text-gray-800">
+                    <h3 className="text-md font-semibold text-gray-800">
                       {chat_session.name || chat_session.phone_number}
                     </h3>
                     <p className="text-xs text-gray-500">

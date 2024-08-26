@@ -21,7 +21,6 @@ const ChatList = ({
   const userDispatch = useUserDispatch();
   const authDispatch = useAuthDispatch();
   const chatDispatch = useChatDispatch();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [chatItems, setChatItems] = useState(initialChatItems);
   const [offset, setOffset] = useState(0);
   const limit = 10;
@@ -157,19 +156,6 @@ const ChatList = ({
       });
     }
   }, [newMessage]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   return (
     <div

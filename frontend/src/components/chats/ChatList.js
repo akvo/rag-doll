@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib";
 import { deleteCookie } from "@/lib/cookies";
 import { formatChatTime, trimMessage } from "@/utils/formatter";
-import { ThreeDotIcon } from "@/utils/icons";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -30,10 +29,6 @@ const ChatList = ({
   const chatListRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
   const handleOnClickChat = ({ id, name, phone_number }) => {
     chatDispatch({
       type: "UPDATE",
@@ -43,10 +38,6 @@ const ChatList = ({
         clientPhoneNumber: phone_number,
       },
     });
-  };
-
-  const handleOnClickSettings = () => {
-    router.push("/settings");
   };
 
   const loadMoreChats = () => {
@@ -191,32 +182,6 @@ const ChatList = ({
             <h2 className="text-xl text-akvo-green font-semibold">
               AGRICONNECT
             </h2>
-            {/* <div className="relative">
-              <button
-                className="p-2 text-gray-600 focus:outline-none"
-                onClick={toggleDropdown}
-              >
-                <ThreeDotIcon />
-              </button>
-              {isDropdownOpen && (
-                <div
-                  ref={dropdownRef}
-                  className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 transition ease-out duration-100 transform opacity-100 scale-100 origin-top-right"
-                >
-                  <ul className="py-1">
-                    <li
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={handleOnClickSettings}
-                    >
-                      Settings
-                    </li>
-                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                      About
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </div> */}
           </div>
         </div>
       </div>

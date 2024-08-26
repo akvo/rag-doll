@@ -198,12 +198,12 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   }, [chats]);
 
   return (
-    <div className="flex flex-col w-full h-screen bg-gray-200">
+    <div className="flex flex-col w-full h-screen bg-gray-100">
       {/* Chat Header */}
       <div className="flex items-center p-4 bg-white border-b h-24">
-        <div className="mr-4">
+        <button className="mr-4" onClick={handleOnClickBack}>
           <BackIcon />
-        </div>
+        </button>
 
         <img
           src="https://via.placeholder.com/40"
@@ -222,10 +222,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       {/* Messages */}
       <div className="flex flex-col h-5/6 pb-4">
         {/* User Messages */}
-        <div
-          id="messagesContainer"
-          className="flex-1 p-4 overflow-auto border-b"
-        >
+        <div id="messagesContainer" className="flex-1 p-4 overflow-auto">
           {renderChatHistory}
           {renderChats}
         </div>
@@ -248,12 +245,12 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           onChange={handleChange}
           onInput={handleTextAreaDynamicHeight}
           placeholder="Type a message..."
-          className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto"
+          className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
           rows={1}
         />
         <button
           onClick={handleSend}
-          className="ml-4 bg-green-500 hover:bg-green-600 text-white p-3 rounded-full focus:outline-none"
+          className="ml-4 bg-akvo-green hover:bg-green-700 text-white p-3 rounded-full focus:outline-none"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

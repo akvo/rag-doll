@@ -64,8 +64,8 @@ const Whisper = ({
   return (
     <div className="flex p-4 overflow-auto">
       <div
-        className={`w-full relative h- bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-40 ${
-          expanded ? "max-h-3/4" : "h-40"
+        className={`w-full relative h- bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-32 ${
+          expanded ? "max-h-3/4" : "h-32"
         }`}
       >
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-white z-10 px-4">
@@ -109,14 +109,14 @@ const Whisper = ({
         <div className="p-4">
           {/* AI Loading */}
           {currentWhisper?.loading ? (
-            <div className="flex h-18 items-center justify-center">
+            <div className="flex h-10 items-center justify-center">
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce delay-150"></div>
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-300"></div>
+                <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></div>
+                <div className="w-1 h-1 bg-green-500 rounded-full animate-bounce delay-150"></div>
+                <div className="w-1 h-1 bg-red-500 rounded-full animate-bounce delay-300"></div>
               </div>
-              <p className="ml-4 text-lg font-medium text-gray-600">
-                AI is thinking...
+              <p className="ml-4 text-sm font-medium text-gray-600">
+                AI is thinking
               </p>
             </div>
           ) : (
@@ -125,7 +125,11 @@ const Whisper = ({
                 <div className="flex mb-2">
                   <div className="relative bg-gray-100 p-4 rounded-lg shadow-lg w-full">
                     {chat.message.split("\n")?.map((line, index) => (
-                      <MarkdownRenderer key={`ai-${index}`} content={line} />
+                      <MarkdownRenderer
+                        key={`ai-${index}`}
+                        content={line}
+                        className="text-sm"
+                      />
                     ))}
                     <div className="flex justify-between items-center border-t border-gray-600 pt-2">
                       <div className="flex justify-start">

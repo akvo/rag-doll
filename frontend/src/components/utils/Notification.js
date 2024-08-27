@@ -1,7 +1,7 @@
 const Notification = ({ message, show }) => {
   return (
     <div
-      className={`min-w-72 fixed top-4 left-1/2 transform -translate-x-1/2 p-4 bg-white border border-green-500 text-gray-800 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${
+      className={`min-w-72 fixed top-4 left-1/2 transform -translate-x-1/2 p-4 bg-white border border-akvo-green text-gray-800 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${
         show ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
@@ -13,7 +13,7 @@ const Notification = ({ message, show }) => {
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="size-6 text-green-500"
+            className="size-6 text-akvo-green"
           >
             <path
               strokeLinecap="round"

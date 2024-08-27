@@ -14,6 +14,7 @@ import { formatChatTime, generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
 import MarkdownRenderer from "./MarkdownRenderer";
+import { BackIcon, SendIcon } from "@/utils/icons";
 
 const SenderRoleEnum = {
   USER: "user",
@@ -22,34 +23,32 @@ const SenderRoleEnum = {
   SYSTEM: "system",
 };
 
-const UserChat = ({ message, timestamp }) => (
-  <div className="flex mb-4 justify-end">
-    <div className="relative bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-      <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-green-500 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+const UserChat = ({ message, timestamp, ref }) => (
+  <div className="flex mb-4 justify-end" ref={ref}>
+    <div className="relative bg-akvo-green-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-akvo-green-100 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer
           key={`user-${i}`}
           content={line}
-          className={`prose-headings:text-white prose-strong:text-white prose-p:text-white prose-a:text-white prose-li:text-white prose-ol:text-white prose-ul:text-white prose-code:text-white text-white`}
+          className={`prose-headings:text-gray-800 prose-strong:text-gray-800 prose-p:text-gray-800 prose-a:text-gray-800 prose-li:text-gray-800 prose-ol:text-gray-800 prose-ul:text-gray-800 prose-code:text-gray-800 text-gray-800`}
         />
       ))}
-      <p className="text-right text-xs text-gray-200 mt-2">
+      <p className="text-right text-xs mt-2 text-gray-800">
         {formatChatTime(timestamp)}
       </p>
     </div>
   </div>
 );
 
-const ClientChat = ({ message, timestamp }) => (
-  <div className="flex mb-4">
-    <div className="relative bg-white p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-white border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+const ClientChat = ({ message, timestamp, ref }) => (
+  <div className="flex mb-4" ref={ref}>
+    <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
+      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer key={`client-${i}`} content={line} />
       ))}
-      <p className="text-right text-xs text-gray-400 mt-2">
-        {formatChatTime(timestamp)}
-      </p>
+      <p className="text-right text-xs mt-2">{formatChatTime(timestamp)}</p>
     </div>
   </div>
 );
@@ -61,15 +60,47 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   const { clientId, clientName, clientPhoneNumber } = chatContext;
 
   const textareaRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const lastMessageRef = useRef(null);
+
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
 
   const scrollToLastMessage = useCallback(() => {
-    const messagesContainer = document.getElementById("messagesContainer");
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
     }
   }, []);
+
+  // Scroll to the last message whenever the chats state changes
+  useEffect(() => {
+    if (chats.length > 0) {
+      scrollToLastMessage();
+    }
+  }, [chats, scrollToLastMessage]);
+
+  // Intersection observer setup to scroll when new message arrives
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          scrollToLastMessage();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (lastMessageRef.current) {
+      observer.observe(lastMessageRef.current);
+    }
+
+    return () => {
+      if (lastMessageRef.current) {
+        observer.unobserve(lastMessageRef.current);
+      }
+    };
+  }, [lastMessageRef, scrollToLastMessage]);
 
   // Load previous chats from /api/chat-details/{clientId}
   useEffect(() => {
@@ -85,11 +116,6 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
     }
     fetchChats();
   }, [clientId, scrollToLastMessage]);
-
-  // Trigger on chats change to scroll to the bottom
-  useLayoutEffect(() => {
-    scrollToLastMessage();
-  }, [chats, scrollToLastMessage]);
 
   const handleTextAreaDynamicHeight = () => {
     const textarea = textareaRef.current;
@@ -183,6 +209,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
               key={`user-${ci}`}
               message={c.body}
               timestamp={c.conversation_envelope.timestamp}
+              ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
             />
           );
         }
@@ -192,33 +219,25 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
               key={`client-${ci}`}
               message={c.body}
               timestamp={c.conversation_envelope.timestamp}
+              ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
             />
           );
         }
       });
   }, [chats]);
 
+  const isWhisperVisible = useMemo(
+    () => whisperChats?.length > 0,
+    [whisperChats]
+  );
+
   return (
-    <div className="flex flex-col w-full h-screen bg-gray-200">
+    <div className="relative flex flex-col w-full bg-gray-100">
       {/* Chat Header */}
-      <div className="flex items-center p-4 bg-white border-b">
-        <div className="mr-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6 cursor-pointer"
-            onClick={handleOnClickBack}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 19.5 8.25 12l7.5-7.5"
-            />
-          </svg>
-        </div>
+      <div className="flex items-center p-4 bg-white border-b h-18 sticky top-0 z-50">
+        <button className="mr-4" onClick={handleOnClickBack}>
+          <BackIcon />
+        </button>
 
         <img
           src="https://via.placeholder.com/40"
@@ -227,20 +246,22 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
         />
 
         <div>
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-md font-semibold">
             {clientName || clientPhoneNumber}
           </h3>
-          <p className="text-sm text-gray-600">Online</p>
+          <p className="text-xs text-gray-500">Online</p>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex flex-col h-3/4">
+      {/* Chat Messages */}
+      <div
+        className={`flex flex-col flex-grow ${
+          isWhisperVisible ? "pb-60" : "pb-20"
+        }`}
+        style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
+      >
         {/* User Messages */}
-        <div
-          id="messagesContainer"
-          className="flex-1 p-4 overflow-auto border-b"
-        >
+        <div ref={messagesContainerRef} className="flex-1 p-4 overflow-auto">
           {renderChatHistory}
           {renderChats}
         </div>
@@ -256,34 +277,21 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       </div>
 
       {/* TextArea */}
-      <div className="flex p-4 bg-white border-t items-center fixed bottom-16 w-full z-20">
+      <div className="flex p-4 bg-white border-t items-center fixed bottom-0 w-full z-20">
         <textarea
           ref={textareaRef}
           value={message}
           onChange={handleChange}
           onInput={handleTextAreaDynamicHeight}
           placeholder="Type a message..."
-          className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto"
+          className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
           rows={1}
         />
         <button
           onClick={handleSend}
-          className="ml-4 bg-green-500 hover:bg-green-600 text-white p-3 rounded-full focus:outline-none"
+          className="ml-4 bg-akvo-green hover:bg-green-700 text-white p-3 rounded-full focus:outline-none"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="size-4"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
-            />
-          </svg>
+          <SendIcon />
         </button>
       </div>
     </div>

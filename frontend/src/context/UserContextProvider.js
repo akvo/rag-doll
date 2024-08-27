@@ -7,6 +7,7 @@ const UserDispatchContext = createContext(null);
 const initalUserState = {
   id: null,
   name: "",
+  phone_number: "",
 };
 
 const userReducer = (state, action) => {

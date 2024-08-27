@@ -1,17 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { api } from "@/lib";
 import { Notification } from "@/components";
 import "react-phone-number-input/style.css";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import { ButtonLoadingIcon, PhoneIcon } from "@/utils/icons";
 
 const Login = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationContent, setNotificationContent] = useState("");
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [disabled, setDisabled] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Check localStorage on component mount
+  useEffect(() => {
+    const savedPhoneNumber = localStorage.getItem("phoneNumber");
+    const savedPreference = localStorage.getItem("rememberMe") === "true";
+    setPhoneNumber(savedPhoneNumber || null);
+    setRememberMe(savedPreference);
+  }, []);
 
   const handleShowNotification = () => {
     setShowNotification(true);
@@ -28,12 +37,14 @@ const Login = () => {
     if (!phoneNumber) {
       setNotificationContent("Phone number required.");
       handleShowNotification();
+      setDisabled(false);
       return;
     }
 
     if (!isValidPhoneNumber(phoneNumber)) {
       setNotificationContent("Invalid phone number.");
       handleShowNotification();
+      setDisabled(false);
       return;
     }
 
@@ -46,6 +57,15 @@ const Login = () => {
           "Verification link sent to your WhatsApp. Please use it to verify your login."
         );
         handleShowNotification();
+
+        // Store phone number and preference in local storage if "Remember me" is checked
+        if (rememberMe) {
+          localStorage.setItem("phoneNumber", phoneNumber);
+          localStorage.setItem("rememberMe", "true");
+        } else {
+          localStorage.removeItem("phoneNumber");
+          localStorage.removeItem("rememberMe");
+        }
       } else if (res.status === 404) {
         setNotificationContent("Phone number not found.");
         handleShowNotification();
@@ -62,16 +82,13 @@ const Login = () => {
   };
 
   return (
-    <>
-      <form className="space-y-6 mt-8 mx-4" onSubmit={handleSubmit}>
+    <div className="mt-20">
+      <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="phone"
-            className="block text-sm font-medium text-gray-900"
-          >
+          <label htmlFor="phone" className="block">
             Phone Number
           </label>
-          <div className="mt-2">
+          <div className="mt-2 flex border-b-2 border-gray-400 items-center">
             <PhoneInput
               id="phone"
               name="phone"
@@ -81,61 +98,46 @@ const Login = () => {
               international
               defaultCountry="KE"
               initialValueFormat="international"
-              className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-500 sm:text-sm sm:leading-6"
+              className="block w-full p-2 text-gray-600 font-medium"
             />
+            <PhoneIcon />
           </div>
         </div>
+        <div className="mt-2">
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
+            <div className="w-5 h-5 border-2 border-gray-300 rounded-md flex items-center justify-center bg-white relative peer-checked:bg-akvo-green">
+              <div className="absolute inset-0 flex items-center justify-center peer-checked:block">
+                <span className="text-white text-sm">✔</span>
+              </div>
+            </div>
+            <span className="ml-2">Remember me</span>
+          </label>
+        </div>
 
-        <div>
+        {/* Button container with absolute positioning */}
+        <div className="absolute left-0 bottom-12 w-full px-12">
           <button
             disabled={disabled}
             type="submit"
-            className={`flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            className={`btn-login flex w-full justify-center rounded-md px-3 py-2 text-sm sm:text-base font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               disabled
-                ? "bg-green-300 cursor-not-allowed"
-                : "bg-green-500 hover:bg-green-600 focus:ring-green-500"
+                ? "bg-akvo-green cursor-not-allowed"
+                : "bg-akvo-green hover:bg-green-700 focus:ring-green-700"
             }`}
           >
-            {disabled ? (
-              <svg
-                className="animate-spin h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zM12 24c6.627 0 12-5.373 12-12h-4a8 8 0 01-8 8v4z"
-                ></path>
-              </svg>
-            ) : (
-              "Sign in"
-            )}
+            {disabled ? <ButtonLoadingIcon /> : "Log in"}
           </button>
         </div>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-500">
-        Not a member?
-        <Link
-          href="/register"
-          className="font-semibold text-green-500 hover:text-green-600 ml-2"
-        >
-          Register
-        </Link>
-      </p>
-
       <Notification message={notificationContent} show={showNotification} />
-    </>
+    </div>
   );
 };
 

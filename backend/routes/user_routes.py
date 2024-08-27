@@ -2,6 +2,7 @@ import json
 import phonenumbers
 from os import environ
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPBasicCredentials as credentials
 from sqlmodel import Session, select
 from uuid import uuid4
 from datetime import timedelta
@@ -13,9 +14,12 @@ from core.database import get_session
 from utils.jwt_handler import create_jwt_token
 from clients.twilio_client import TwilioClient
 from Akvo_rabbitmq_client import queue_message_util
+from middleware import verify_user
 
 
 router = APIRouter()
+security = HTTPBearer()
+
 webdomain = environ.get("WEBDOMAIN")
 MAGIC_LINK_CHAT_TEMPLATE = environ.get("MAGIC_LINK_CHAT_TEMPLATE")
 
@@ -81,3 +85,12 @@ async def verify_login_code(
         }
     )
     return res
+
+
+@router.get("/me")
+async def user_me(
+    session: Session = Depends(get_session),
+    auth: credentials = Depends(security),
+):
+    user = verify_user(session, auth)
+    return user.serialize()

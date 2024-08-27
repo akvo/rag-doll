@@ -8,7 +8,7 @@ const MarkdownRenderer = ({ content, className }) => {
   }
 
   return (
-    <div className={`prose ${className}`}>
+    <div className={`text-md prose ${className}`}>
       <ReactMarkdown>{content}</ReactMarkdown>
     </div>
   );

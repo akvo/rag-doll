@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib";
 import { deleteCookie } from "@/lib/cookies";
 import { formatChatTime, trimMessage } from "@/utils/formatter";
+import ChatHeader from "./ChatHeader";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -162,16 +163,7 @@ const ChatList = ({
       className="w-full h-screen bg-white overflow-y-scroll flex-shrink-0"
       ref={chatListRef}
     >
-      <div className="sticky top-0 left-0 right-0 bg-gray-100 z-10 px-2 border-b border-gray-100">
-        <div className="mx-auto py-4 px-6">
-          <div className="flex items-center justify-center h-16">
-            <h2 className="text-xl text-akvo-green font-semibold">
-              AGRICONNECT
-            </h2>
-          </div>
-        </div>
-      </div>
-
+      <ChatHeader />
       <div className="pb-20 w-full">
         {/* Chat List */}
         <div className="bg-white overflow-hidden  px-2">

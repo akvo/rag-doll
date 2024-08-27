@@ -19,6 +19,7 @@ const chatButtonType = (type) => {
           chatDispatch({
             type: "CLEAR",
           });
+          router.replace("/chats");
         },
       };
     case "reference":
@@ -33,7 +34,9 @@ const chatButtonType = (type) => {
         active: pathname.includes("account"),
         icon: <AccountIcon />,
         text: "Account",
-        onClick: () => {},
+        onClick: () => {
+          router.replace("/account");
+        },
       };
     default:
       throw Error(`Unknown tab type: ${type}.`);

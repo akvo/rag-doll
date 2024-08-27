@@ -136,3 +136,24 @@ def test_client_invalid_phone_number_with_invalid_characters(
             ), f"Expected ValueError for phone number {phone_number}"
         except ValueError as e:
             assert str(e) == "Phone number contains invalid characters"
+
+
+def test_get_user_me(client: TestClient, session: Session) -> None:
+    response = client.post("/login?phone_number=%2B12345678900")
+    assert response.status_code == 200
+
+    user = session.exec(
+        select(User).where(User.phone_number == "+12345678900")
+    ).first()
+
+    verification_uuid = user.login_code
+    response = client.get(f"/verify/{verification_uuid}")
+    assert response.status_code == 200
+    content = response.json()
+    assert "token" in content
+    token = content["token"]
+
+    response = client.get("/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    content = response.json()
+    assert content == user.serialize()

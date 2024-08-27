@@ -200,7 +200,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   return (
     <div className="flex flex-col w-full h-screen bg-gray-100">
       {/* Chat Header */}
-      <div className="flex items-center p-4 bg-white border-b h-24">
+      <div className="flex items-center p-4 bg-white border-b h-18">
         <button className="mr-4" onClick={handleOnClickBack}>
           <BackIcon />
         </button>

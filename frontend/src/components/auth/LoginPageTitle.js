@@ -20,7 +20,7 @@ const LoginPageTitle = () => {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-col flex-start w-full max-w-sm mx-auto">
+    <div className="flex flex-col flex-start w-full max-w-sm">
       <button className="mt-4 mb-20">{/* <BackIcon /> */}</button>
       {pathname.includes("login") ? (
         <LoginTitle />

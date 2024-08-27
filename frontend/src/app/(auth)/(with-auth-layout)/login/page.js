@@ -83,7 +83,7 @@ const Login = () => {
 
   return (
     <div className="mt-20">
-      <form className="space-y-6 mt-8 max-w-sm" onSubmit={handleSubmit}>
+      <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
         <div>
           <label htmlFor="phone" className="block">
             Phone Number

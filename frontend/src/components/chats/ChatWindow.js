@@ -60,13 +60,17 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   const { clientId, clientName, clientPhoneNumber } = chatContext;
 
   const textareaRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
 
   const scrollToLastMessage = useCallback(() => {
-    const messagesContainer = document.getElementById("messagesContainer");
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (messagesContainerRef.current) {
+      setTimeout(() => {
+        messagesContainerRef.current.scrollTop =
+          messagesContainerRef.current.scrollHeight;
+      }, 500);
     }
   }, []);
 
@@ -226,12 +230,12 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
 
       {/* Messages */}
       <div
-        className={`relative flex flex-col pt-2 ${
+        className={`relative flex flex-col pt-2 max-heigh-screen ${
           isWhisperVisible ? "pb-0" : "pb-20"
         }`}
       >
         {/* User Messages */}
-        <div id="messagesContainer" className="flex-1 p-4 overflow-auto">
+        <div ref={messagesContainerRef} className="flex-1 p-4 overflow-auto">
           {renderChatHistory}
           {renderChats}
         </div>

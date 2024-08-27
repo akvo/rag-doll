@@ -23,8 +23,8 @@ const SenderRoleEnum = {
   SYSTEM: "system",
 };
 
-const UserChat = ({ message, timestamp }) => (
-  <div className="flex mb-4 justify-end">
+const UserChat = ({ message, timestamp, ref }) => (
+  <div className="flex mb-4 justify-end" ref={ref}>
     <div className="relative bg-akvo-green-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
       <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-akvo-green-100 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
       {message?.split("\n")?.map((line, i) => (
@@ -41,8 +41,8 @@ const UserChat = ({ message, timestamp }) => (
   </div>
 );
 
-const ClientChat = ({ message, timestamp }) => (
-  <div className="flex mb-4">
+const ClientChat = ({ message, timestamp, ref }) => (
+  <div className="flex mb-4" ref={ref}>
     <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
       <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
       {message?.split("\n")?.map((line, i) => (
@@ -61,18 +61,39 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
 
   const textareaRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const lastMessageRef = useRef(null);
 
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
 
   const scrollToLastMessage = useCallback(() => {
     if (messagesContainerRef.current) {
-      setTimeout(() => {
-        messagesContainerRef.current.scrollTop =
-          messagesContainerRef.current.scrollHeight;
-      }, 500);
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
     }
   }, []);
+
+  // Intersection observer setup to scroll when new message arrives
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          scrollToLastMessage();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (lastMessageRef.current) {
+      observer.observe(lastMessageRef.current);
+    }
+
+    return () => {
+      if (lastMessageRef.current) {
+        observer.unobserve(lastMessageRef.current);
+      }
+    };
+  }, [lastMessageRef, scrollToLastMessage]);
 
   // Load previous chats from /api/chat-details/{clientId}
   useEffect(() => {
@@ -88,11 +109,6 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
     }
     fetchChats();
   }, [clientId, scrollToLastMessage]);
-
-  // Trigger on chats change to scroll to the bottom
-  useLayoutEffect(() => {
-    scrollToLastMessage();
-  }, [chats, scrollToLastMessage]);
 
   const handleTextAreaDynamicHeight = () => {
     const textarea = textareaRef.current;
@@ -186,6 +202,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
               key={`user-${ci}`}
               message={c.body}
               timestamp={c.conversation_envelope.timestamp}
+              ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
             />
           );
         }
@@ -195,6 +212,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
               key={`client-${ci}`}
               message={c.body}
               timestamp={c.conversation_envelope.timestamp}
+              ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
             />
           );
         }
@@ -230,9 +248,10 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
 
       {/* Messages */}
       <div
-        className={`relative flex flex-col pt-2 max-heigh-screen ${
-          isWhisperVisible ? "pb-0" : "pb-20"
+        className={`relative flex flex-col pt-2 ${
+          isWhisperVisible ? "pb-52" : "pb-20"
         }`}
+        style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
       >
         {/* User Messages */}
         <div ref={messagesContainerRef} className="flex-1 p-4 overflow-auto">

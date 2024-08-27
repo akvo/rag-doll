@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { formatChatTime } from "@/utils/formatter";
 import { useChatContext } from "@/context/ChatContextProvider";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -8,7 +8,6 @@ import { Copied, ExpandIcon, Copy } from "@/utils/icons";
 
 const Whisper = ({
   whisperChats,
-  setWhisperChats,
   textareaRef,
   handleTextAreaDynamicHeight,
   setMessage,
@@ -32,39 +31,36 @@ const Whisper = ({
     [whisperChats, clientPhoneNumber]
   );
 
-  const handleCopy = async ({ message }) => {
-    try {
-      await navigator.clipboard.writeText(message);
-      if (textareaRef.current) {
-        textareaRef.current.value = message;
-        setMessage(message);
-        handleTextAreaDynamicHeight();
+  const handleCopy = useCallback(
+    async ({ message }) => {
+      try {
+        await navigator.clipboard.writeText(message);
+        if (textareaRef.current) {
+          textareaRef.current.value = message;
+          setMessage(message);
+          handleTextAreaDynamicHeight();
+        }
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1000);
+      } catch (error) {
+        console.error("Failed to copy text: ", error);
       }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1000);
-    } catch (error) {
-      console.error("Failed to copy text: ", error);
-    }
-  };
+    },
+    [textareaRef, setMessage, handleTextAreaDynamicHeight]
+  );
 
-  const onClose = () => {
-    setWhisperChats((prev) =>
-      prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
-    );
-  };
-
-  const toggleExpand = () => {
+  const toggleExpand = useCallback(() => {
     setExpanded(!expanded);
-  };
+  }, [expanded]);
 
   if (!currentWhisper && whispers.length === 0) {
     return null;
   }
 
   return (
-    <div className="sticky bottom-16 w-full flex mt-12 px-4 pt-4 pb-4 sm:pb-0 overflow-auto bg-gray-100">
+    <div className="fixed bottom-16 w-full flex mt-12 px-4 py-6 overflow-auto bg-gray-100">
       <div
-        className={`w-full relative h- bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-24 ${
+        className={`w-full relative bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-24 ${
           expanded ? "max-h-3/4" : "h-24"
         }`}
       >
@@ -77,7 +73,9 @@ const Whisper = ({
                 className="h-4 w-4"
               />
             </div>
-            <div className="ml-2 text-sm font-semibold">Sugested Resources</div>
+            <div className="ml-2 text-sm font-semibold">
+              Suggested Resources
+            </div>
           </div>
           <div className="flex">
             <button
@@ -88,22 +86,6 @@ const Whisper = ({
             >
               <ExpandIcon />
             </button>
-            {/* <button onClick={onClose} className="bg-gray-100 rounded-full p-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-4 h-4"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button> */}
           </div>
         </div>
         <div className="p-4">

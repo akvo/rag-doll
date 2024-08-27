@@ -21,9 +21,7 @@ const LoginPageTitle = () => {
 
   return (
     <div className="flex flex-col flex-start w-full max-w-sm mx-auto">
-      <button className="mt-4 mb-20">
-        <BackIcon />
-      </button>
+      <button className="mt-4 mb-20">{/* <BackIcon /> */}</button>
       {pathname.includes("login") ? (
         <LoginTitle />
       ) : (

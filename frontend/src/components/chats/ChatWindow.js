@@ -256,7 +256,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       {/* Chat Messages */}
       <div
         className={`flex flex-col flex-grow ${
-          isWhisperVisible ? "pb-52" : "pb-20"
+          isWhisperVisible ? "pb-60" : "pb-20"
         }`}
         style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
       >

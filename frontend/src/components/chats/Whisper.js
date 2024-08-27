@@ -58,7 +58,7 @@ const Whisper = ({
   }
 
   return (
-    <div className="fixed bottom-16 w-full flex mt-12 px-4 py-6 overflow-auto bg-gray-100">
+    <div className="fixed bottom-16 w-full flex mt-12 px-4 pt-4 pb-6 overflow-auto bg-gray-100">
       <div
         className={`w-full relative bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-32 ${
           expanded ? "max-h-3/4" : "h-32"

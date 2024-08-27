@@ -82,7 +82,7 @@ const Login = () => {
   };
 
   return (
-    <div className="mt-10">
+    <div className="mt-20">
       <form className="space-y-6 mt-8 max-w-sm" onSubmit={handleSubmit}>
         <div>
           <label htmlFor="phone" className="block">
@@ -120,11 +120,12 @@ const Login = () => {
           </label>
         </div>
 
-        <div>
+        {/* Button container with absolute positioning */}
+        <div className="absolute left-0 bottom-12 w-full px-12">
           <button
             disabled={disabled}
             type="submit"
-            className={`btn-login mt-80 flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            className={`btn-login flex w-full justify-center rounded-md px-3 py-2 text-sm sm:text-base font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               disabled
                 ? "bg-akvo-green cursor-not-allowed"
                 : "bg-akvo-green hover:bg-green-700 focus:ring-green-700"

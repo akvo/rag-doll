@@ -220,7 +220,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       </div>
 
       {/* Messages */}
-      <div className="flex flex-col h-5/6 pb-4">
+      <div className="relative flex flex-col h-5/6">
         {/* User Messages */}
         <div id="messagesContainer" className="flex-1 p-4 overflow-auto">
           {renderChatHistory}

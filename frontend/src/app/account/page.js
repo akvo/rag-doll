@@ -54,7 +54,7 @@ const Account = () => {
         }
       />
 
-      <div className="p-4 bg-white mt-32">
+      <div className="mt-[15%] p-4 bg-white flex flex-col justify-center">
         <div className="flex justify-center mb-6">
           <img
             className="h-32 w-32 rounded-full"

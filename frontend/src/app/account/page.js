@@ -34,12 +34,12 @@ const Account = () => {
   const handleLogout = () => {
     // Clear user & auth context
     // Redirect to login page
-    userDispatch({
-      type: "DELETE",
-    });
     authDispatch({ type: "DELETE" });
     deleteCookie("AUTH_TOKEN");
     setTimeout(() => {
+      userDispatch({
+        type: "DELETE",
+      });
       router.replace("/login");
     }, 500);
   };

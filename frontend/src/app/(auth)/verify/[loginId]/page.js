@@ -51,7 +51,7 @@ const VerifyLogin = ({ params }) => {
 
   useEffect(() => {
     verifyUser();
-  }, [verifyUser]);
+  }, []);
 
   const handleBack = () => {
     route.replace("/login");

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { formatChatTime } from "@/utils/formatter";
 
 const ChatNotification = ({
@@ -22,7 +22,7 @@ const ChatNotification = ({
 
   return (
     <div
-      className={`max-w-xs md:max-w-sm p-4 bg-gray-800 opacity-75 text-white rounded-lg shadow-md cursor-pointer transition-all transform ${
+      className={`max-w-sm p-4 bg-gray-800 opacity-75 text-white rounded-lg shadow-md cursor-pointer transition-all transform ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
       onClick={() => onClick(sender)}

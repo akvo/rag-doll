@@ -14,7 +14,7 @@ import { formatChatTime, generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
 import MarkdownRenderer from "./MarkdownRenderer";
-import { BackIcon } from "@/utils/icons";
+import { BackIcon, SendIcon } from "@/utils/icons";
 
 const SenderRoleEnum = {
   USER: "user",
@@ -72,6 +72,13 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
         messagesContainerRef.current.scrollHeight;
     }
   }, []);
+
+  // Scroll to the last message whenever the chats state changes
+  useEffect(() => {
+    if (chats.length > 0) {
+      scrollToLastMessage();
+    }
+  }, [chats, scrollToLastMessage]);
 
   // Intersection observer setup to scroll when new message arrives
   useEffect(() => {
@@ -246,9 +253,9 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Chat Messages */}
       <div
-        className={`relative flex flex-col pt-2 ${
+        className={`flex flex-col flex-grow ${
           isWhisperVisible ? "pb-52" : "pb-20"
         }`}
         style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
@@ -284,20 +291,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           onClick={handleSend}
           className="ml-4 bg-akvo-green hover:bg-green-700 text-white p-3 rounded-full focus:outline-none"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="size-4"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
-            />
-          </svg>
+          <SendIcon />
         </button>
       </div>
     </div>

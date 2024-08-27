@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { formatChatTime } from "@/utils/formatter";
 import { useChatContext } from "@/context/ChatContextProvider";
 import MarkdownRenderer from "./MarkdownRenderer";
-import { Copied, ExpandIcon, Copy } from "@/utils/icons";
+import { CopiedIcon, ExpandIcon, CopyIcon } from "@/utils/icons";
 
 const Whisper = ({
   whisperChats,
@@ -60,8 +60,8 @@ const Whisper = ({
   return (
     <div className="fixed bottom-16 w-full flex mt-12 px-4 py-6 overflow-auto bg-gray-100">
       <div
-        className={`w-full relative bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-24 ${
-          expanded ? "max-h-3/4" : "h-24"
+        className={`w-full relative bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-32 ${
+          expanded ? "max-h-3/4" : "h-32"
         }`}
       >
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-white z-10 px-4">
@@ -123,14 +123,14 @@ const Whisper = ({
                           {/* Copy */}
                           {copied ? (
                             <div className="flex items-center">
-                              <Copied />
+                              <CopiedIcon />
                               <p className="text-xs font-medium ms-2 text-akvo-green">
                                 Copied!
                               </p>
                             </div>
                           ) : (
                             <div className="flex items-center">
-                              <Copy />
+                              <CopyIcon />
                               <p className="text-xs font-medium ms-2 text-gray-500">
                                 Use this message
                               </p>

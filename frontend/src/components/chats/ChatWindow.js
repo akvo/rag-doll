@@ -197,10 +197,15 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       });
   }, [chats]);
 
+  const isWhisperVisible = useMemo(
+    () => whisperChats?.length > 0,
+    [whisperChats]
+  );
+
   return (
-    <div className="flex flex-col w-full h-screen bg-gray-100">
+    <div className="relative flex flex-col w-full bg-gray-100">
       {/* Chat Header */}
-      <div className="flex items-center p-4 bg-white border-b h-18">
+      <div className="flex items-center p-4 bg-white border-b h-18 sticky top-0 z-50">
         <button className="mr-4" onClick={handleOnClickBack}>
           <BackIcon />
         </button>
@@ -220,7 +225,11 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       </div>
 
       {/* Messages */}
-      <div className="relative flex flex-col h-5/6">
+      <div
+        className={`relative flex flex-col pt-2 ${
+          isWhisperVisible ? "pb-0" : "pb-20"
+        }`}
+      >
         {/* User Messages */}
         <div id="messagesContainer" className="flex-1 p-4 overflow-auto">
           {renderChatHistory}

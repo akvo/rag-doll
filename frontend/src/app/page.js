@@ -1,5 +1,27 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { SplashScreen, Welcome } from "@/components";
+
 const Home = () => {
-  return <h1 className="text-3xl font-bold underline">Home page</h1>;
+  const [isSplash, setIsSplash] = useState(true);
+  const [fadeClass, setFadeClass] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFadeClass("fade-out");
+      setTimeout(() => {
+        setIsSplash(false);
+        setFadeClass("fade-in");
+      }, 500); // Match the fade-out duration
+    }, 1000); // Duration of the splash screen
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className={fadeClass}>{isSplash ? <SplashScreen /> : <Welcome />}</div>
+  );
 };
 
 export default Home;

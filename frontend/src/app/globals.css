@@ -42,8 +42,17 @@ label {
 
 .bg-login-page {
   background-image: url("/images/bg-login-page.png");
-  flex-shrink: 0;
   background-size: repeat;
+}
+
+.bg-splash-page {
+  background: linear-gradient(
+      rgba(211, 211, 211, 0.7),
+      rgba(211, 211, 211, 0.7)
+    ),
+    url("/images/bg-login-page.png") repeat;
+  background-color: #006349;
+  background-blend-mode: overlay; /* This blends the color overlay with the image */
 }
 
 .btn-login {
@@ -56,4 +65,31 @@ label {
   gap: 10px;
   flex-shrink: 0;
   font-size: 16px;
+}
+
+/* Splash Screen transition */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s forwards;
+}
+
+.fade-out {
+  animation: fadeOut 0.5s forwards;
 }

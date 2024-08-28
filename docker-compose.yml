@@ -43,6 +43,8 @@ services:
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
       CHROMADB_COLLECTION: ${EPPO_LIBRARIAN_COLLECTION}
+      CHUNK_SIZE: ${CHUNK_SIZE}
+      OVERLAP_SIZE: ${OVERLAP_SIZE}
     depends_on:
       - chromadb
     command: ["./run.sh"]

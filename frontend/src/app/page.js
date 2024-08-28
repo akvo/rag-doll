@@ -14,7 +14,7 @@ const Home = () => {
         setIsSplash(false);
         setFadeClass("fade-in");
       }, 500); // Match the fade-out duration
-    }, 1000); // Duration of the splash screen
+    }, 550); // Duration of the splash screen
 
     return () => clearTimeout(timer);
   }, []);

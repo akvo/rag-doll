@@ -93,3 +93,9 @@ label {
 .fade-out {
   animation: fadeOut 0.5s forwards;
 }
+
+/* Sliding text animations */
+.sliding-text-container {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+}

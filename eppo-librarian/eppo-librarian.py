@@ -207,7 +207,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # download the NLTK sentence splitter
-    nltk.download('punkt')
+    nltk.download('punkt_tab')
 
     logger.info("loading eppo codes...")
     eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)

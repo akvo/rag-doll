@@ -184,7 +184,7 @@ def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.
             logger.info(f"Connected to http://{host}:{port}/{chromadb_collection.name}, which has {chromadb_collection.count()} records.")
             return chromadb_collection
         except Exception as e:
-            logger.warning(f"unable to connect to http://{host}:{port}/{collection_name}, retrying...: {type(e)}: {e}")
+            logger.warning(f"unable to connect to http://{host}:{port}/{collection_name}, retrying...: {type(e).__name__}: {e}")
             chromadb_client = None
             sleep(1)
 
@@ -217,7 +217,7 @@ def translate_chunks(df: pd.DataFrame, col_chunk: str, from_language: str, col_t
                     result += translator.translate(chunk)
                     break
                 except Exception as e:
-                    logger.warning(f"Translation {type(e)}: {str(e)}, retrying in 10 seconds...")
+                    logger.warning(f"Translation {type(e).__name__}: {str(e)}, retrying in 10 seconds...")
                     time.sleep(10)
         return result
 

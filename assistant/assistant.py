@@ -3,24 +3,26 @@ import json
 import asyncio
 import logging
 import chromadb
-
 from time import sleep
 from openai import OpenAI
 from Akvo_rabbitmq_client import rabbitmq_client
 from datetime import datetime, timezone
 
-
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+CHROMADB_COLLECTION: str = os.getenv("CHROMADB_COLLECTION") # XXX
 
 # ChromaDB section
 
 CHROMADB_HOST: str = os.getenv("CHROMADB_HOST")
 CHROMADB_PORT: int = os.getenv("CHROMADB_PORT")
-CHROMADB_COLLECTION: str = os.getenv("CHROMADB_COLLECTION")
 CHROMADB_DISTANCE_CUTOFF: float = float(os.getenv("CHROMADB_DISTANCE_CUTOFF"))
 
+CHROMADB_COLLECTION_TEMPLATE: str = os.getenv('CHROMADB_COLLECTION_TEMPLATE')
+ASSISTANT_LANGUAGES: list[str] = os.getenv('ASSISTANT_LANGUAGES').replace(' ', '').split(',')
+
+# XXX dictionary of prompts and chroma collections, indexed by language
 
 def connect_to_chromadb(
     host: str, port: int, collection_name: str
@@ -49,29 +51,57 @@ def connect_to_chromadb(
             sleep(1)
 
 
-def query_collection(collection: chromadb.Collection, prompt: str) -> list[str]:
+def query_collection(collection: chromadb.Collection, prompt: str, cutoff: float = None) -> tuple[list[str], list[float]]:
+    """
+    Queries the collection with the provided prompt and returns documents and
+    their corresponding distances if they have a lower distance than on the
+    cutoff value. The idea is that the cutoff value helps suppress irrelevant
+    documents.
+
+    Parameters:
+    collection (chromadb.Collection): The collection to query.
+    prompt (str): The prompt to query with.
+    cutoff (int, optional): The distance cutoff for filtering documents. 
+                            If `None`, the default, all documents are returned.
+    
+    Returns:
+    tuple[list[str], list[float]]: A tuple containing a list of filtered documents 
+                                   and a list of their corresponding distances.
+    """
     logger.info(
-        f"[ASSISTANT] -> will query: {collection} for {prompt}"
-        f" with cut-off {CHROMADB_DISTANCE_CUTOFF}"
+        f"[ASSISTANT] -> will query: {collection} for '{prompt}'"
+        f" with cut-off {cutoff}"
     )
 
     query_result = collection.query(
-        query_texts=[prompt], n_results=5, include=["documents", "distances"]
+        query_texts=[prompt], n_results=5, include=["documents", "distances", "uris", "metadatas"]
     )
-    filtered_documents = [
-        doc
-        for doc, dist in zip(
-            query_result["documents"][0], query_result["distances"][0]
-        )
-        if dist < CHROMADB_DISTANCE_CUTOFF
-    ]
+
+    if cutoff is not None:
+        filtered_documents = [
+            doc for doc, dist in zip(query_result["documents"][0], query_result["distances"][0]) if dist < cutoff
+        ]
+        filtered_distances = [
+            dist for dist in query_result["distances"][0] if dist < cutoff
+        ]
+        filtered_uris = [
+            uri for uri, dist in zip(query_result["uris"][0], query_result["distances"][0]) if dist < cutoff
+        ]
+        filtered_countries = [
+            metadata["countries"] for metadata, dist in zip(query_result["metadatas"][0], query_result["distances"][0]) if dist < cutoff
+        ]
+    else:
+        filtered_documents = query_result["documents"][0]
+        filtered_distances = query_result["distances"][0]
+        filtered_uris = query_result["uris"][0]
+        filtered_countries = [metadata["countries"] for metadata in query_result["metadatas"][0]]
 
     logger.info(
         f"[ASSISTANT] -> accepted {len(filtered_documents)} of "
         f"{len(query_result['documents'][0])} query results: distances:"
-        f"{query_result['distances'][0]}, cut-off: {CHROMADB_DISTANCE_CUTOFF}"
+        f"{query_result['distances'][0]}, cut-off: {cutoff}"
     )
-    return filtered_documents, query_result
+    return filtered_documents, filtered_distances, filtered_uris, filtered_countries
 
 
 chromadb_collection = connect_to_chromadb(
@@ -84,7 +114,6 @@ ASSISTANT_ROLE = os.getenv("ASSISTANT_ROLE")
 OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL")
 RAG_PROMPT = os.getenv("RAG_PROMPT")
 RAGLESS_PROMPT = os.getenv("RAGLESS_PROMPT")
-
 
 class LLM:
     def __init__(self, chat_model: str):
@@ -169,13 +198,14 @@ async def on_message(body: str) -> None:
     from_client = json.loads(body)
 
     # query the knowledge base for RAG context
-    rag_context, query_result = query_collection(
-        chromadb_collection, from_client["body"]
+    rag_context, _, _, _ = query_collection(
+        chromadb_collection, from_client["body"],
+        CHROMADB_DISTANCE_CUTOFF
     )
 
     # if there is context, add it to the prompt
     if len(rag_context) > 0:
-        prompt = RAG_PROMPT.format(from_client["body"], query_result)
+        prompt = RAG_PROMPT.format(from_client["body"], rag_context)
     else:
         prompt = RAGLESS_PROMPT.format(from_client["body"])
 
@@ -206,4 +236,6 @@ async def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
     asyncio.run(main())

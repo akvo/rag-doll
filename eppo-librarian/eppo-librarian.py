@@ -9,13 +9,20 @@ from lxml import html
 from time import sleep
 from lxml.html import HtmlElement
 from nltk.tokenize import sent_tokenize
+from deep_translator import GoogleTranslator
 
 logger = logging.getLogger(__name__)
 
 
 EPPO_COUNTRY_ORGANISM_URL: str = os.getenv('EPPO_COUNTRY_ORGANISM_URL')
+assert not EPPO_COUNTRY_ORGANISM_URL is None
+assert isinstance(EPPO_COUNTRY_ORGANISM_URL, str)
 EPPO_DATASHEET_URL: str = os.getenv('EPPO_DATASHEET_URL')
+assert not EPPO_DATASHEET_URL is None
+assert isinstance(EPPO_DATASHEET_URL, str)
 EPPO_COUNTRIES: list[str] = os.getenv('EPPO_COUNTRIES').replace(' ', '').split(',')
+assert not EPPO_COUNTRIES is None
+assert len(EPPO_COUNTRIES) > 0
 
 # Here we define the granularity of the chunks, as well as overlap and metadata.
 # Our data sets are tiny, so just a few sentences will have to do. Based on gut
@@ -23,12 +30,23 @@ EPPO_COUNTRIES: list[str] = os.getenv('EPPO_COUNTRIES').replace(' ', '').split('
 # have to fine tune that over time. We simply use all other columns as metadata.
 
 CHUNK_SIZE: int = int(os.getenv('CHUNK_SIZE'))
+assert CHUNK_SIZE > 0
 OVERLAP_SIZE: int = int(os.getenv('OVERLAP_SIZE'))
+assert OVERLAP_SIZE > 0
 
 CHROMADB_HOST: str = os.getenv('CHROMADB_HOST')
-CHROMADB_PORT: int = os.getenv('CHROMADB_PORT')
-CHROMADB_COLLECTION: str = os.getenv('CHROMADB_COLLECTION')
+assert not CHROMADB_HOST is None
+assert isinstance(CHROMADB_HOST, str)
+CHROMADB_PORT: int = int(os.getenv('CHROMADB_PORT'))
+assert not CHROMADB_PORT is None
+assert isinstance(CHROMADB_PORT, int)
 
+CHROMADB_COLLECTION_TEMPLATE: str = os.getenv('CHROMADB_COLLECTION_TEMPLATE')
+assert not CHROMADB_COLLECTION_TEMPLATE is None
+assert isinstance(CHROMADB_COLLECTION_TEMPLATE, str)
+ASSISTANT_LANGUAGES: list[str] = os.getenv('ASSISTANT_LANGUAGES').replace(' ', '').split(',')
+assert not ASSISTANT_LANGUAGES is None
+assert len(ASSISTANT_LANGUAGES) > 0
 
 COL_EPPO_CODE: str = 'EPPOCode'
 COL_COUNTRY: str   = 'country code (ISO 3166-1)'
@@ -160,13 +178,36 @@ def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.
     chromadb_client = None
     while chromadb_client == None:
         try:
-            logger.info(f"trying http://{host}:{port}/{collection_name}...")
             chromadb_client = chromadb.HttpClient(host=host, port=port, settings=chromadb.Settings(anonymized_telemetry=False))
-            return chromadb_client.get_or_create_collection(collection_name)
+            chromadb_collection = chromadb_client.get_or_create_collection(collection_name)
+            logger.info(f"Connected to http://{host}:{port}/{chromadb_collection.name}, which has {chromadb_collection.count()} records.")
+            return chromadb_collection
         except Exception as e:
             logger.warning(f"unable to connect to http://{host}:{port}/{collection_name}, retrying...: {type(e)}: {e}")
             chromadb_client = None
             sleep(1)
+
+
+def translate_chunks(df: pd.DataFrame, col_chunk: str, from_language: str, col_translated: str, to_language: str) -> pd.DataFrame:
+    """
+    Translates the text in the source column of the dataframe from one language
+    to another and stores the result into `col_translated`.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the text to translate.
+    col_chunk (str): The column name with the text to translate.
+    from_language (str): The source language code.
+    col_translated (str): The column name where the translated text will be stored.
+    to_language (str): The target language code.
+
+    Returns:
+    pd.DataFrame: The DataFrame with the translated text in the new column.
+    """
+
+    translator = GoogleTranslator(source=from_language, target=to_language)
+
+    df[col_translated] = df[col_chunk].apply(translator.translate)
+    return df
 
 
 def add_chunks_to_chromadb(df: pd.DataFrame, metadata_df: pd.DataFrame, chunk_column: str, collection: chromadb.Collection) -> None:
@@ -211,22 +252,29 @@ if __name__ == "__main__":
 
     logger.info("loading eppo codes...")
     eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)
-    logger.info(eppo_code_df.info())
-    logger.info(eppo_code_df.head())
 
     logger.info("loading datasheets...")
     datasheets_df = download_datasheets(eppo_code_df)
-    logger.info(datasheets_df.info())
-    logger.info(datasheets_df.head())
 
     logger.info("generating chunks...")
     chunks_df = make_chunks(datasheets_df, CHUNK_SIZE, OVERLAP_SIZE)
-    logger.info(chunks_df.info())
-    logger.info(chunks_df.head())
 
-    logger.info("storing chunks...")
-    knowledgebase = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, CHROMADB_COLLECTION)
-    add_chunks_to_chromadb(chunks_df, datasheets_df, COL_CHUNK, knowledgebase)
+    for to_language in ASSISTANT_LANGUAGES:
+        collection_name = CHROMADB_COLLECTION_TEMPLATE.format(to_language)
+
+        if to_language == 'en':
+            logger.info(f"storing {to_language} chunks into {collection_name}...")
+            chromadb_collection = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, collection_name)
+            add_chunks_to_chromadb(chunks_df, datasheets_df, COL_CHUNK, chromadb_collection)
+        else:
+            logger.info(f"translating chunks into {to_language}...")
+            translated_column = f"translated chunk ({to_language})"
+            chunks_df = translate_chunks(chunks_df, COL_CHUNK, 'en', translated_column, to_language)
+    
+            logger.info(f"storing {to_language} chunks into {collection_name}...")
+            chromadb_collection = connect_to_chromadb(CHROMADB_HOST, CHROMADB_PORT, collection_name)
+            add_chunks_to_chromadb(chunks_df, datasheets_df, translated_column, chromadb_collection)
+
     logger.info("all done.")
 
 # And with that, the librarian is done. The searchable text has been updated and

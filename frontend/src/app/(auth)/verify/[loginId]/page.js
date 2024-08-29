@@ -47,11 +47,18 @@ const VerifyLogin = ({ params }) => {
         setError(true);
       }
     }
-  }, [auth.isLogin, params.loginId, user.id]);
+  }, [
+    auth.isLogin,
+    params.loginId,
+    user.id,
+    authDispatch,
+    route,
+    userDispatch,
+  ]);
 
   useEffect(() => {
     verifyUser();
-  }, []);
+  }, [verifyUser]);
 
   const handleBack = () => {
     route.replace("/login");

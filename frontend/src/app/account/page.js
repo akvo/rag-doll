@@ -62,6 +62,7 @@ const Account = () => {
             width={32}
             height={32}
             alt="user"
+            src=""
           />
         </div>
         <div className="flex flex-col items-center space-y-6">

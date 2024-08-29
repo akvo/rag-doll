@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { BackIcon, SendIcon } from "@/utils/icons";
+import Image from "next/image";
 
 const SenderRoleEnum = {
   USER: "user",
@@ -75,6 +76,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
 
   // Intersection observer setup to scroll when new message arrives
   useEffect(() => {
+    const lastMessageRefTemp = lastMessageRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -84,13 +86,13 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
       { threshold: 0.5 }
     );
 
-    if (lastMessageRef.current) {
-      observer.observe(lastMessageRef.current);
+    if (lastMessageRefTemp) {
+      observer.observe(lastMessageRefTemp);
     }
 
     return () => {
-      if (lastMessageRef.current) {
-        observer.unobserve(lastMessageRef.current);
+      if (lastMessageRefTemp) {
+        observer.unobserve(lastMessageRefTemp);
       }
     };
   }, [lastMessageRef, scrollToLastMessage]);
@@ -217,7 +219,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           );
         }
       });
-  }, [chats]);
+  }, [chats, clientPhoneNumber]);
 
   const isWhisperVisible = useMemo(
     () => whisperChats?.length > 0,
@@ -232,10 +234,12 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           <BackIcon />
         </button>
 
-        <img
-          src="https://via.placeholder.com/40"
+        <Image
+          src="/images/bg-login-page.png"
           alt="User Avatar"
-          className="rounded-full mr-4 w-12"
+          className="rounded-full mr-4 w-12 h-12 bg-gray-300"
+          width={12}
+          height={12}
         />
 
         <div>

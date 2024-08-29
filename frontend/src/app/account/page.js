@@ -62,7 +62,7 @@ const Account = () => {
             width={32}
             height={32}
             alt="user"
-            src=""
+            src="/images/bg-login-page.png"
           />
         </div>
         <div className="flex flex-col items-center space-y-6">

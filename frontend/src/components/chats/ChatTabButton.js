@@ -4,46 +4,46 @@ import { useChatDispatch } from "@/context/ChatContextProvider";
 import { usePathname, useRouter } from "next/navigation";
 import { ChatIcon, ReferenceIcon, AccountIcon } from "@/utils/icons";
 
-const chatButtonType = (type) => {
-  const chatDispatch = useChatDispatch();
+const ChatTabButton = ({ type }) => {
   const router = useRouter();
+  const chatDispatch = useChatDispatch();
   const pathname = usePathname();
 
-  switch (type) {
-    case "chats":
-      return {
-        active: pathname.includes("chats"),
-        icon: <ChatIcon />,
-        text: "Chats",
-        onClick: () => {
-          chatDispatch({
-            type: "CLEAR",
-          });
-          router.replace("/chats");
-        },
-      };
-    case "reference":
-      return {
-        active: pathname.includes("reference"),
-        icon: <ReferenceIcon />,
-        text: "Reference",
-        onClick: () => {},
-      };
-    case "account":
-      return {
-        active: pathname.includes("account"),
-        icon: <AccountIcon />,
-        text: "Account",
-        onClick: () => {
-          router.replace("/account");
-        },
-      };
-    default:
-      throw Error(`Unknown tab type: ${type}.`);
-  }
-};
+  const chatButtonType = (type) => {
+    switch (type) {
+      case "chats":
+        return {
+          active: pathname.includes("chats"),
+          icon: <ChatIcon />,
+          text: "Chats",
+          onClick: () => {
+            chatDispatch({
+              type: "CLEAR",
+            });
+            router.replace("/chats");
+          },
+        };
+      case "reference":
+        return {
+          active: pathname.includes("reference"),
+          icon: <ReferenceIcon />,
+          text: "Reference",
+          onClick: () => {},
+        };
+      case "account":
+        return {
+          active: pathname.includes("account"),
+          icon: <AccountIcon />,
+          text: "Account",
+          onClick: () => {
+            router.replace("/account");
+          },
+        };
+      default:
+        throw Error(`Unknown tab type: ${type}.`);
+    }
+  };
 
-const ChatTabButton = ({ type }) => {
   const buttonEl = chatButtonType(type);
 
   return (

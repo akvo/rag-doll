@@ -1,6 +1,7 @@
 import os
 import io
 import nltk
+import time
 import logging
 import requests
 import chromadb
@@ -204,9 +205,23 @@ def translate_chunks(df: pd.DataFrame, col_chunk: str, from_language: str, col_t
     pd.DataFrame: The DataFrame with the translated text in the new column.
     """
 
+    TRANSLATOR_CHAR_LIMIT: int = 4999
     translator = GoogleTranslator(source=from_language, target=to_language)
 
-    df[col_translated] = df[col_chunk].apply(translator.translate)
+    def translate_with_retry(text: str) -> str:
+        result = ''
+        for i in range(0, len(text), TRANSLATOR_CHAR_LIMIT):
+            chunk = text[i:i+TRANSLATOR_CHAR_LIMIT]
+            while True:
+                try:
+                    result += translator.translate(chunk)
+                    break
+                except Exception as e:
+                    logger.warning(f"Translation {type(e)}: {str(e)}, retrying in 10 seconds...")
+                    time.sleep(10)
+        return result
+
+    df[col_translated] = df[col_chunk].apply(translate_with_retry)
     return df
 
 

@@ -9,6 +9,7 @@ import { api } from "@/lib";
 import { deleteCookie } from "@/lib/cookies";
 import { formatChatTime, trimMessage } from "@/utils/formatter";
 import ChatHeader from "./ChatHeader";
+import Image from "next/image";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -27,7 +28,6 @@ const ChatList = ({
   const limit = 10;
 
   const chatListRef = useRef(null);
-  const dropdownRef = useRef(null);
 
   const handleOnClickChat = ({ id, name, phone_number }) => {
     chatDispatch({
@@ -97,7 +97,7 @@ const ChatList = ({
       deleteCookie("AUTH_TOKEN");
       router.replace("/login");
     }
-  }, [offset]);
+  }, [offset, authDispatch, router, setClients, userDispatch]);
 
   useEffect(() => {
     fetchData();
@@ -108,22 +108,23 @@ const ChatList = ({
       fetchData();
       setReloadChatList(false);
     }
-  }, [reloadChatList]);
+  }, [reloadChatList, fetchData, setReloadChatList]);
 
   // Handle infinite scroll
   useEffect(() => {
+    const chatListRefTemp = chatListRef.current;
     const handleScroll = () => {
-      if (chatListRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = chatListRef.current;
+      if (chatListRefTemp) {
+        const { scrollTop, scrollHeight, clientHeight } = chatListRefTemp;
         if (scrollTop + clientHeight >= scrollHeight - 5) {
           loadMoreChats();
         }
       }
     };
 
-    chatListRef?.current?.addEventListener("scroll", handleScroll);
+    chatListRefTemp?.addEventListener("scroll", handleScroll);
     return () => {
-      chatListRef?.current?.removeEventListener("scroll", handleScroll);
+      chatListRefTemp?.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -174,10 +175,12 @@ const ChatList = ({
               onClick={() => handleOnClickChat(chat_session)}
             >
               <div className="flex items-center">
-                <img
-                  src="https://via.placeholder.com/40"
+                <Image
+                  src="/images/bg-login-page.png"
                   alt="User Avatar"
-                  className="rounded-full w-10 h-10 mr-4"
+                  className="rounded-full w-12 h-12 mr-4 bg-gray-300"
+                  height={12}
+                  width={12}
                 />
                 <div className="flex-1">
                   <div className="flex justify-between">

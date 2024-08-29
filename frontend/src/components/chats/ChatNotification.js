@@ -16,7 +16,7 @@ const ChatNotification = ({
       setVisible();
     }, 1500);
     return () => clearTimeout(timer);
-  }, [message]);
+  }, [message, setVisible]);
 
   if (!visible) return null;
 

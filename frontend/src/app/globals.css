@@ -2,18 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  font-family: "Assistant";
-}
-
 html,
 body {
   overflow-x: hidden;
-}
-
-h1,
-h2 {
-  font-family: "Roboto Condensed";
 }
 
 h1 {

@@ -8,6 +8,7 @@ import { deleteCookie } from "@/lib/cookies";
 import { BackIcon } from "@/utils/icons";
 import { ChatHeader } from "@/components";
 import { api } from "@/lib";
+import Image from "next/image";
 
 const Account = () => {
   const user = useUserContext();
@@ -25,7 +26,7 @@ const Account = () => {
       }
     };
     fetchUserMe();
-  }, []);
+  }, [userDispatch]);
 
   const handleOnClickBack = () => {
     router.replace("/chats");
@@ -56,10 +57,12 @@ const Account = () => {
 
       <div className="mt-[15%] p-4 bg-white flex flex-col justify-center">
         <div className="flex justify-center mb-6">
-          <img
-            className="h-32 w-32 rounded-full"
-            src="https://via.placeholder.com/150"
-            alt="User Avatar"
+          <Image
+            className="h-32 w-32 rounded-full bg-gray-300"
+            width={32}
+            height={32}
+            alt="user"
+            src="/images/bg-login-page.png"
           />
         </div>
         <div className="flex flex-col items-center space-y-6">

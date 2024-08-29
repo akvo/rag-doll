@@ -5,6 +5,7 @@ import { formatChatTime } from "@/utils/formatter";
 import { useChatContext } from "@/context/ChatContextProvider";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { CopiedIcon, ExpandIcon, CopyIcon } from "@/utils/icons";
+import Image from "next/image";
 
 const Whisper = ({
   whisperChats,
@@ -67,10 +68,12 @@ const Whisper = ({
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-white z-10 px-4">
           <div className="flex items-center">
             <div>
-              <img
+              <Image
                 src="/images/whisper-logo.png"
                 alt="whisper-logo"
                 className="h-4 w-4"
+                width={4}
+                height={4}
               />
             </div>
             <div className="ml-2 text-sm font-semibold">

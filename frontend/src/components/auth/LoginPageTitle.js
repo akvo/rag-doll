@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { BackIcon } from "@/utils/icons";
+import { useRouter } from "next/navigation";
 
 const LoginTitle = () => {
   return (
@@ -18,10 +19,17 @@ const LoginTitle = () => {
 
 const LoginPageTitle = () => {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleOnClickBack = () => {
+    router.replace("/");
+  };
 
   return (
     <div className="flex flex-col flex-start w-full max-w-sm">
-      <button className="mt-4 mb-20">{/* <BackIcon /> */}</button>
+      <button className="mt-4 mb-20" onClick={handleOnClickBack}>
+        <BackIcon />
+      </button>
       {pathname.includes("login") ? (
         <LoginTitle />
       ) : (

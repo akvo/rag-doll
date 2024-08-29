@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useRef,
-  useState,
-  useEffect,
-  useLayoutEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket, api } from "@/lib";
 import { formatChatTime, generateMessage } from "@/utils/formatter";

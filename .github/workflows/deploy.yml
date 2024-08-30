@@ -1,4 +1,4 @@
-name: Deploy to test environment
+name: Deploy to Test Cluster
 
 on:
   push:
@@ -6,7 +6,8 @@ on:
       - master
 
 jobs:
-  deploy:
+  build-push:
+    name: Build and Push to Registry
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,13 +21,171 @@ jobs:
           repository: akvo/composite-actions
           token: ${{ secrets.GH_PAT }}
           path: composite-actions
-          ref: 0.0.4
+          ref: main
 
-      - name: Docker compose rebuild
-        uses: ./composite-actions/.github/actions/ssh-docker-compose
+      - name: Copy Akvo_rabbitmq_client python package
+        run: |
+          cp src/packages/Akvo_rabbitmq_client src/backend/ -R
+          cp src/packages/Akvo_rabbitmq_client src/assistant/ -R
+        shell: bash
+
+      - name: List files
+        run: |
+          ls -la src/backend
+        shell: bash
+
+      - name: Prepare Frontend Build
+        run: |
+          mv src/frontend/next.config.prod.mjs src/frontend/next.config.mjs
+        shell: bash
+
+
+      - name: Node Operations
+        uses: ./composite-actions/.github/actions/node-operation
         with:
-          server-ip:  ${{ secrets.SERVER_IP }}
-          server-ssh-port:  ${{ secrets.SERVER_SSH_PORT }}
-          server-ssh-secret-key:  ${{ secrets.SERVER_SSH_SECRET_KEY }}
-          server-ssh-user:  ${{ secrets.SERVER_SSH_USER }}
-          docker-compose-file: ${{ secrets.DOCKER_COMPOSE_FILE }}
+          node-version: "18"
+          node-command: "yarn install --no-progress --frozen-lock && yarn build"
+
+      - name: Docker Build Nginx
+        uses: ./composite-actions/.github/actions/docker-build
+        with:
+          app-name: "agriconnect"
+          service-name: "nginx"
+          dockerfile-location: "nginx"
+
+      - name: Docker Build Frontend
+        uses: ./composite-actions/.github/actions/docker-build
+        with:
+          app-name: "agriconnect"
+          service-name: "frontend"
+          dockerfile-location: "frontend"
+
+      - name: Docker Build Backend
+        uses: ./composite-actions/.github/actions/docker-build
+        with:
+          app-name: "agriconnect"
+          service-name: "backend"
+          dockerfile-location: "backend"
+
+      - name: Docker Build Assistant
+        uses: ./composite-actions/.github/actions/docker-build
+        with:
+          app-name: "agriconnect"
+          service-name: "assistant"
+          dockerfile-location: "assistant"
+
+      - name: Docker Build EPPO Librarian
+        uses: ./composite-actions/.github/actions/docker-build
+        with:
+          app-name: "agriconnect"
+          service-name: "eppo-librarian"
+          dockerfile-location: "eppo-librarian"
+
+      - name: Docker Push Nginx
+        uses: ./composite-actions/.github/actions/docker-push
+        with:
+          app-name: "agriconnect"
+          service-name: "nginx"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
+          cluster-name: "test"
+
+      - name: Docker Push Frontend
+        uses: ./composite-actions/.github/actions/docker-push
+        with:
+          app-name: "agriconnect"
+          service-name: "frontend"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
+          cluster-name: "test"
+
+      - name: Docker Push Backend
+        uses: ./composite-actions/.github/actions/docker-push
+        with:
+          app-name: "agriconnect"
+          service-name: "backend"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
+          cluster-name: "test"
+
+      - name: Docker Push Assistant
+        uses: ./composite-actions/.github/actions/docker-push
+        with:
+          app-name: "agriconnect"
+          service-name: "assistant"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
+          cluster-name: "test"
+
+      - name: Docker Push EPPO Librarian
+        uses: ./composite-actions/.github/actions/docker-push
+        with:
+          app-name: "agriconnect"
+          service-name: "eppo-librarian"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
+          cluster-name: "test"
+
+  rollout:
+    name: Rollout to the server
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Checkout Akvo composite actions
+        uses: actions/checkout@v4
+        with:
+          repository: akvo/composite-actions
+          token: ${{ secrets.GH_PAT }}
+          path: composite-actions
+          ref: main
+
+      - name: Rollout Nginx
+        uses: ./composite-actions/.github/actions/k8s-rollout
+        with:
+          app-name: "agriconnect"
+          deployment-name: "nginx-deployment"
+          container-name: "nginx"
+          cluster-name: "test"
+          namespace-name: "agriconnect-namespace"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}
+
+
+      - name: Rollout Frontend
+        uses: ./composite-actions/.github/actions/k8s-rollout
+        with:
+          app-name: "agriconnect"
+          deployment-name: "frontend-deployment"
+          container-name: "frontend"
+          cluster-name: "test"
+          namespace-name: "agriconnect-namespace"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}
+
+      - name: Rollout Backend
+        uses: ./composite-actions/.github/actions/k8s-rollout
+        with:
+          app-name: "agriconnect"
+          deployment-name: "backend-deployment"
+          container-name: "backend"
+          cluster-name: "test"
+          namespace-name: "agriconnect-namespace"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}
+
+      - name: Rollout Assistant
+        uses: ./composite-actions/.github/actions/k8s-rollout
+        with:
+          app-name: "agriconnect"
+          deployment-name: "assistant-deployment"
+          container-name: "assistant"
+          cluster-name: "test"
+          namespace-name: "agriconnect-namespace"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}
+
+      - name: Rollout EPPO Librarian
+        uses: ./composite-actions/.github/actions/k8s-rollout
+        with:
+          app-name: "agriconnect"
+          deployment-name: "eppo-librarian-deployment"
+          container-name: "eppo-librarian"
+          cluster-name: "test"
+          namespace-name: "agriconnect-namespace"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}

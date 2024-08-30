@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-RUN apt-get update && apt-get install -y build-essential
+RUN apt-get update && apt-get install -y flac ffmpeg
 
 RUN set -e; \
     pip -q install --upgrade pip && \
@@ -12,4 +12,4 @@ RUN set -e; \
     pip -q install --no-cache-dir -e Akvo_rabbitmq_client && \
     pip check
 
-CMD ["sh", "run.prod.sh"]
+CMD ["sh", "prod.sh"]

@@ -1,6 +1,13 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  forwardRef,
+} from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { socket, api } from "@/lib";
 import { formatChatTime, generateMessage } from "@/utils/formatter";
@@ -17,7 +24,7 @@ const SenderRoleEnum = {
   SYSTEM: "system",
 };
 
-const UserChat = ({ message, timestamp, ref }) => (
+const UserChat = forwardRef(({ message, timestamp }, ref) => (
   <div className="flex mb-4 justify-end" ref={ref}>
     <div className="relative bg-akvo-green-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
       <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-akvo-green-100 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
@@ -33,9 +40,10 @@ const UserChat = ({ message, timestamp, ref }) => (
       </p>
     </div>
   </div>
-);
+));
+UserChat.displayName = "UserChat";
 
-const ClientChat = ({ message, timestamp, ref }) => (
+const ClientChat = forwardRef(({ message, timestamp }, ref) => (
   <div className="flex mb-4" ref={ref}>
     <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
       <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
@@ -45,7 +53,8 @@ const ClientChat = ({ message, timestamp, ref }) => (
       <p className="text-right text-xs mt-2">{formatChatTime(timestamp)}</p>
     </div>
   </div>
-);
+));
+ClientChat.displayName = "ClientChat";
 
 const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   const chatContext = useChatContext();

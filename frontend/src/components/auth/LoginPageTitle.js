@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { BackIcon } from "@/utils/icons";
 import { useRouter } from "next/navigation";
 
@@ -18,7 +17,6 @@ const LoginTitle = () => {
 };
 
 const LoginPageTitle = () => {
-  const pathname = usePathname();
   const router = useRouter();
 
   const handleOnClickBack = () => {
@@ -30,11 +28,7 @@ const LoginPageTitle = () => {
       <button className="mt-4 mb-20" onClick={handleOnClickBack}>
         <BackIcon />
       </button>
-      {pathname.includes("login") ? (
-        <LoginTitle />
-      ) : (
-        <h1 className="text-2xl">Sign up to join us</h1>
-      )}
+      <LoginTitle />
     </div>
   );
 };

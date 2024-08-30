@@ -1,7 +1,9 @@
-FROM nginx:1.21.0-alpine
+FROM akvo/akvo-node-18-alpine:20230831.105309.b9593b7
 
-# Copy the build output to replace the default nginx contents.
-COPY ./out /usr/share/nginx/html
+WORKDIR /app
 
-# Copy the custom nginx configuration file.
-COPY ./nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
+COPY . .
+
+EXPOSE 3000
+
+CMD [ "yarn", "start" ]

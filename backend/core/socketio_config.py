@@ -206,7 +206,11 @@ async def sio_connect(sid, environ):
         user_phone_number = decoded_token.get("uphone_number")
         user_id = decoded_token.get("uid")
         async with sio_server.session(sid) as sio_session:
+            sio_session["user_id"] = user_id
             sio_session["user_phone_number"] = user_phone_number
+            user_sid = await get_user_session(user_id)
+            if user_sid:
+                await delete_user_session(user_id)
             await set_user_session(user_id, sid)
         logger.info(f"User sid[{sid}] connected: {user_id}")
     except HTTPException as e:
@@ -220,9 +224,8 @@ async def sio_connect(sid, environ):
 @sio_server.on("disconnect")
 async def sio_disconnect(sid):
     async with sio_server.session(sid) as sio_session:
-        user_phone_number = sio_session.get("user_phone_number")
-        if user_phone_number:
-            user_id = user_phone_number  # Adjust if needed
+        user_id = sio_session.get("user_id")
+        if user_id:
             await delete_user_session(user_id)
     logger.info(f"User sid[{sid}] disconnected")
 

@@ -65,7 +65,7 @@ jobs:
         with:
           app-name: "agriconnect"
           service-name: "backend"
-          dockerfile-location: "backend"
+          dockerfile-location: "backend/Dockerfile.prod"
 
       - name: Docker Build Assistant
         uses: ./composite-actions/.github/actions/docker-build

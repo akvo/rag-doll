@@ -29,13 +29,18 @@ pulling models as needed.
 
 | `.env` | default | description |
 |---|---|---|
-| `ASSISTANT_ROLE` | _CHANGEME_ | The system prompt to the LLM. Describe the assistant's role here. |
-| `RAG_PROMPT`     | "{prompt}. In your answer, use the following information if it is related: {context}" | The RAG enabled prompt for the LLM. The `{prompt}` placeholder is for the client question and `{context}` is where the RAG context is added. |
-| `RAGLESS_PROMPT` | "{prompt}" | The prompt in case there is no usable RAG context. The `{prompt}` placeholder is where the client's question is added. |
+| `ASSISTANT_LANGUAGES` | `en`, _CHANGEME_, _CHANGEME_ | A comma-separated list of ISO 639-1 language codes. Be sure to add a section to the system prompt that describes these languages.  |
+| `SYSTEM_PROMPT_{language}` | _CHANGEME_ | The system prompt to the LLM in language `{language}`. Describe the assistant's role here. |
+| `RAG_PROMPT_{language}`     | "{prompt}. In your answer, use the following information if it is related: {context}" | The RAG enabled prompt for the LLM. The `{prompt}` placeholder is for the client question and `{context}` is where the RAG context is added. |
+| `RAGLESS_PROMPT_{language}` | "{prompt}" | The prompt in case there is no usable RAG context. The `{prompt}` placeholder is where the client's question is added. |
 | `OPENAI_API_KEY` | _CHANGEME_ | The API key for authenticating with OpenAI services. |
 | `OPENAI_CHAT_MODEL` | `gpt-4o` | The LLM model that is used to handle chat messages. Read more about [OpenAI models](https://platform.openai.com/docs/models) |
 | `CHROMADB_DISTANCE_CUTOFF` | `1.5` | The minimum vector distance needed for a chunk for the chunk to be included in the prompt as RAG context. Chunks with a higher distance are discarded from the RAG query results. |
-| `ASSISTANT_LANGUAGES` | `en`, _CHANGEME_, _CHANGEME_ | A comma-separated list of ISO 639-1 language codes. Be sure to add a section to the system prompt that describes these languages.  |
+
+For the final configuration, be sure to add one each of system prompt, RAG
+prompt and RAG-less prompt for all langauges in `ASSISTANT_LANGUAGES`. This
+gives the system a specific set of prompts for each language. All language codes
+are ISO 639-1 codes.
 
 Note: The __OPENAI_API_KEY__ does not need to be explicitly called in
 [assistant.py](https://github.com/akvo/rag-doll/blob/master/assistant/assistant.py)
@@ -59,7 +64,7 @@ Secretariat.*
 
 | `.env` | default | description |
 |---|---|---|
-| `CHROMADB_COLLECTION_TEMPLATE` | EPPO-datasheets-{} | The templarte for the names of the ChromaDB collections where each translation of the EPPO datasheets will be stored. This should have one `{}` placeholder. |
+| `CHROMADB_COLLECTION_TEMPLATE` | EPPO-datasheets-{} | The template for the names of the ChromaDB collections where each translation of the EPPO datasheets will be stored. This should have one `{}` placeholder. |
 | `EPPO_COUNTRY_ORGANISM_URL` | https://gd.eppo.int/country/{country}/organisms.csv | The URL to the per-country organism list on the EPPO database. Use `{country}` as placeholder for the country to query for. |
 | `EPPO_DATASHEET_URL` | https://gd.eppo.int/taxon/{eppo_code}/datasheet | The URL to the organism datasheet in the EPPO database. Use `{eppo_code}` as placeholder for the EPPO code. |
 | `EPPO_COUNTRIES` | _CHANGEME_ | A comma-separated list of ISO 3166-1 alpha-2 country codes of countries that you are interested in. |

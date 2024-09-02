@@ -14,10 +14,15 @@ services:
     working_dir: /app
     environment:
       <<: *rabbitmq_client_env
-      ASSISTANT_ROLE: ${ASSISTANT_ROLE}
       ASSISTANT_LANGUAGES: ${ASSISTANT_LANGUAGES}
-      RAG_PROMPT: ${RAG_PROMPT}
-      RAGLESS_PROMPT: ${RAGLESS_PROMPT}
+      SYSTEM_PROMPT_en: ${SYSTEM_PROMPT_en}
+      RAG_PROMPT_en: ${RAG_PROMPT_en}
+      RAGLESS_PROMPT_en: ${RAGLESS_PROMPT_sw}
+      SYSTEM_PROMPT_sw: ${SYSTEM_PROMPT_sw}
+      RAG_PROMPT_sw: ${RAG_PROMPT_sw}
+      RAGLESS_PROMPT_sw: ${RAGLESS_PROMPT_sw}
+      SYSTEM_PROMPT_fr: ${SYSTEM_PROMPT_fr}
+      RAG_PROMPT_fr: ${RAG_PROMPT_fr}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL}
       CHROMADB_HOST: ${CHROMADB_HOST}

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPBearer, HTTPBasicCredentials as credentials
-from models import Chat_Session, Chat
-from sqlmodel import Session, select, func
+from models import Chat_Session, Chat, Sender_Role_Enum
+from sqlmodel import Session, select, func, and_
 from middleware import verify_user
 from core.database import get_session
 
@@ -42,6 +42,12 @@ async def get_chats(
         last_message = session.exec(
             select(Chat)
             .where(Chat.chat_session_id == chat.id)
+            .where(
+                and_(
+                    Chat.sender_role != Sender_Role_Enum.ASSISTANT,
+                    Chat.sender_role != Sender_Role_Enum.SYSTEM,
+                )
+            )
             .order_by(Chat.created_at.desc(), Chat.id.desc())
         ).first()
         last_chats.append(

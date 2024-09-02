@@ -54,16 +54,22 @@ cookie = SimpleCookie()
 USER_CACHE_KEY = "USER_"
 
 
-async def set_user_session(user_id: str, sid: str):
-    await FastAPICache.get_backend().set(f"{USER_CACHE_KEY}{user_id}", sid)
+async def set_user_session(user_phone_number: str, sid: str):
+    await FastAPICache.get_backend().set(
+        f"{USER_CACHE_KEY}{user_phone_number}", sid
+    )
 
 
-async def get_user_session(user_id: str):
-    return await FastAPICache.get_backend().get(f"{USER_CACHE_KEY}{user_id}")
+async def get_user_session(user_phone_number: str):
+    return await FastAPICache.get_backend().get(
+        f"{USER_CACHE_KEY}{user_phone_number}"
+    )
 
 
-async def delete_user_session(user_id: str):
-    await FastAPICache.get_backend().clear(f"{USER_CACHE_KEY}{user_id}")
+async def delete_user_session(user_phone_number: str):
+    await FastAPICache.get_backend().clear(
+        f"{USER_CACHE_KEY}{user_phone_number}"
+    )
 
 
 def check_conversation_exist_and_generate_queue_message(
@@ -125,6 +131,9 @@ def handle_incoming_message(session: Session, message: dict):
     conversation_envelope = get_value_or_raise_error(
         message, "conversation_envelope"
     )
+    user_phone_number = get_value_or_raise_error(
+        conversation_envelope, "user_phone_number"
+    )
     client_phone_number = get_value_or_raise_error(
         conversation_envelope, "client_phone_number"
     )
@@ -140,7 +149,6 @@ def handle_incoming_message(session: Session, message: dict):
 
     if not prev_conversation_exist:
         user = session.exec(select(User).order_by(User.id)).first()
-        user_id = user.id
 
         curr_client = session.exec(
             select(Client).where(Client.phone_number == client_phone_number)
@@ -166,7 +174,6 @@ def handle_incoming_message(session: Session, message: dict):
         chat_session_id = new_chat_session.id
         session.flush()
     else:
-        user_id = prev_conversation_exist.user_id
         chat_session_id = prev_conversation_exist.id
 
     new_chat = Chat(
@@ -177,7 +184,7 @@ def handle_incoming_message(session: Session, message: dict):
     session.add(new_chat)
     session.commit()
     session.flush()
-    return user_id
+    return user_phone_number
 
 
 async def user_to_client(body: str):
@@ -208,11 +215,15 @@ async def sio_connect(sid, environ):
         async with sio_server.session(sid) as sio_session:
             sio_session["user_id"] = user_id
             sio_session["user_phone_number"] = user_phone_number
-            user_sid = await get_user_session(user_id)
+            user_sid = await get_user_session(
+                user_phone_number=user_phone_number
+            )
             if user_sid:
-                await delete_user_session(user_id)
-            await set_user_session(user_id, sid)
-        logger.info(f"User sid[{sid}] connected: {user_id}")
+                await delete_user_session(user_phone_number=user_phone_number)
+            await set_user_session(
+                user_phone_number=user_phone_number, sid=sid
+            )
+        logger.info(f"User sid[{sid}] connected: {user_phone_number}")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
         raise ConnectionRefusedError("Authentication failed")
@@ -224,9 +235,9 @@ async def sio_connect(sid, environ):
 @sio_server.on("disconnect")
 async def sio_disconnect(sid):
     async with sio_server.session(sid) as sio_session:
-        user_id = sio_session.get("user_id")
-        if user_id:
-            await delete_user_session(user_id)
+        user_phone_number = sio_session.get("user_phone_number")
+        if user_phone_number:
+            await delete_user_session(user_phone_number=user_phone_number)
     logger.info(f"User sid[{sid}] disconnected")
 
 
@@ -292,7 +303,9 @@ async def client_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id = handle_incoming_message(session=session, message=message)
+        user_phone_number = handle_incoming_message(
+            session=session, message=message
+        )
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
@@ -301,10 +314,10 @@ async def client_to_user(body: str):
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = await get_user_session(user_id)
+        user_sid = await get_user_session(user_phone_number=user_phone_number)
 
         logger.info(
-            f"Send client->user to {USER_CACHE_KEY}{user_id} "
+            f"Send client->user to {USER_CACHE_KEY}{user_phone_number} "
             f"{user_sid}: {message}"
         )
 
@@ -340,5 +353,24 @@ async def assistant_to_user(body: str):
     to user routing, the message is marked as a whisper and posted to the
     frontend.
     """
-    message = json.loads(body)
-    await sio_server.emit("whisper", message, callback=emit_whisper_callback)
+    try:
+        message = json.loads(body)
+        conversation_envelope = get_value_or_raise_error(
+            message, "conversation_envelope"
+        )
+        user_phone_number = get_value_or_raise_error(
+            conversation_envelope, "user_phone_number"
+        )
+        user_sid = await get_user_session(user_phone_number=user_phone_number)
+
+        logger.info(
+            f"Send assistant->user to {USER_CACHE_KEY}{user_phone_number} "
+            f"{user_sid}: {message}"
+        )
+
+        await sio_server.emit(
+            "whisper", message, to=user_sid, callback=emit_whisper_callback
+        )
+    except Exception as e:
+        logger.error(f"Error handling user_chats_callback: {e}")
+        raise e

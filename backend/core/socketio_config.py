@@ -55,18 +55,21 @@ USER_CACHE_KEY = "USER_"
 
 
 async def set_user_session(user_phone_number: str, sid: str):
+    logger.info(f"[FastAPICache] set_user_session: {user_phone_number}")
     await FastAPICache.get_backend().set(
         f"{USER_CACHE_KEY}{user_phone_number}", sid
     )
 
 
 async def get_user_session(user_phone_number: str):
+    logger.info(f"[FastAPICache] get_user_session: {user_phone_number}")
     return await FastAPICache.get_backend().get(
         f"{USER_CACHE_KEY}{user_phone_number}"
     )
 
 
 async def delete_user_session(user_phone_number: str):
+    logger.info(f"[FastAPICache] delete_user_session: {user_phone_number}")
     await FastAPICache.get_backend().clear(
         f"{USER_CACHE_KEY}{user_phone_number}"
     )
@@ -131,9 +134,7 @@ def handle_incoming_message(session: Session, message: dict):
     conversation_envelope = get_value_or_raise_error(
         message, "conversation_envelope"
     )
-    user_phone_number = get_value_or_raise_error(
-        conversation_envelope, "user_phone_number"
-    )
+
     client_phone_number = get_value_or_raise_error(
         conversation_envelope, "client_phone_number"
     )
@@ -149,6 +150,7 @@ def handle_incoming_message(session: Session, message: dict):
 
     if not prev_conversation_exist:
         user = session.exec(select(User).order_by(User.id)).first()
+        user_phone_number = user.phone_number
 
         curr_client = session.exec(
             select(Client).where(Client.phone_number == client_phone_number)
@@ -174,6 +176,10 @@ def handle_incoming_message(session: Session, message: dict):
         chat_session_id = new_chat_session.id
         session.flush()
     else:
+        user = session.exec(
+            select(User).where(User.id == prev_conversation_exist.user_id)
+        ).first()
+        user_phone_number = user.phone_number
         chat_session_id = prev_conversation_exist.id
 
     new_chat = Chat(
@@ -206,7 +212,7 @@ async def user_to_client(body: str):
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
     try:
-        cookie.load(environ["HTTP_COOKIE"])
+        cookie.load(environ.get("HTTP_COOKIE"))
         auth_token = cookie.get("AUTH_TOKEN")
         auth_token = auth_token.value if auth_token else None
         decoded_token = verify_jwt_token(auth_token)
@@ -354,13 +360,20 @@ async def assistant_to_user(body: str):
     frontend.
     """
     try:
+        session = Session(engine)
         message = json.loads(body)
+
+        user_phone_number = handle_incoming_message(
+            session=session, message=message
+        )
+
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
-        user_phone_number = get_value_or_raise_error(
-            conversation_envelope, "user_phone_number"
-        )
+        conversation_envelope.pop("user_phone_number", None)
+        message.pop("conversation_envelope", None)
+        message.update({"conversation_envelope": conversation_envelope})
+
         user_sid = await get_user_session(user_phone_number=user_phone_number)
 
         logger.info(

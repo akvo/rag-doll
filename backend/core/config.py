@@ -13,8 +13,6 @@ from core.socketio_config import (
     sio_app,
     assistant_to_user,
 )
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.inmemory import InMemoryBackend
 
 
 logging.basicConfig(level=logging.INFO)
@@ -24,10 +22,6 @@ logger = logging.getLogger(__name__)
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
-
-
-# Use FastAPICache with in-memory backend
-FastAPICache.init(InMemoryBackend())
 
 
 @asynccontextmanager

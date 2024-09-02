@@ -22,8 +22,12 @@ const Chats = () => {
       console.info("FE Connected");
     }
 
-    function onDisconnect() {
-      console.info("FE Disconnected");
+    function onDisconnect(reason) {
+      console.info(`FE Disconnected: ${reason}`);
+      if (reason === "io server disconnect") {
+        // the disconnection was initiated by the server, you need to reconnect manually
+        socket.connect();
+      }
     }
 
     function onChats(value, callback) {

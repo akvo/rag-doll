@@ -5,8 +5,8 @@ import logging
 import chromadb
 from time import sleep
 from openai import OpenAI
-from Akvo_rabbitmq_client import rabbitmq_client
 from datetime import datetime, timezone
+from Akvo_rabbitmq_client import rabbitmq_client
 
 logger = logging.getLogger(__name__)
 
@@ -115,29 +115,52 @@ OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL")
 RAG_PROMPT = os.getenv("RAG_PROMPT")
 RAGLESS_PROMPT = os.getenv("RAGLESS_PROMPT")
 
-class LLM:
-    def __init__(self, chat_model: str):
-        self.chat_model = chat_model
-        self.llm_client = OpenAI()
-        self.messages = []
-        self.append_message("system", ASSISTANT_ROLE)
 
-    def chat(self, content: str) -> dict:
-        self.append_message("user", content)
-        response = self.llm_client.chat.completions.create(
-            model=self.chat_model, messages=self.messages
-        )
-        logger.info(f"[ASSISTANT] -> OPENAI RESPONSE: {response}")
-        message = response.choices[0].message
-        self.append_message(message.role, message.content)
-        return {"message": message.content, "created_at": response.created}
+def query_llm(llm_client: OpenAI, model: str,
+    system_prompt: str,
+    ragless_prompt_template: str,
+    rag_prompt_template: str, context: list[str],
+    prompt: str) -> tuple[str, datetime]:
+    """
+    Queries the LLM with the given model and prompts, building the final prompt
+    from the user's prompt and the knowledge base context. Depending on the
+    value of `CHROMADB_DISTANCE_CUTOFF` the number of context chunks may be
+    higher or lower. If no context was deemed relevant, we use the simpler
+    RAGless prompt. Returns the first answer from the LLM.
 
-    def append_message(self, role, content):
-        self.messages.append({"role": role, "content": str(content)})
+    Parameters:
+    llm_client (OpenAI): The LLM client to call.
+    model (str): The name of the model to use.
+    system_prompt (str): The system prompt for the LLM.
+    ragless_prompt_template (str): The template for the prompt _without_
+                                   RAG context.
+    rag_prompt_template (str): The template for the prompt _with_ RAG context.
+    context (list[str]): The list of knowledge base chunks to include in the
+                         RAG prompt.
+    prompt (str): The user's prompt.
 
+    Returns:
+    str: The LLM response.
+    """
+    if context:
+        final_prompt = rag_prompt_template.format(prompt=prompt, context="\n".join(context))
+    else:
+        final_prompt = ragless_prompt_template.format(prompt=prompt)
+    logger.info(f"[ASSISTANT] -> final prompt: {final_prompt}")
 
-llm = LLM(OPENAI_CHAT_MODEL)
+    response = llm_client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": final_prompt}
+        ]
+    )
+    iso_timestamp = datetime.fromtimestamp(
+        int(response.created), tz=timezone.utc
+    )
+    return response.choices[0].message.content.strip(), iso_timestamp
 
+openai = OpenAI()
 
 # --- RabbitMQ Section
 
@@ -148,15 +171,12 @@ RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
 
 
 def queue_message_and_llm_response_to_reply(
-    queue_message: dict, llm_response: dict
+    queue_message: dict, llm_response: str, timestamp: datetime
 ) -> str:
     try:
         logger.info(f"[ASSISTANT] -> Formatting message: {queue_message}")
         conversation_envelope = queue_message.get("conversation_envelope", {})
-        timestamp = float(llm_response["created_at"])
-        iso_timestamp = datetime.fromtimestamp(
-            timestamp, tz=timezone.utc
-        ).isoformat()
+        iso_timestamp = timestamp.isoformat()
         reply = {
             "conversation_envelope": {
                 "message_id": conversation_envelope.get("message_id"),
@@ -170,10 +190,10 @@ def queue_message_and_llm_response_to_reply(
                 "platform": conversation_envelope.get("platform"),
                 "timestamp": iso_timestamp,
             },
-            "body": llm_response["message"],
+            "body": llm_response,
             "media": [],
             "context": [],
-            "transformation_log": [llm_response["message"]],
+            "transformation_log": [llm_response],
         }
         logger.info(f"[ASSISTANT] -> Message ready: {reply}")
         return json.dumps(reply)
@@ -203,17 +223,20 @@ async def on_message(body: str) -> None:
         CHROMADB_DISTANCE_CUTOFF
     )
 
-    # if there is context, add it to the prompt
-    if len(rag_context) > 0:
-        prompt = RAG_PROMPT.format(from_client["body"], rag_context)
-    else:
-        prompt = RAGLESS_PROMPT.format(from_client["body"])
-
-    # then send that prompt over to the LLM
-    llm_response = llm.chat(prompt)
+    # send the user's prompt and context to the LLM
+    llm_response, timestamp = query_llm(
+            openai, OPENAI_CHAT_MODEL,
+            ASSISTANT_ROLE,
+            RAGLESS_PROMPT,
+            RAG_PROMPT, rag_context,
+            from_client["body"],
+        )
     logger.info(f"[ASSISTANT] -> LLM replied: {llm_response}")
+
+    # finally post the reply onto the message queue
     reply_message = queue_message_and_llm_response_to_reply(
-        queue_message=from_client, llm_response=llm_response
+        queue_message=from_client,
+        llm_response=llm_response, timestamp=timestamp
     )
     await publish_reliably(queue_message=reply_message)
 

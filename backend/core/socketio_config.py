@@ -20,7 +20,6 @@ from datetime import datetime, timezone
 from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
 from utils.util import get_value_or_raise_error
-from fastapi_cache import FastAPICache
 from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
 
@@ -51,28 +50,29 @@ sio_app = socketio.ASGIApp(
 
 cookie = SimpleCookie()
 
+
+USER_CACHE_DICT = {}
 USER_CACHE_KEY = "USER_"
 
 
-async def set_user_session(user_phone_number: str, sid: str):
-    logger.info(f"[FastAPICache] set_user_session: {user_phone_number}")
-    await FastAPICache.get_backend().set(
-        f"{USER_CACHE_KEY}{user_phone_number}", sid
-    )
+def set_cache(user_id: str, sid: str):
+    key = f"{USER_CACHE_KEY}{user_id}"
+    logger.info(f"[FastAPICache] Setting cache: {key} -> {sid}")
+    USER_CACHE_DICT[key] = sid
 
 
-async def get_user_session(user_phone_number: str):
-    logger.info(f"[FastAPICache] get_user_session: {user_phone_number}")
-    return await FastAPICache.get_backend().get(
-        f"{USER_CACHE_KEY}{user_phone_number}"
-    )
+def get_cache(user_id: str):
+    key = f"{USER_CACHE_KEY}{user_id}"
+    sid = USER_CACHE_DICT.get(key)
+    logger.info(f"[FastAPICache] Retrieved cache: {key} -> {sid}")
+    return sid
 
 
-async def delete_user_session(user_phone_number: str):
-    logger.info(f"[FastAPICache] delete_user_session: {user_phone_number}")
-    await FastAPICache.get_backend().clear(
-        f"{USER_CACHE_KEY}{user_phone_number}"
-    )
+def delete_cache(user_id: str):
+    key = f"{USER_CACHE_KEY}{user_id}"
+    logger.info(f"[FastAPICache] delete_cache: {key}")
+    if key in USER_CACHE_DICT:
+        del USER_CACHE_DICT[key]
 
 
 def check_conversation_exist_and_generate_queue_message(
@@ -150,7 +150,7 @@ def handle_incoming_message(session: Session, message: dict):
 
     if not prev_conversation_exist:
         user = session.exec(select(User).order_by(User.id)).first()
-        user_phone_number = user.phone_number
+        user_id = user.id
 
         curr_client = session.exec(
             select(Client).where(Client.phone_number == client_phone_number)
@@ -176,10 +176,7 @@ def handle_incoming_message(session: Session, message: dict):
         chat_session_id = new_chat_session.id
         session.flush()
     else:
-        user = session.exec(
-            select(User).where(User.id == prev_conversation_exist.user_id)
-        ).first()
-        user_phone_number = user.phone_number
+        user_id = prev_conversation_exist.user_id
         chat_session_id = prev_conversation_exist.id
 
     new_chat = Chat(
@@ -190,7 +187,7 @@ def handle_incoming_message(session: Session, message: dict):
     session.add(new_chat)
     session.commit()
     session.flush()
-    return user_phone_number
+    return str(user_id)
 
 
 async def user_to_client(body: str):
@@ -221,14 +218,7 @@ async def sio_connect(sid, environ):
         async with sio_server.session(sid) as sio_session:
             sio_session["user_id"] = user_id
             sio_session["user_phone_number"] = user_phone_number
-            user_sid = await get_user_session(
-                user_phone_number=user_phone_number
-            )
-            if user_sid:
-                await delete_user_session(user_phone_number=user_phone_number)
-            await set_user_session(
-                user_phone_number=user_phone_number, sid=sid
-            )
+            set_cache(user_id=user_id, sid=sid)
         logger.info(f"User sid[{sid}] connected: {user_phone_number}")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
@@ -241,9 +231,9 @@ async def sio_connect(sid, environ):
 @sio_server.on("disconnect")
 async def sio_disconnect(sid):
     async with sio_server.session(sid) as sio_session:
-        user_phone_number = sio_session.get("user_phone_number")
-        if user_phone_number:
-            await delete_user_session(user_phone_number=user_phone_number)
+        user_id = sio_session.get("user_id")
+        if user_id:
+            delete_cache(user_id=user_id)
     logger.info(f"User sid[{sid}] disconnected")
 
 
@@ -309,9 +299,7 @@ async def client_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_phone_number = handle_incoming_message(
-            session=session, message=message
-        )
+        user_id = handle_incoming_message(session=session, message=message)
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
@@ -320,10 +308,10 @@ async def client_to_user(body: str):
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = await get_user_session(user_phone_number=user_phone_number)
+        user_sid = get_cache(user_id=user_id)
 
         logger.info(
-            f"Send client->user to {USER_CACHE_KEY}{user_phone_number} "
+            f"Send client->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
         )
 
@@ -363,9 +351,7 @@ async def assistant_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_phone_number = handle_incoming_message(
-            session=session, message=message
-        )
+        user_id = handle_incoming_message(session=session, message=message)
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
@@ -374,10 +360,10 @@ async def assistant_to_user(body: str):
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = await get_user_session(user_phone_number=user_phone_number)
+        user_sid = get_cache(user_id=user_id)
 
         logger.info(
-            f"Send assistant->user to {USER_CACHE_KEY}{user_phone_number} "
+            f"Send assistant->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
         )
 

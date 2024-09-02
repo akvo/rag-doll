@@ -26,11 +26,12 @@ RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
 )
 
 
+# Use FastAPICache with in-memory backend
+FastAPICache.init(InMemoryBackend())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Use FastAPICache with in-memory backend
-    FastAPICache.init(InMemoryBackend())
-
     await rabbitmq_client.initialize()
     loop = asyncio.get_running_loop()
     loop.create_task(

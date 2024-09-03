@@ -56,7 +56,14 @@ const ClientChat = forwardRef(({ message, timestamp }, ref) => (
 ));
 ClientChat.displayName = "ClientChat";
 
-const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
+const ChatWindow = ({
+  chats,
+  setChats,
+  whisperChats,
+  setWhisperChats,
+  useWhisperAsTemplate,
+  setUseWhisperAsTemplate,
+}) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
 
@@ -132,6 +139,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   };
 
   const handleChange = (event) => {
+    setUseWhisperAsTemplate(false);
     setMessage(event.target.value);
   };
 
@@ -171,6 +179,12 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           .timeout(5000)
           .emitWithAck("chats", chatPayload);
         console.info(`Success send message: ${JSON.stringify(response)}`);
+        if (useWhisperAsTemplate) {
+          // remove whisper
+          setWhisperChats((prev) =>
+            prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
+          );
+        }
       } catch (err) {
         console.error(`Failed send message: ${JSON.stringify(err)}`);
       }
@@ -281,6 +295,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           textareaRef={textareaRef}
           handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
           setMessage={setMessage}
+          setUseWhisperAsTemplate={setUseWhisperAsTemplate}
         />
       </div>
 

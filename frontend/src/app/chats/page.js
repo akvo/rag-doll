@@ -13,6 +13,7 @@ const Chats = () => {
   const [clients, setClients] = useState([]);
   const [reloadChatList, setReloadChatList] = useState(false);
   const [whisperChats, setWhisperChats] = useState([]);
+  const [useWhisperAsTemplate, setUseWhisperAsTemplate] = useState(false);
 
   // reset chats state
   useEffect(() => {
@@ -43,6 +44,7 @@ const Chats = () => {
           setReloadChatList(!selectedClient);
 
           // to handle show & loading whisper
+          setUseWhisperAsTemplate(false);
           setWhisperChats((prev) => [
             ...prev.filter(
               (p) =>
@@ -87,6 +89,7 @@ const Chats = () => {
       console.info(value, "socket whisper");
       try {
         if (value) {
+          setUseWhisperAsTemplate(false);
           setWhisperChats((prev) => {
             return prev.map((p) => {
               if (
@@ -186,6 +189,8 @@ const Chats = () => {
           setChats={setChats}
           whisperChats={whisperChats}
           setWhisperChats={setWhisperChats}
+          useWhisperAsTemplate={useWhisperAsTemplate}
+          setUseWhisperAsTemplate={setUseWhisperAsTemplate}
         />
       ) : (
         <ChatList

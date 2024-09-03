@@ -18,6 +18,7 @@ const Whisper = ({
   textareaRef,
   handleTextAreaDynamicHeight,
   setMessage,
+  setUseWhisperAsTemplate,
 }) => {
   const whisperMessageRef = useRef(null);
   const chatContext = useChatContext();
@@ -51,12 +52,18 @@ const Whisper = ({
           handleTextAreaDynamicHeight();
         }
         setCopied(true);
+        setUseWhisperAsTemplate(true);
         setTimeout(() => setCopied(false), 1000);
       } catch (error) {
         console.error("Failed to copy text: ", error);
       }
     },
-    [textareaRef, setMessage, handleTextAreaDynamicHeight]
+    [
+      textareaRef,
+      setMessage,
+      handleTextAreaDynamicHeight,
+      setUseWhisperAsTemplate,
+    ]
   );
 
   const toggleExpand = useCallback(() => {

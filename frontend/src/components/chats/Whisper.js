@@ -92,6 +92,10 @@ const Whisper = ({
     }
   }, [whispers, expanded]);
 
+  if (!currentWhisper && whispers.length === 0) {
+    return null;
+  }
+
   return (
     <div
       className={`fixed bottom-16 w-full flex mt-12 px-4 pt-4 pb-6 overflow-auto bg-gray-100`}

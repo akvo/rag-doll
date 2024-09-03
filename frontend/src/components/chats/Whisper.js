@@ -98,13 +98,13 @@ const Whisper = ({
       style={{
         height: expanded
           ? Math.min(whisperHeight, parseFloat(maxHeight))
-          : "11rem", // 11rem is 44px if you prefer using rem instead of pixels
+          : "11.625rem",
       }}
     >
       <div
         className={`w-full relative bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto`}
         style={{
-          maxHeight: expanded ? maxHeight : "8rem", // Adjust maxHeight when expanded or not
+          maxHeight: expanded ? maxHeight : "11.625rem",
         }}
       >
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-white z-10 px-4">

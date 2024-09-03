@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
 import { formatChatTime } from "@/utils/formatter";
 import { useChatContext } from "@/context/ChatContextProvider";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -13,11 +19,14 @@ const Whisper = ({
   handleTextAreaDynamicHeight,
   setMessage,
 }) => {
+  const whisperMessageRef = useRef(null);
   const chatContext = useChatContext();
   const { clientPhoneNumber } = chatContext;
 
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [whisperHeight, setWhisperHeight] = useState(0);
+  const [maxHeight, setMaxHeight] = useState("0px");
 
   const currentWhisper = useMemo(
     () => whisperChats.find((c) => c.clientPhoneNumber === clientPhoneNumber),
@@ -51,23 +60,52 @@ const Whisper = ({
   );
 
   const toggleExpand = useCallback(() => {
-    setExpanded(!expanded);
-  }, [expanded]);
+    setExpanded((prev) => !prev);
+  }, []);
 
-  if (!currentWhisper && whispers.length === 0) {
-    return null;
-  }
+  useEffect(() => {
+    const calculateMaxHeight = () => {
+      // Calculate 2/3 of the viewport height
+      const calculatedMaxHeight = (window.innerHeight * 2) / 3 + "px";
+      setMaxHeight(calculatedMaxHeight);
+    };
+
+    const handleResize = () => {
+      calculateMaxHeight();
+    };
+
+    // Initial calculation
+    calculateMaxHeight();
+
+    // Update max height on window resize
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (whisperMessageRef.current) {
+      setWhisperHeight(whisperMessageRef.current.clientHeight + 85);
+    }
+  }, [whispers, expanded]);
 
   return (
     <div
-      className={`fixed bottom-16 w-full flex mt-12 px-4 pt-4 pb-6 overflow-auto bg-gray-100 max-h-2/3 ${
-        expanded ? "h-2/3" : "h-44"
-      }`}
+      className={`fixed bottom-16 w-full flex mt-12 px-4 pt-4 pb-6 overflow-auto bg-gray-100`}
+      style={{
+        height: expanded
+          ? Math.min(whisperHeight, parseFloat(maxHeight))
+          : "11rem", // 11rem is 44px if you prefer using rem instead of pixels
+      }}
     >
       <div
-        className={`w-full relative bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto min-h-32 ${
-          expanded ? "max-h-2/3" : "h-32"
-        }`}
+        className={`w-full relative bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto`}
+        style={{
+          maxHeight: expanded ? maxHeight : "8rem", // Adjust maxHeight when expanded or not
+        }}
       >
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-white z-10 px-4">
           <div className="flex items-center">
@@ -90,12 +128,13 @@ const Whisper = ({
               className={`w-5 h-5 bg-gray-100 rounded-full p-1 ${
                 expanded ? "rotate-180" : ""
               }`}
+              disabled={currentWhisper?.loading}
             >
               <ExpandIcon />
             </button>
           </div>
         </div>
-        <div className="p-4">
+        <div className="p-4" ref={whisperMessageRef}>
           {/* AI Loading */}
           {currentWhisper?.loading ? (
             <div className="flex h-10 items-center justify-center">

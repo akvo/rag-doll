@@ -32,17 +32,15 @@ const Account = () => {
     router.replace("/chats");
   };
 
-  const handleLogout = () => {
-    // Clear user & auth context
-    // Redirect to login page
-    authDispatch({ type: "DELETE" });
-    deleteCookie("AUTH_TOKEN");
-    setTimeout(() => {
-      userDispatch({
-        type: "DELETE",
-      });
+  const handleLogout = async () => {
+    try {
+      authDispatch({ type: "DELETE" });
+      userDispatch({ type: "DELETE" });
+      deleteCookie("AUTH_TOKEN");
       router.replace("/login");
-    }, 500);
+    } catch (error) {
+      console.error("Failed to logout:", error);
+    }
   };
 
   return (

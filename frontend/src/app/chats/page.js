@@ -14,6 +14,11 @@ const Chats = () => {
   const [reloadChatList, setReloadChatList] = useState(false);
   const [whisperChats, setWhisperChats] = useState([]);
 
+  // reset chats state
+  useEffect(() => {
+    setChats([]);
+  }, [clientPhoneNumber]);
+
   // Handle socketio
   useEffect(() => {
     socket.connect();

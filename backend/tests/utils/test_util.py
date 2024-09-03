@@ -14,7 +14,8 @@ def sample_text():
         "This is _italic_ text.\n"
         "This is **bold** text."
         "This is `code block` text."
-        "Check this [link](https://example.com)."
+        "This is hypen-between-words."
+        "Check this [link](https://example.com/verify/unique-uuid)."
     )
 
 
@@ -30,7 +31,8 @@ def expected_whatsapp_output():
         "This is _italic_ text.\n"
         "This is *bold* text."
         "This is `code block` text."
-        "Check this link (https://example.com)."
+        "This is hypen-between-words."
+        "Check this link (https://example.com/verify/unique-uuid)."
     )
 
 
@@ -61,8 +63,26 @@ def test_convert_italics_to_whatsapp():
 
 def test_convert_bold_to_whatsapp():
     """Test the conversion of bold text to WhatsApp format."""
-    sample_text = "This is *bold* text."
+    sample_text = "This is **bold** text."
     expected_output = "This is *bold* text."
     converter = TextConverter(sample_text)
     output = converter._convert_bold_to_whatsapp(converter.text)
     assert output == expected_output
+
+
+def test_not_to_convert_hypen_between_words():
+    """Test the conversion of hypen between words."""
+    sample_text = "This is word-hypenbold-word text."
+    converter = TextConverter(sample_text)
+    output = converter._convert_bold_to_whatsapp(converter.text)
+    assert output == sample_text
+
+
+def test_not_to_convert_hypen_inside_urls():
+    """Test the conversion of hypen inside URLs."""
+    sample_text = (
+        "This is http://localhost:3001/verification/unique-uuid-here text."
+    )
+    converter = TextConverter(sample_text)
+    output = converter._convert_bold_to_whatsapp(converter.text)
+    assert output == sample_text

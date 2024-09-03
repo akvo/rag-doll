@@ -32,17 +32,15 @@ const Account = () => {
     router.replace("/chats");
   };
 
-  const handleLogout = () => {
-    // Clear user & auth context
-    // Redirect to login page
-    authDispatch({ type: "DELETE" });
-    deleteCookie("AUTH_TOKEN");
-    setTimeout(() => {
-      userDispatch({
-        type: "DELETE",
-      });
+  const handleLogout = async () => {
+    try {
+      authDispatch({ type: "DELETE" });
+      userDispatch({ type: "DELETE" });
+      deleteCookie("AUTH_TOKEN");
       router.replace("/login");
-    }, 500);
+    } catch (error) {
+      console.error("Failed to logout:", error);
+    }
   };
 
   return (
@@ -55,7 +53,7 @@ const Account = () => {
         }
       />
 
-      <div className="mt-[15%] p-4 bg-white flex flex-col justify-center">
+      <div className="mt-[35%] p-4 bg-white flex flex-col justify-center">
         <div className="flex justify-center mb-6">
           <Image
             className="h-32 w-32 rounded-full bg-gray-300"

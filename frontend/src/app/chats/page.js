@@ -13,6 +13,12 @@ const Chats = () => {
   const [clients, setClients] = useState([]);
   const [reloadChatList, setReloadChatList] = useState(false);
   const [whisperChats, setWhisperChats] = useState([]);
+  const [useWhisperAsTemplate, setUseWhisperAsTemplate] = useState(false);
+
+  // reset chats state
+  useEffect(() => {
+    setChats([]);
+  }, [clientPhoneNumber]);
 
   // Handle socketio
   useEffect(() => {
@@ -24,10 +30,7 @@ const Chats = () => {
 
     function onDisconnect(reason) {
       console.info(`FE Disconnected: ${reason}`);
-      if (reason === "io server disconnect") {
-        // the disconnection was initiated by the server, you need to reconnect manually
-        socket.connect();
-      }
+      socket.connect();
     }
 
     function onChats(value, callback) {
@@ -41,6 +44,7 @@ const Chats = () => {
           setReloadChatList(!selectedClient);
 
           // to handle show & loading whisper
+          setUseWhisperAsTemplate(false);
           setWhisperChats((prev) => [
             ...prev.filter(
               (p) =>
@@ -85,6 +89,7 @@ const Chats = () => {
       console.info(value, "socket whisper");
       try {
         if (value) {
+          setUseWhisperAsTemplate(false);
           setWhisperChats((prev) => {
             return prev.map((p) => {
               if (
@@ -184,6 +189,8 @@ const Chats = () => {
           setChats={setChats}
           whisperChats={whisperChats}
           setWhisperChats={setWhisperChats}
+          useWhisperAsTemplate={useWhisperAsTemplate}
+          setUseWhisperAsTemplate={setUseWhisperAsTemplate}
         />
       ) : (
         <ChatList

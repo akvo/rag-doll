@@ -56,7 +56,14 @@ const ClientChat = forwardRef(({ message, timestamp }, ref) => (
 ));
 ClientChat.displayName = "ClientChat";
 
-const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
+const ChatWindow = ({
+  chats,
+  setChats,
+  whisperChats,
+  setWhisperChats,
+  useWhisperAsTemplate,
+  setUseWhisperAsTemplate,
+}) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
 
@@ -132,6 +139,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   };
 
   const handleChange = (event) => {
+    setUseWhisperAsTemplate(false);
     setMessage(event.target.value);
   };
 
@@ -171,6 +179,12 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           .timeout(5000)
           .emitWithAck("chats", chatPayload);
         console.info(`Success send message: ${JSON.stringify(response)}`);
+        if (useWhisperAsTemplate) {
+          // remove whisper
+          setWhisperChats((prev) =>
+            prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
+          );
+        }
       } catch (err) {
         console.error(`Failed send message: ${JSON.stringify(err)}`);
       }
@@ -231,14 +245,16 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
   }, [chats, clientPhoneNumber]);
 
   const isWhisperVisible = useMemo(
-    () => whisperChats?.length > 0,
-    [whisperChats]
+    () =>
+      whisperChats.filter((wc) => wc.clientPhoneNumber === clientPhoneNumber)
+        .length > 0,
+    [whisperChats, clientPhoneNumber]
   );
 
   return (
     <div className="relative flex flex-col w-full bg-gray-100">
       {/* Chat Header */}
-      <div className="flex items-center p-4 bg-white border-b h-18 sticky top-0 z-50">
+      <div className="flex items-center p-4 bg-white border-b h-18 fixed top-0 left-0 right-0 z-10">
         <button className="mr-4" onClick={handleOnClickBack}>
           <BackIcon />
         </button>
@@ -261,8 +277,8 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
 
       {/* Chat Messages */}
       <div
-        className={`flex flex-col flex-grow ${
-          isWhisperVisible ? "pb-60" : "pb-20"
+        className={`flex flex-col flex-grow pt-20 w-full h-full ${
+          isWhisperVisible ? "pb-40" : "pb-0"
         }`}
         style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
       >
@@ -279,6 +295,7 @@ const ChatWindow = ({ chats, setChats, whisperChats, setWhisperChats }) => {
           textareaRef={textareaRef}
           handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
           setMessage={setMessage}
+          setUseWhisperAsTemplate={setUseWhisperAsTemplate}
         />
       </div>
 

@@ -15,7 +15,9 @@ export default function RootLayout({ children }) {
         <title>{metadata.title}</title>
         <meta name="description" content={metadata.description} />
       </head>
-      <body className={`${assistant.className} min-h-full`}>
+      <body
+        className={`${assistant.className} h-full min-h-screen bg-white overflow-hidden`}
+      >
         <RootLayoutClient>{children}</RootLayoutClient>
       </body>
     </html>

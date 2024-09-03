@@ -165,9 +165,9 @@ const ChatList = ({
       ref={chatListRef}
     >
       <ChatHeader />
-      <div className="pb-20 w-full">
+      <div className="pt-20 pb-24 w-full">
         {/* Chat List */}
-        <div className="bg-white overflow-hidden  px-2">
+        <div className="bg-white overflow-hidden px-2">
           {chatItems.chats.map(({ chat_session, last_message }) => (
             <div
               key={`chat-list-${chat_session.id}`}

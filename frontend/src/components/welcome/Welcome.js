@@ -44,7 +44,7 @@ const Welcome = () => {
   return (
     <div className="bg-login-page">
       <div className="relative flex items-center min-h-screen px-12 py-12 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden -mt-24">
           {/* Sliding Text Container */}
           <div
             className="sliding-text-container min-h-40"
@@ -80,7 +80,7 @@ const Welcome = () => {
         </div>
 
         {/* Button */}
-        <div className="absolute bottom-16 flex space-x-4">
+        <div className="absolute bottom-24 flex space-x-4">
           <button
             className="bg-gray-300 px-5 py-3 rounded-lg text-sm"
             onClick={handleOnClickSkip}

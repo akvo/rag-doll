@@ -83,7 +83,7 @@ const Login = () => {
 
   return (
     <div className="mt-20">
-      <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+      <form className="space-y-6 mt-5" onSubmit={handleSubmit}>
         <div>
           <label htmlFor="phone" className="block">
             Phone Number
@@ -121,7 +121,7 @@ const Login = () => {
         </div>
 
         {/* Button container with absolute positioning */}
-        <div className="absolute left-0 bottom-12 w-full px-12">
+        <div className="absolute left-0 bottom-24 w-full px-12">
           <button
             disabled={disabled}
             type="submit"

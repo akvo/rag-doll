@@ -20,114 +20,104 @@ const Chats = () => {
     setChats([]);
   }, [clientPhoneNumber]);
 
-  // Handle socketio
+  // Connect to socket on component mount
   useEffect(() => {
     socket.connect();
 
-    function onConnect() {
+    const handleConnect = () => {
       console.info("FE Connected");
-    }
+    };
 
-    function onDisconnect(reason) {
+    const handleDisconnect = (reason) => {
       console.info(`FE Disconnected: ${reason}`);
-      socket.connect();
-    }
+      socket.connect(); // Attempt to reconnect
+    };
 
-    function onChats(value, callback) {
-      console.info(value, "socket chats");
-      try {
-        if (value) {
-          const selectedClient = clients.find(
-            (c) =>
-              c.phone_number === value.conversation_envelope.client_phone_number
-          );
-          setReloadChatList(!selectedClient);
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
 
-          // to handle show & loading whisper
-          setUseWhisperAsTemplate(false);
-          setWhisperChats((prev) => [
-            ...prev.filter(
-              (p) =>
-                p.clientPhoneNumber !==
-                value.conversation_envelope.client_phone_number
-            ),
-            {
-              clientPhoneNumber:
-                value.conversation_envelope.client_phone_number,
-              message: null,
-              timestamp: null,
-              loading: true,
-            },
-          ]);
-          // EOL to handle show & loading whisper
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+    };
+  }, []);
 
-          setNewMessage((previous) => [
-            ...previous.filter(
-              (p) =>
-                p.conversation_envelope.message_id !==
-                value?.conversation_envelope?.message_id
-            ),
-            value,
-          ]);
-        }
-        // set chats from socket if chat window opened
-        if (value && clientPhoneNumber) {
-          setChats((previous) => [...previous, value]);
+  // Handle socket events
+  useEffect(() => {
+    const handleChats = (value, callback) => {
+      if (value) {
+        const selectedClient = clients.find(
+          (c) =>
+            c.phone_number === value.conversation_envelope.client_phone_number
+        );
+        setReloadChatList(!selectedClient);
+
+        setWhisperChats((prev) => [
+          ...prev.filter(
+            (p) =>
+              p.clientPhoneNumber !==
+              value.conversation_envelope.client_phone_number
+          ),
+          {
+            clientPhoneNumber: value.conversation_envelope.client_phone_number,
+            message: null,
+            timestamp: null,
+            loading: true,
+          },
+        ]);
+        setUseWhisperAsTemplate(false);
+
+        setNewMessage((prev) => [
+          ...prev.filter(
+            (p) =>
+              p.conversation_envelope.message_id !==
+              value?.conversation_envelope?.message_id
+          ),
+          value,
+        ]);
+
+        if (clientPhoneNumber) {
+          setChats((prev) => [...prev, value]);
         }
 
         if (callback) {
           callback({ success: true, message: "Message received by FE" });
         }
-      } catch (err) {
+      }
+    };
+
+    const handleWhisper = (value, callback) => {
+      if (value) {
+        setUseWhisperAsTemplate(false);
+        setWhisperChats((prev) =>
+          prev.map((p) => {
+            if (
+              p.clientPhoneNumber ===
+              value.conversation_envelope.client_phone_number
+            ) {
+              return {
+                ...p,
+                message: value.body,
+                timestamp: value.conversation_envelope.timestamp,
+                loading: false,
+              };
+            }
+            return p;
+          })
+        );
+
         if (callback) {
-          callback({ success: false, message: "Message not received by FE" });
+          callback({ success: true, message: "Whisper received by FE" });
         }
       }
-    }
+    };
 
-    function onWhisper(value, callback) {
-      console.info(value, "socket whisper");
-      try {
-        if (value) {
-          setUseWhisperAsTemplate(false);
-          setWhisperChats((prev) => {
-            return prev.map((p) => {
-              if (
-                p.clientPhoneNumber ===
-                value.conversation_envelope.client_phone_number
-              ) {
-                return {
-                  ...p,
-                  message: value.body,
-                  timestamp: value.conversation_envelope.timestamp,
-                  loading: false,
-                };
-              }
-              return prev;
-            });
-          });
-
-          if (callback) {
-            callback({ success: true, message: "Whisper received by FE" });
-          }
-        }
-      } catch (err) {
-        if (callback) {
-          callback({ success: false, message: "Whisper not received by FE" });
-        }
-      }
-    }
-
-    socket.on("connect", onConnect);
-    socket.on("chats", onChats);
-    socket.on("whisper", onWhisper);
-    socket.on("disconnect", onDisconnect);
+    socket.on("chats", handleChats);
+    socket.on("whisper", handleWhisper);
 
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("chats", onChats);
-      socket.off("whisper", onWhisper);
-      socket.off("disconnect", onDisconnect);
+      socket.off("chats", handleChats);
+      socket.off("whisper", handleWhisper);
     };
   }, [clients, clientPhoneNumber]);
 

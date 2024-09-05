@@ -128,10 +128,13 @@ class MockRabbitMQClient:
 
 
 class MockTwilioBotClient:
+    def whatsapp_message_create(self, to, body):
+        pass
+
     def format_to_queue_message(self, data):
         return "formatted_message"
 
-    async def send_whatsapp_message(self, message):
+    def send_whatsapp_message(self, message):
         pass
 
 

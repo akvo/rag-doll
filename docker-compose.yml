@@ -121,11 +121,14 @@ services:
       TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
+      BUCKET_NAME: ${BUCKET_NAME}
+      GOOGLE_APPLICATION_CREDENTIALS: /credentials/${GOOGLE_APPLICATION_CREDENTIALS}
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated
       - ./setup.cfg:/app/setup.cfg:ro
       - ./packages/Akvo_rabbitmq_client:/lib/Akvo_rabbitmq_client:delegated
+      - ${GOOGLE_APPLICATION_CREDENTIALS_PATH}:/credentials/:ro
     depends_on:
       - postgres
       - rabbitmq

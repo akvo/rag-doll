@@ -69,7 +69,18 @@ class Chat(SQLModel, table=True):
         default_factory=lambda: datetime.now(tz),
     )
 
+    media: list["Chat_Media"] = Relationship(back_populates="chat")
+
     def __init__(self, **data):
         # Remove created_at if it's in the input data
         data.pop("created_at", None)
         super().__init__(**data)
+
+
+class Chat_Media(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    chat_id: int = Field(foreign_key="chat.id")
+    media_url: str
+    media_type: str
+
+    chat: Optional[Chat] = Relationship(back_populates="media")

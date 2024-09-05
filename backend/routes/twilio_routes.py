@@ -39,6 +39,7 @@ async def receive_whatsapp_message(
     try:
         form_data = await request.form()
         values = {key: form_data[key] for key in form_data}
+        logger.warning(f"[COBA] {values}")
         data = IncomingMessage(
             MessageSid=values.get("MessageSid"),
             From=values.get("From"),

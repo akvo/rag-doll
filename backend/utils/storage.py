@@ -27,7 +27,6 @@ def upload(file: str, folder: str, filename: str = None, public: bool = False):
     bucket = storage_client.bucket(BUCKET_NAME)
     destination_blob_name = f"{folder}/{filename}"
     blob = bucket.blob(destination_blob_name)
-
     blob.upload_from_filename(file)
     os.remove(file)
 

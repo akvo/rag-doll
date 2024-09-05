@@ -27,6 +27,7 @@ from base64 import b64encode
 from sqlmodel import Session, select
 from core.database import engine
 from utils.util import get_value_or_raise_error, TextConverter
+from utils.storage import upload
 
 
 logging.basicConfig(level=logging.INFO)
@@ -102,6 +103,23 @@ class TwilioClient:
             self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN
         )
 
+    def download_media(self, url: str, folder: str, filename: str):
+        # create authentication token
+        auth_str = f"{self.TWILIO_ACCOUNT_SID}:{self.TWILIO_AUTH_TOKEN}"
+        auth_bytes = auth_str.encode("utf-8")
+        auth_b64 = b64encode(auth_bytes).decode("utf-8")
+        headers = {"Authorization": "Basic " + auth_b64}
+
+        # download and convert the audio file
+        response = requests.get(url=url, headers=headers)
+        filepath = f"{STORAGE}/{folder}"
+        if not os.path.exists(filepath):
+            os.makedirs(filepath)
+
+        filepath = f"{filepath}/{filename}"
+        urllib.request.urlretrieve(response.url, filepath)
+        return filepath
+
     def whatsapp_message_create(self, to: str, body: str):
         return self.twilio_client.messages.create(
             from_=self.TWILIO_WHATSAPP_FROM,
@@ -176,15 +194,30 @@ class TwilioClient:
                 if media_url:
                     media.append(media_url)
                     context.append({"file": media_url, "type": media_type})
+                # AUDIO
                 if media_url and media_type == "audio/ogg":
-                    audio_file_path = self.ogg2mp3(
+                    audio_filepath = self.ogg2mp3(
                         audio_url=media_url, message_sid=values["MessageSid"]
                     )
-                    logger.info(f"Audio converted {audio_file_path}")
+                    logger.info(f"Audio converted {audio_filepath}")
                     transcription = self.transcribe_audio(
-                        wav_path=audio_file_path
+                        wav_path=audio_filepath
                     )
                     message_body = transcription if transcription else ""
+                # IMAGE
+                if media_url and "image" in media_type:
+                    filetype = media_type.split("/")[1]
+                    filename = f"{values["MessageSid"]}.{filetype}"
+                    filepath = self.download_media(
+                        url=media_url, folder="media", filename=filename
+                    )
+                    res = upload(
+                        file=filepath,
+                        folder="media",
+                        filename=filename,
+                        public=True,
+                    )
+                    logger.info(f"Image upload: {res}")
 
             queue_message = queue_message_util.create_queue_message(
                 message_id=values["MessageSid"],
@@ -205,27 +238,13 @@ class TwilioClient:
 
     def ogg2mp3(self, audio_url: str, message_sid: str):
         try:
-            filepath = f"{STORAGE}/audio"
-            # create authentication token
-            auth_str = f"{self.TWILIO_ACCOUNT_SID}:{self.TWILIO_AUTH_TOKEN}"
-            auth_bytes = auth_str.encode("utf-8")
-            auth_b64 = b64encode(auth_bytes).decode("utf-8")
-            headers = {"Authorization": "Basic " + auth_b64}
-
-            # download and convert the audio file
-            response = requests.get(url=audio_url, headers=headers)
-            url = response.url
-            if not os.path.exists(filepath):
-                os.makedirs(filepath)
-
-            audio_filepath = f"{filepath}/{message_sid}.ogg"
-            urllib.request.urlretrieve(url, audio_filepath)
-            audio_file = AudioSegment.from_ogg(audio_filepath)
-
+            filepath = self.download_media(
+                url=audio_url, folder="media", filename=f"{message_sid}.ogg"
+            )
+            audio_file = AudioSegment.from_ogg(filepath)
             converted_filepath = f"{filepath}/{message_sid}.wav"
             audio_file.export(converted_filepath, format="wav")
-            os.remove(audio_filepath)
-
+            os.remove(filepath)
             return os.path.join(os.getcwd(), converted_filepath)
         except Exception as e:
             logger.error(f"Error downloading audio file: {e}")

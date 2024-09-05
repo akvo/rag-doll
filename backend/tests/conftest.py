@@ -128,6 +128,9 @@ class MockRabbitMQClient:
 
 
 class MockTwilioBotClient:
+    def download_media(self, url, folder, filename):
+        pass
+
     def whatsapp_message_create(self, to, body):
         pass
 

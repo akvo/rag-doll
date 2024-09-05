@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import json
 
 from fastapi import (
     APIRouter,
@@ -11,7 +12,11 @@ from fastapi import (
 )
 from fastapi.security import HTTPBearer
 from pydantic import ValidationError
-from clients.twilio_client import IncomingMessage, TwilioClient
+from clients.twilio_client import (
+    IncomingMessage,
+    TwilioClient,
+    ALLOWED_MESSAGE_TYPES,
+)
 from core.socketio_config import client_to_user
 
 
@@ -42,6 +47,16 @@ async def receive_whatsapp_message(
         )
         values.update(data.model_dump())
         body = twilio_client.format_to_queue_message(values)
+        # BEGIN repy directly with a notification
+        message_type = values["MessageType"]
+        if message_type not in ALLOWED_MESSAGE_TYPES:
+            body = json.loads(body)
+            twilio_client.whatsapp_message_create(
+                to=body["conversation_envelope"].get("client_phone_number"),
+                body=f"This ({message_type}) media type is not yet supported.",
+            )
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        # END repy directly with a notification
         asyncio.create_task(client_to_user(body=body))
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 

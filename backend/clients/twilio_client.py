@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 MAX_WHATSAPP_MESSAGE_LENGTH = 1500
 STORAGE = "./storage"
+ALLOWED_MESSAGE_TYPES = ["text", "image"]
 
 
 def save_chat_history(
@@ -101,6 +102,13 @@ class TwilioClient:
             self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN
         )
 
+    def whatsapp_message_create(self, to: str, body: str):
+        return self.twilio_client.messages.create(
+            from_=self.TWILIO_WHATSAPP_FROM,
+            body=TextConverter(body).format_whatsapp(),
+            to=f"whatsapp:{to}",
+        )
+
     def send_whatsapp_message(self, body: str) -> None:
         try:
             session = Session(engine)
@@ -120,11 +128,7 @@ class TwilioClient:
                     conversation_envelope=conversation_envelope,
                     message_body=text,
                 )
-            response = self.twilio_client.messages.create(
-                from_=self.TWILIO_WHATSAPP_FROM,
-                body=TextConverter(text).format_whatsapp(),
-                to=f"whatsapp:{phone}",
-            )
+            response = self.whatsapp_message_create(to=phone, body=text)
             if response.error_code is not None:
                 logger.error(
                     f"Failed to send message to WhatsApp number "

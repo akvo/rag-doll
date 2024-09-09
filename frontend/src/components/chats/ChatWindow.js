@@ -83,12 +83,12 @@ const ChatWindow = ({
     }
   }, []);
 
-  // Scroll to the last message whenever the chats state changes
+  // Scroll to the last message whenever chats or chatHistory state changes
   useEffect(() => {
-    if (chats.length > 0) {
+    if (chats.length > 0 || chatHistory.length > 0) {
       scrollToLastMessage();
     }
-  }, [chats, scrollToLastMessage]);
+  }, [chats, chatHistory, scrollToLastMessage]);
 
   // Intersection observer setup to scroll when new message arrives
   useEffect(() => {
@@ -120,7 +120,6 @@ const ChatWindow = ({
         const res = await api.get(`/chat-details/${clientId}`);
         const data = await res.json();
         setChatHistory(data.messages);
-        scrollToLastMessage();
       } catch (error) {
         console.error(error);
       }

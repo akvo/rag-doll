@@ -2,7 +2,7 @@ from os import environ
 from assistant import get_language, assistant_data
 
 
-def test_support_french():
+def test_language_support():
     detected_language = get_language(
         "Bonjour, veuillez m'envoyer les recommandations d'agriculture au Kenya"
     )

@@ -209,7 +209,10 @@ async def publish_reliably(queue_message: str) -> None:
 def get_language(user_prompt) -> str:
     detected_language = detect(user_prompt)
     if detected_language not in assistant_data:
-        detected_language = "en"
+        logger.warning(
+            f"[ASSISTANT] -> Unsupported language detected: {detected_language} for '{user_prompt}', defaulting to English"
+        )
+        return "en"
     return detected_language
 
 

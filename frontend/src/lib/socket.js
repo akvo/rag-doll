@@ -19,7 +19,7 @@ if (typeof window !== "undefined") {
     reconnectionAttempts: 20,
     reconnectionDelay: 5000,
     pingInterval: 25000, // 25 seconds
-    pingTimeout: 5000, // 5 seconds
+    pingTimeout: 20000, // 20 seconds
     upgrade: isLocalhost ? false : true,
   });
 }

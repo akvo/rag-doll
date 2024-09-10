@@ -206,9 +206,19 @@ async def publish_reliably(queue_message: str) -> None:
         logger.error(f"[ASSISTANT] -> Error send to queue {type(e)}: {e}")
 
 
+def get_language(user_prompt) -> str:
+    detected_language = detect(user_prompt)
+    if detected_language not in assistant_data:
+        logger.warning(
+            f"[ASSISTANT] -> Unsupported language detected: {detected_language} for '{user_prompt}', defaulting to English"
+        )
+        return "en"
+    return detected_language
+
+
 async def on_message(body: str) -> None:
     """
-    Handles incoming messages, detects the language, and processes the message 
+    Handles incoming messages, detects the language, and processes the message
     using the appropriate knowledge base and prompts.
 
     Parameters:
@@ -218,28 +228,25 @@ async def on_message(body: str) -> None:
     from_client = json.loads(body)
     user_prompt = from_client["body"]
 
-    detected_language = detect(user_prompt)
-    if detected_language not in assistant_data:
-        logger.warning(f"[ASSISTANT] -> Unsupported language detected: {detected_language} for '{user_prompt}', defaulting to English")
-        detected_language = 'en'
-
+    detected_language = get_language(user_prompt)
     knowledge_base = assistant_data[detected_language]["knowledge_base"]
-    system_prompt  = assistant_data[detected_language]["system_prompt"]
-    rag_prompt     = assistant_data[detected_language]["rag_prompt"]
+    system_prompt = assistant_data[detected_language]["system_prompt"]
+    rag_prompt = assistant_data[detected_language]["rag_prompt"]
     ragless_prompt = assistant_data[detected_language]["ragless_prompt"]
 
     # Query the knowledge base for RAG context
     rag_context, _, _, _ = query_collection(
-        knowledge_base, from_client["body"],
-        CHROMADB_DISTANCE_CUTOFF
+        knowledge_base, from_client["body"], CHROMADB_DISTANCE_CUTOFF
     )
 
     # Send the user's prompt and context to the LLM
     llm_response, timestamp = query_llm(
-        openai, OPENAI_CHAT_MODEL,
+        openai,
+        OPENAI_CHAT_MODEL,
         system_prompt,
         ragless_prompt,
-        rag_prompt, rag_context,
+        rag_prompt,
+        rag_context,
         user_prompt,
     )
     logger.info(f"[ASSISTANT] -> LLM replied: {llm_response}")

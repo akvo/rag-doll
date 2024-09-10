@@ -43,7 +43,11 @@ SOCKETIO_PATH = ""
 twilio_client = TwilioClient()
 slackbot_client = SlackBotClient()
 
-sio_server = socketio.AsyncServer(async_mode="asgi")
+sio_server = socketio.AsyncServer(
+    async_mode="asgi",
+    ping_interval=25,  # 25 seconds
+    ping_timeout=5,  # 5 seconds
+)
 sio_app = socketio.ASGIApp(
     socketio_server=sio_server, socketio_path=SOCKETIO_PATH
 )

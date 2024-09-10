@@ -53,7 +53,7 @@ const ChatList = ({
         const updatedChats = [...prev.chats, ...resData.chats].reduce(
           (acc, incomingChat) => {
             const existingChatIndex = acc.findIndex(
-              (chat) => chat.chat_session.id === incomingChat.chat_session.id
+              (chat) => chat.chat_session.id === incomingChat.chat_session.id,
             );
 
             if (existingChatIndex > -1) {
@@ -71,14 +71,14 @@ const ChatList = ({
 
             return acc;
           },
-          [...prev.chats]
+          [...prev.chats],
         );
 
         // Sort the chats by the last_message's created_at date in descending order
         const sortedChats = updatedChats.sort(
           (a, b) =>
             new Date(b.last_message.created_at) -
-            new Date(a.last_message.created_at)
+            new Date(a.last_message.created_at),
         );
 
         return {
@@ -136,7 +136,7 @@ const ChatList = ({
           const findNewMessage = newMessage.find(
             (nm) =>
               nm.conversation_envelope.client_phone_number ===
-              chat.chat_session.phone_number
+              chat.chat_session.phone_number,
           );
           if (findNewMessage) {
             return {
@@ -168,36 +168,38 @@ const ChatList = ({
       <div className="pt-20 pb-24 w-full">
         {/* Chat List */}
         <div className="bg-white overflow-hidden px-2">
-          {chatItems.chats.map(({ chat_session, last_message }) => (
-            <div
-              key={`chat-list-${chat_session.id}`}
-              className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
-              onClick={() => handleOnClickChat(chat_session)}
-            >
-              <div className="flex items-center">
-                <Image
-                  src="/images/bg-login-page.png"
-                  alt="User Avatar"
-                  className="rounded-full w-12 h-12 mr-4 bg-gray-300"
-                  height={12}
-                  width={12}
-                />
-                <div className="flex-1">
-                  <div className="flex justify-between">
-                    <h3 className="text-md font-semibold text-gray-800">
-                      {chat_session.name || chat_session.phone_number}
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      {formatChatTime(last_message.created_at)}
+          {chatItems.chats
+            .filter((c) => c.last_message)
+            .map(({ chat_session, last_message }) => (
+              <div
+                key={`chat-list-${chat_session.id}`}
+                className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
+                onClick={() => handleOnClickChat(chat_session)}
+              >
+                <div className="flex items-center">
+                  <Image
+                    src="/images/bg-login-page.png"
+                    alt="User Avatar"
+                    className="rounded-full w-12 h-12 mr-4 bg-gray-300"
+                    height={12}
+                    width={12}
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <h3 className="text-md font-semibold text-gray-800">
+                        {chat_session.name || chat_session.phone_number}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {formatChatTime(last_message.created_at)}
+                      </p>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      {trimMessage(last_message.message)}
                     </p>
                   </div>
-                  <p className="text-gray-600 text-sm">
-                    {trimMessage(last_message.message)}
-                  </p>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     </div>

@@ -47,6 +47,7 @@ sio_server = socketio.AsyncServer(
     async_mode="asgi",
     ping_interval=25,  # 25 seconds
     ping_timeout=5,  # 5 seconds
+    transports=["websocket", "polling"],
 )
 sio_app = socketio.ASGIApp(
     socketio_server=sio_server, socketio_path=SOCKETIO_PATH

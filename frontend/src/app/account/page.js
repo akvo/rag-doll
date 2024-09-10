@@ -7,7 +7,7 @@ import { useAuthDispatch } from "@/context/AuthContextProvider";
 import { deleteCookie } from "@/lib/cookies";
 import { BackIcon } from "@/utils/icons";
 import { ChatHeader } from "@/components";
-import { api } from "@/lib";
+import { api, socket } from "@/lib";
 import Image from "next/image";
 
 const Account = () => {
@@ -34,6 +34,7 @@ const Account = () => {
 
   const handleLogout = async () => {
     try {
+      socket.disconnect();
       authDispatch({ type: "DELETE" });
       userDispatch({ type: "DELETE" });
       deleteCookie("AUTH_TOKEN");

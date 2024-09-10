@@ -16,7 +16,7 @@ if (typeof window !== "undefined") {
     path: "/api/socket.io",
     transports: transports,
     reconnection: true,
-    reconnectionAttempts: 10,
+    reconnectionAttempts: 20,
     reconnectionDelay: 5000,
     pingInterval: 25000, // 25 seconds
     pingTimeout: 5000, // 5 seconds

@@ -15,14 +15,16 @@ const Chats = () => {
   const [whisperChats, setWhisperChats] = useState([]);
   const [useWhisperAsTemplate, setUseWhisperAsTemplate] = useState(false);
 
-  // reset chats state
+  // Reset chats state when clientPhoneNumber changes
   useEffect(() => {
     setChats([]);
   }, [clientPhoneNumber]);
 
-  // Connect to socket on component mount
+  // Connect to socket on component mount and disconnect on unmount
   useEffect(() => {
-    socket.connect();
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     const handleConnect = () => {
       console.info("FE Connected");
@@ -30,7 +32,6 @@ const Chats = () => {
 
     const handleDisconnect = (reason) => {
       console.info(`FE Disconnected: ${reason}`);
-      socket.connect(); // Attempt to reconnect
     };
 
     socket.on("connect", handleConnect);
@@ -39,6 +40,7 @@ const Chats = () => {
     return () => {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
+      socket.disconnect(); // Disconnect socket when component unmounts
     };
   }, []);
 
@@ -121,7 +123,7 @@ const Chats = () => {
     };
   }, [clients, clientPhoneNumber]);
 
-  // handle on click notification
+  // Handle click notification
   const handleOnClickNotification = (sender) => {
     const selectedClient = clients.find((c) => c.phone_number === sender);
     if (selectedClient) {
@@ -140,30 +142,24 @@ const Chats = () => {
     <div className="w-full h-full">
       <div className="absolute right-4 top-4 flex flex-col gap-2">
         {newMessage.map((nm, index) => {
-          let showNotif = false;
-          if (clientPhoneNumber) {
-            showNotif =
-              clientPhoneNumber &&
-              nm?.conversation_envelope?.client_phone_number !==
-                clientPhoneNumber
-                ? true
-                : false;
-          } else {
-            showNotif = true;
-          }
+          let showNotif = clientPhoneNumber
+            ? nm?.conversation_envelope?.client_phone_number !==
+              clientPhoneNumber
+            : true;
+
           return (
             <ChatNotification
               key={`chat-notification-${index}`}
               visible={showNotif}
-              setVisible={() => {
+              setVisible={() =>
                 setNewMessage((prev) =>
                   prev.filter(
                     (p) =>
                       p.conversation_envelope.message_id !==
                       nm?.conversation_envelope?.message_id
                   )
-                );
-              }}
+                )
+              }
               sender={nm?.conversation_envelope?.client_phone_number}
               message={nm?.body}
               timestamp={nm?.conversation_envelope?.timestamp}

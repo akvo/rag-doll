@@ -5,7 +5,7 @@ import { useEffect, useCallback } from "react";
 import { useAuthContext, useAuthDispatch } from "@/context/AuthContextProvider";
 import { useUserContext, useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib";
+import { api, socket } from "@/lib";
 import { setCookie } from "@/lib/cookies";
 import { BackIcon } from "@/utils/icons";
 
@@ -25,6 +25,7 @@ const VerifyLogin = ({ params }) => {
         const { token, phone_number, name, id: userID } = resData;
         setCookie("AUTH_TOKEN", token);
         api.setToken(resData.token);
+        socket.connect();
         authDispatch({
           type: "UPDATE",
           payload: {

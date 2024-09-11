@@ -159,7 +159,7 @@ class TwilioClient:
                 "client_phone_number"
             ) or conversation_envelope.get("user_phone_number")
             media = queue_message.get("media", [])
-            logger.error(f"MEDIA ==== {media}")
+
             if not os.getenv("TESTING"):
                 # save sent message history here
                 save_chat_history(

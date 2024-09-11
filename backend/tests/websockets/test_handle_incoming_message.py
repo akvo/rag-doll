@@ -4,6 +4,7 @@ from core.socketio_config import (
     Chat,
     Chat_Session,
     Client,
+    Chat_Media,
 )
 
 
@@ -60,3 +61,42 @@ def test_handle_incoming_message_existing_conversation(session: Session):
     ).all()
     assert chats[0].message == "Test message!"
     assert chats[1].message == "Second message"
+
+
+def test_handle_incoming_message_existing_conversation_with_image(
+    session: Session,
+):
+    image_url = "https://akvo.org/wp-content/themes/Akvo-Theme"
+    image_url += "/images/logos/akvologoblack.png"
+
+    MESSAGE["body"] = "Image caption"
+    MESSAGE["transformation_log"] = ["Image caption"]
+    MESSAGE["media"] = [
+        {"url": image_url, "type": "image/png"},
+    ]
+    MESSAGE["context"] = [
+        {"url": image_url, "type": "image/png", "caption": "Image caption"},
+    ]
+
+    handle_incoming_message(session=session, message=MESSAGE)
+
+    updated_chat_session = session.exec(
+        select(Chat_Session)
+        .join(Client)
+        .where(Client.phone_number == "+6281222304050")
+    ).first()
+    assert updated_chat_session is not None
+
+    chats = session.exec(
+        select(Chat).where(Chat.chat_session_id == updated_chat_session.id)
+    ).all()
+    assert chats[0].message == "Test message!"
+    assert chats[1].message == "Second message"
+    assert chats[2].message == "Image caption"
+
+    chat_media = session.exec(
+        select(Chat_Media).where(Chat_Media.chat_id == chats[2].id)
+    ).all()
+    assert len(chat_media) == 1
+    assert chat_media[0].url == image_url
+    assert chat_media[0].type == "image/png"

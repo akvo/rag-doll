@@ -13,6 +13,7 @@ from models import (
     Sender_Role_Enum,
     Platform_Enum,
     Chat,
+    Chat_Media,
 )
 from core.database import engine
 from sqlmodel import Session, select
@@ -147,6 +148,8 @@ def handle_incoming_message(session: Session, message: dict):
         conversation_envelope, "sender_role"
     )
 
+    media = get_value_or_raise_error(message, "media")
+
     prev_conversation_exist = session.exec(
         select(Chat_Session)
         .join(Client)
@@ -191,6 +194,17 @@ def handle_incoming_message(session: Session, message: dict):
     )
     session.add(new_chat)
     session.commit()
+
+    # handle media
+    if media:
+        for md in media:
+            new_media = Chat_Media(
+                chat_id=new_chat.id, url=md.get("url"), type=md.get("type")
+            )
+            session.add(new_media)
+            session.commit()
+    # eol handle media
+
     session.flush()
     return str(user_id)
 

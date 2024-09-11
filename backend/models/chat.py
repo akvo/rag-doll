@@ -76,6 +76,19 @@ class Chat(SQLModel, table=True):
         data.pop("created_at", None)
         super().__init__(**data)
 
+    def serialize(self) -> dict:
+        media = []
+        if self.media:
+            media = [md.simplify() for md in self.media]
+        return {
+            "id": self.id,
+            "chat_session_id": self.chat_session_id,
+            "message": self.message,
+            "sender_role": self.sender_role.value,
+            "created_at": self.created_at,
+            "media": media,
+        }
+
 
 class Chat_Media(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
@@ -84,3 +97,9 @@ class Chat_Media(SQLModel, table=True):
     type: str
 
     chat: Optional[Chat] = Relationship(back_populates="media")
+
+    def simplify(self) -> dict:
+        return {
+            "url": self.url,
+            "type": self.type,
+        }

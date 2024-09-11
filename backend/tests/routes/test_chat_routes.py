@@ -103,3 +103,5 @@ def test_get_chat_details_by_client_id(
 
     first_message = messages[0]
     assert first_message.get("message") is not None
+    assert "sender_role" in first_message
+    assert "media" in first_message

@@ -87,7 +87,7 @@ def save_chat_history(
                     type=md.get('type')
                 )
                 session.add(new_media)
-                session.commit()
+            session.commit()
         # eol handle media
 
         session.flush()

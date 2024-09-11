@@ -202,7 +202,7 @@ def handle_incoming_message(session: Session, message: dict):
                 chat_id=new_chat.id, url=md.get("url"), type=md.get("type")
             )
             session.add(new_media)
-            session.commit()
+        session.commit()
     # eol handle media
 
     session.flush()

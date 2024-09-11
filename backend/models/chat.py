@@ -80,7 +80,7 @@ class Chat(SQLModel, table=True):
 class Chat_Media(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     chat_id: int = Field(foreign_key="chat.id")
-    media_url: str
-    media_type: str
+    url: str
+    type: str
 
     chat: Optional[Chat] = Relationship(back_populates="media")

@@ -1,8 +1,8 @@
 """Add chat_media table
 
-Revision ID: 6c24e108a9ac
+Revision ID: 88850c0758b4
 Revises: 7e33edbad21a
-Create Date: 2024-09-11 00:29:01.134405
+Create Date: 2024-09-11 01:19:42.217454
 
 """
 
@@ -14,7 +14,7 @@ import sqlmodel  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "6c24e108a9ac"
+revision: str = "88850c0758b4"
 down_revision: Union[str, None] = "7e33edbad21a"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,12 +26,8 @@ def upgrade() -> None:
         "chat_media",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("chat_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "media_url", sqlmodel.sql.sqltypes.AutoString(), nullable=False
-        ),
-        sa.Column(
-            "media_type", sqlmodel.sql.sqltypes.AutoString(), nullable=False
-        ),
+        sa.Column("url", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("type", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.ForeignKeyConstraint(
             ["chat_id"],
             ["chat.id"],

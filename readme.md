@@ -138,6 +138,7 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `GOOGLE_APPLICATION_CREDENTIALS_PATH` | _CHANGEME_ | Path to the service account JSON key file location used for authentication and accessing Google Cloud services (Development only) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | _CHANGEME_ | JSON key file name used for authentication and accessing Google Cloud services |
 | `BUCKET_NAME` | _CHANGEME_ | Bucket name for a storage object (offered by Google Cloud) |
+| `TESTING` | `None` | An environment for testing purposes when running backend tests. This environment variable will automatically be set to 1 by `conftest`. |
 
 ### Twilio Channel
 

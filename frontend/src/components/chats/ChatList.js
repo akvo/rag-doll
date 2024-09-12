@@ -47,7 +47,13 @@ const ChatList = ({
   const fetchData = useCallback(async () => {
     const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
     if (res.status === 200) {
-      const resData = await res.json();
+      let resData = await res.json();
+      resData = resData?.chats
+        ? {
+            ...resData,
+            chats: resData.chats.filter((c) => c.last_message),
+          }
+        : resData;
       setClients(resData.chats.map((c) => c.chat_session));
       setChatItems((prev) => {
         const updatedChats = [...prev.chats, ...resData.chats].reduce(

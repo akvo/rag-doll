@@ -43,6 +43,7 @@ class Chat_Session(SQLModel, table=True):
     def serialize(self) -> dict:
         return {
             "id": self.id,
+            "client_id": self.client_id,
             "name": (
                 self.client.properties.name if self.client.properties else None
             ),

@@ -13,7 +13,6 @@ from models import (
     Sender_Role_Enum,
     Platform_Enum,
     Chat,
-    Chat_Media,
 )
 from core.database import engine
 from sqlmodel import Session, select
@@ -23,6 +22,7 @@ from socketio.exceptions import ConnectionRefusedError
 from utils.util import get_value_or_raise_error
 from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
+from db import add_media
 
 
 logging.basicConfig(level=logging.INFO)
@@ -197,12 +197,7 @@ def handle_incoming_message(session: Session, message: dict):
 
     # handle media
     if media:
-        for md in media:
-            new_media = Chat_Media(
-                chat_id=new_chat.id, url=md.get("url"), type=md.get("type")
-            )
-            session.add(new_media)
-        session.commit()
+        add_media(session=session, chat=new_chat, media=media)
     # eol handle media
 
     session.flush()

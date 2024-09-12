@@ -21,7 +21,6 @@ from models import (
     Chat,
     User,
     Client as ClientModel,
-    Chat_Media
 )
 from typing import Optional, List
 from pydub import AudioSegment
@@ -30,6 +29,7 @@ from sqlmodel import Session, select
 from core.database import engine
 from utils.util import get_value_or_raise_error, TextConverter
 from utils.storage import upload
+from db import add_media
 
 
 logging.basicConfig(level=logging.INFO)
@@ -80,14 +80,7 @@ def save_chat_history(
 
         # handle media
         if media:
-            for md in media:
-                new_media = Chat_Media(
-                    chat_id=new_chat.id,
-                    url=md.get('url'),
-                    type=md.get('type')
-                )
-                session.add(new_media)
-            session.commit()
+            add_media(session=session, chat=new_chat, media=media)
         # eol handle media
 
         session.flush()

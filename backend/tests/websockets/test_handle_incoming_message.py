@@ -4,8 +4,8 @@ from core.socketio_config import (
     Chat,
     Chat_Session,
     Client,
-    Chat_Media,
 )
+from models import Chat_Media
 
 
 MESSAGE = {

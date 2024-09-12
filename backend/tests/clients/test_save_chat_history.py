@@ -7,8 +7,8 @@ from clients.twilio_client import (
     ClientModel,
     User,
     Chat,
-    Chat_Media,
 )
+from models import Chat_Media
 
 
 def test_save_chat_history_when_send_a_message_into_platform(session: Session):

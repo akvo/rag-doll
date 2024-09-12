@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 from faker import Faker
@@ -28,7 +27,7 @@ def validate_phone_number(phone_number: str):
 def save_user(session: Session, phone_number: str, name: str = None):
     validated_phone_number = validate_phone_number(phone_number)
     if validated_phone_number is None:
-        return None
+        return False
 
     user = User(phone_number=validated_phone_number, login_code=None)
     session.add(user)
@@ -39,6 +38,7 @@ def save_user(session: Session, phone_number: str, name: str = None):
         session.add(user_properties)
     session.commit()
     print(f"Seeded user {user.id} with phone number {phone_number}")
+    return user
 
 
 def seed_users(session: Session, count: int):
@@ -47,7 +47,7 @@ def seed_users(session: Session, count: int):
             phone_number = faker.phone_number()
             phone_number = f"+{re.sub(r'\D', '', phone_number)}"
             save_user(
-                session=session, phone_number=phone_number, name=faker.name
+                session=session, phone_number=phone_number, name=faker.name()
             )
     finally:
         session.close()
@@ -60,14 +60,11 @@ def interactive_seeder(session: Session):
         name = None
         if input("Does the user have properties? (y/n): ").lower() == "y":
             name = input("Enter name: ")
-        save_user(session=session, phone_number=phone_number, name=name)
-    except ValidationError as e:
-        print(f"Validation error for phone number {phone_number}: {e}")
-        if os.getenv("TESTING"):
-            raise e
+        user = save_user(session=session, phone_number=phone_number, name=name)
+        if user:
+            print("Seeder process completed.")
     finally:
         session.close()
-        print("Seeder process completed.")
 
 
 if __name__ == "__main__":

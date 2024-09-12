@@ -44,6 +44,7 @@ services:
       TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
+      BUCKET_NAME: ${BUCKET_NAME}
     command: ["./test.sh"]
     volumes:
       - ./backend:/app:delegated

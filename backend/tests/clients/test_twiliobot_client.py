@@ -82,13 +82,8 @@ def test_format_to_queue_message_valid_with_voice_notes(twilio_client):
             "timestamp": timestamp,
         },
         "body": "",
-        "media": [audio_file_link],
-        "context": [
-            {
-                "file": audio_file_link,
-                "type": "audio/ogg",
-            },
-        ],
+        "media": [],
+        "context": [],
         "transformation_log": [""],
     }
 

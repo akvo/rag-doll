@@ -22,6 +22,7 @@ from socketio.exceptions import ConnectionRefusedError
 from utils.util import get_value_or_raise_error
 from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
+from db import add_media
 
 
 logging.basicConfig(level=logging.INFO)
@@ -147,6 +148,8 @@ def handle_incoming_message(session: Session, message: dict):
         conversation_envelope, "sender_role"
     )
 
+    media = get_value_or_raise_error(message, "media")
+
     prev_conversation_exist = session.exec(
         select(Chat_Session)
         .join(Client)
@@ -191,6 +194,12 @@ def handle_incoming_message(session: Session, message: dict):
     )
     session.add(new_chat)
     session.commit()
+
+    # handle media
+    if media:
+        add_media(session=session, chat=new_chat, media=media)
+    # eol handle media
+
     session.flush()
     return str(user_id)
 

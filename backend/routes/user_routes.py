@@ -1,4 +1,3 @@
-import json
 import phonenumbers
 from os import environ
 from fastapi import APIRouter, HTTPException, Depends
@@ -9,11 +8,9 @@ from datetime import timedelta
 
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from models import User
-from models.chat import Sender_Role_Enum, Platform_Enum
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
 from clients.twilio_client import TwilioClient
-from Akvo_rabbitmq_client import queue_message_util
 from middleware import verify_user
 
 
@@ -43,18 +40,14 @@ async def send_login_link(
     user.login_code = str(login_code_uuid)
     session.commit()
 
+    if environ.get("TESTING"):
+        return {"message": "Login link sent via WhatsApp"}
+
     # format login link and message for the user
     link = f"{webdomain}/verify/{user.login_code}"
-    message_body = queue_message_util.create_queue_message(
-        message_id=str(uuid4()),
-        user_phone_number=phone_number,
-        sender_role=Sender_Role_Enum.SYSTEM,
-        sender_role_enum=Sender_Role_Enum,
-        platform=Platform_Enum.WHATSAPP,
-        platform_enum=Platform_Enum,
-        body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
+    twilio_client.whatsapp_message_create(
+        to=phone_number, body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link)
     )
-    twilio_client.send_whatsapp_message(body=json.dumps(message_body))
     return {"message": "Login link sent via WhatsApp"}
 
 

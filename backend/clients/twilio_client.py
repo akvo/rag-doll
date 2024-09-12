@@ -6,6 +6,7 @@ import requests
 import urllib.request
 import speech_recognition as sr
 
+from uuid import uuid4
 from datetime import datetime, timezone
 from json.decoder import JSONDecodeError
 from twilio.base.exceptions import TwilioRestException
@@ -21,12 +22,14 @@ from models import (
     User,
     Client as ClientModel,
 )
-from typing import Optional
+from typing import Optional, List
 from pydub import AudioSegment
 from base64 import b64encode
 from sqlmodel import Session, select
 from core.database import engine
 from utils.util import get_value_or_raise_error, TextConverter
+from utils.storage import upload
+from db import add_media
 
 
 logging.basicConfig(level=logging.INFO)
@@ -34,10 +37,14 @@ logger = logging.getLogger(__name__)
 
 MAX_WHATSAPP_MESSAGE_LENGTH = 1500
 STORAGE = "./storage"
+ALLOWED_MESSAGE_TYPES = ["text", "image"]
 
 
 def save_chat_history(
-    session: Session, conversation_envelope: dict, message_body=str
+    session: Session,
+    conversation_envelope: dict,
+    message_body: str,
+    media: Optional[List[dict]] = [],
 ):
     try:
         user_phone_number = get_value_or_raise_error(
@@ -70,7 +77,14 @@ def save_chat_history(
         )
         session.add(new_chat)
         session.commit()
+
+        # handle media
+        if media:
+            add_media(session=session, chat=new_chat, media=media)
+        # eol handle media
+
         session.flush()
+
         return new_chat.id
     except Exception as e:
         logger.error(f"Save chat history failed: {e}")
@@ -101,6 +115,30 @@ class TwilioClient:
             self.TWILIO_ACCOUNT_SID, self.TWILIO_AUTH_TOKEN
         )
 
+    def download_media(self, url: str, folder: str, filename: str):
+        # create authentication token
+        auth_str = f"{self.TWILIO_ACCOUNT_SID}:{self.TWILIO_AUTH_TOKEN}"
+        auth_bytes = auth_str.encode("utf-8")
+        auth_b64 = b64encode(auth_bytes).decode("utf-8")
+        headers = {"Authorization": "Basic " + auth_b64}
+
+        # download and convert the audio file
+        response = requests.get(url=url, headers=headers)
+        filepath = f"{STORAGE}/{folder}"
+        if not os.path.exists(filepath):
+            os.makedirs(filepath)
+
+        filepath = f"{filepath}/{filename}"
+        urllib.request.urlretrieve(response.url, filepath)
+        return filepath
+
+    def whatsapp_message_create(self, to: str, body: str):
+        return self.twilio_client.messages.create(
+            from_=self.TWILIO_WHATSAPP_FROM,
+            body=TextConverter(body).format_whatsapp(),
+            to=f"whatsapp:{to}",
+        )
+
     def send_whatsapp_message(self, body: str) -> None:
         try:
             session = Session(engine)
@@ -113,18 +151,17 @@ class TwilioClient:
             phone = conversation_envelope.get(
                 "client_phone_number"
             ) or conversation_envelope.get("user_phone_number")
+            media = queue_message.get("media", [])
+
             if not os.getenv("TESTING"):
                 # save sent message history here
                 save_chat_history(
                     session=session,
                     conversation_envelope=conversation_envelope,
                     message_body=text,
+                    media=media
                 )
-            response = self.twilio_client.messages.create(
-                from_=self.TWILIO_WHATSAPP_FROM,
-                body=TextConverter(text).format_whatsapp(),
-                to=f"whatsapp:{phone}",
-            )
+            response = self.whatsapp_message_create(to=phone, body=text)
             if response.error_code is not None:
                 logger.error(
                     f"Failed to send message to WhatsApp number "
@@ -169,18 +206,39 @@ class TwilioClient:
             for i in range(num_media):
                 media_url = values.get(f"MediaUrl{i}", "")
                 media_type = values.get(f"MediaContentType{i}")
-                if media_url:
-                    media.append(media_url)
-                    context.append({"file": media_url, "type": media_type})
+
+                # AUDIO
                 if media_url and media_type == "audio/ogg":
-                    audio_file_path = self.ogg2mp3(
+                    audio_filepath = self.ogg2mp3(
                         audio_url=media_url, message_sid=values["MessageSid"]
                     )
-                    logger.info(f"Audio converted {audio_file_path}")
+                    logger.info(f"Audio converted {audio_filepath}")
                     transcription = self.transcribe_audio(
-                        wav_path=audio_file_path
+                        wav_path=audio_filepath
                     )
                     message_body = transcription if transcription else ""
+
+                # IMAGE
+                if media_url and "image" in media_type:
+                    uid = uuid4()
+                    filetype = media_type.split("/")[1]
+                    filename = f"{values["MessageSid"]}-{str(uid)}.{filetype}"
+                    filepath = self.download_media(
+                        url=media_url, folder="media", filename=filename
+                    )
+                    bucket_url = upload(
+                        file=filepath,
+                        folder="media",
+                        filename=filename,
+                        public=True,
+                    )
+                    media.append({"url": bucket_url, "type": media_type})
+                    context.append({
+                        "url": bucket_url,
+                        "type": media_type,
+                        "caption": message_body
+                    })
+                    logger.info(f"Image upload: {bucket_url}")
 
             queue_message = queue_message_util.create_queue_message(
                 message_id=values["MessageSid"],
@@ -201,27 +259,13 @@ class TwilioClient:
 
     def ogg2mp3(self, audio_url: str, message_sid: str):
         try:
-            filepath = f"{STORAGE}/audio"
-            # create authentication token
-            auth_str = f"{self.TWILIO_ACCOUNT_SID}:{self.TWILIO_AUTH_TOKEN}"
-            auth_bytes = auth_str.encode("utf-8")
-            auth_b64 = b64encode(auth_bytes).decode("utf-8")
-            headers = {"Authorization": "Basic " + auth_b64}
-
-            # download and convert the audio file
-            response = requests.get(url=audio_url, headers=headers)
-            url = response.url
-            if not os.path.exists(filepath):
-                os.makedirs(filepath)
-
-            audio_filepath = f"{filepath}/{message_sid}.ogg"
-            urllib.request.urlretrieve(url, audio_filepath)
-            audio_file = AudioSegment.from_ogg(audio_filepath)
-
+            filepath = self.download_media(
+                url=audio_url, folder="media", filename=f"{message_sid}.ogg"
+            )
+            audio_file = AudioSegment.from_ogg(filepath)
             converted_filepath = f"{filepath}/{message_sid}.wav"
             audio_file.export(converted_filepath, format="wav")
-            os.remove(audio_filepath)
-
+            os.remove(filepath)
             return os.path.join(os.getcwd(), converted_filepath)
         except Exception as e:
             logger.error(f"Error downloading audio file: {e}")

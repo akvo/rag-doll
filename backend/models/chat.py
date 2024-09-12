@@ -70,7 +70,37 @@ class Chat(SQLModel, table=True):
         default_factory=lambda: datetime.now(tz),
     )
 
+    media: list["Chat_Media"] = Relationship(back_populates="chat")
+
     def __init__(self, **data):
         # Remove created_at if it's in the input data
         data.pop("created_at", None)
         super().__init__(**data)
+
+    def serialize(self) -> dict:
+        media = []
+        if self.media:
+            media = [md.simplify() for md in self.media]
+        return {
+            "id": self.id,
+            "chat_session_id": self.chat_session_id,
+            "message": self.message,
+            "sender_role": self.sender_role.value,
+            "created_at": self.created_at,
+            "media": media,
+        }
+
+
+class Chat_Media(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    chat_id: int = Field(foreign_key="chat.id")
+    url: str
+    type: str
+
+    chat: Optional[Chat] = Relationship(back_populates="media")
+
+    def simplify(self) -> dict:
+        return {
+            "url": self.url,
+            "type": self.type,
+        }

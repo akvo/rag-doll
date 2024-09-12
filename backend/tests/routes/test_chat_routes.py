@@ -52,7 +52,7 @@ def test_get_chats_authenticated(client: TestClient, session: Session) -> None:
     assert last_chat_message is not None
     sender = last_chat_message.get("sender_role")
     assert sender == Sender_Role_Enum.USER.value
-    assert last_chat_message.get("message") == "Saved message"
+    assert last_chat_message.get("message") == "Saved message with image"
 
 
 def test_get_chat_details_by_client_id(
@@ -105,3 +105,5 @@ def test_get_chat_details_by_client_id(
 
     first_message = messages[0]
     assert first_message.get("message") is not None
+    assert "sender_role" in first_message
+    assert "media" in first_message

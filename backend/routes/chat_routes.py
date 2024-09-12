@@ -91,5 +91,5 @@ async def get_chat_details_by_client_id(
     return {
         "client_id": client_id,
         "chat_session": chat_session.serialize(),
-        "messages": messages,
+        "messages": [m.serialize() for m in messages],
     }

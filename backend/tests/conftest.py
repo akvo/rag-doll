@@ -1,6 +1,7 @@
 import os
 import warnings
 import pytest
+import shutil
 
 from collections.abc import Generator
 from alembic import command
@@ -127,10 +128,16 @@ class MockRabbitMQClient:
 
 
 class MockTwilioBotClient:
+    def download_media(self, url, folder, filename):
+        pass
+
+    def whatsapp_message_create(self, to, body):
+        pass
+
     def format_to_queue_message(self, data):
         return "formatted_message"
 
-    async def send_whatsapp_message(self, message):
+    def send_whatsapp_message(self, message):
         pass
 
 
@@ -143,3 +150,26 @@ def run_app():
     app.dependency_overrides[get_twilio_client] = get_mock_twilio_client
     yield
     app.dependency_overrides = {}
+
+
+@pytest.fixture(scope="module")
+def setup_local_storage():
+    test_file_path = "./tmp/test_file.txt"
+    test_folder_path = "./tmp/fake-storage"
+    test_file_content = "This is a test file."
+
+    # Create the local test file and folder
+    os.makedirs(test_folder_path, exist_ok=True)
+    with open(test_file_path, "w") as f:
+        f.write(test_file_content)
+
+    yield {
+        "test_file": test_file_path,
+        "test_folder": test_folder_path,
+        "test_file_content": test_file_content,
+    }
+
+    if os.path.isfile(test_file_path):
+        os.remove(test_file_path)
+    if os.path.isdir(test_folder_path):
+        shutil.rmtree(test_folder_path)

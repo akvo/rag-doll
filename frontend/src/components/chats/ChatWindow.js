@@ -85,7 +85,7 @@ const ChatWindow = ({
 
   // Scroll to the last message whenever chats or chatHistory state changes
   useEffect(() => {
-    if (chats.length > 0 || chatHistory.length > 0) {
+    if (chats?.length > 0 || chatHistory?.length > 0) {
       scrollToLastMessage();
     }
   }, [chats, chatHistory, scrollToLastMessage]);
@@ -191,7 +191,7 @@ const ChatWindow = ({
   };
 
   const renderChatHistory = useMemo(() => {
-    return chatHistory.map((c, ci) => {
+    return chatHistory?.map((c, ci) => {
       if (c.sender_role === SenderRoleEnum.USER) {
         return (
           <UserChat

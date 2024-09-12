@@ -140,6 +140,34 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `BUCKET_NAME` | _CHANGEME_ | Bucket name for a storage object (offered by Google Cloud) |
 | `TESTING` | `None` | An environment for testing purposes when running backend tests. This environment variable will automatically be set to 1 by `conftest`. |
 
+### Chat Session Seeder
+
+Before using the application, you can seed the database with user, client, and chat session data using the `chat_session` seeder. Follow the instructions below to set up and run the seeder.
+
+#### Google Sheet Template
+
+Prepare a Google Sheet with the following columns (or you can use this [template](https://docs.google.com/spreadsheets/d/1ev7-wZbFZU_IpN4KL1XQlaVpCbH3JyOXsNB0r69Dbbw/edit?gid=0#gid=0)):
+- `client_phone_number`: Phone number of the client (including the + sign).
+- `client_name`: Name of the client (can be empty).
+- `linked_to_user_phone_number`: Phone number of the user linked to the client (including the + sign).
+- `user_name`: Name of the user (can be empty).
+
+Ensure that the Google Sheet is publicly accessible.
+
+#### Running the Seeder
+
+1. Save your data in the prepared Google Sheet template.
+2. From the backend directory, run the following command:
+
+    ```bash
+    python -m seeder.chat_session
+    ```
+
+3. The script will prompt you for the Google Sheet ID, which can be found in the URL of the Google Sheet. Enter the ID and press Enter.
+
+4. The seeder will process the data and populate your database with the user, client, and chat session information.
+
+
 ### Twilio Channel
 
 In the backend, we handle Twilio's send and receive messages through a service

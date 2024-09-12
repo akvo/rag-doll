@@ -24,3 +24,5 @@ pytest-aiohttp==1.0.5
 pydub==0.25.1
 SpeechRecognition==3.10.4
 google-cloud-storage==2.18.2
+
+pandas==2.2.2

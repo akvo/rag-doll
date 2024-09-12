@@ -43,6 +43,8 @@ def test_get_chats_authenticated(client: TestClient, session: Session) -> None:
     assert len(content["chats"]) >= 1
 
     chat_session = content["chats"][0].get("chat_session")
+    assert chat_session.get("id")
+    assert chat_session.get("client_id")
     assert chat_session.get("phone_number")
     assert chat_session.get("last_read")
 

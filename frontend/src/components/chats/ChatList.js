@@ -29,11 +29,11 @@ const ChatList = ({
 
   const chatListRef = useRef(null);
 
-  const handleOnClickChat = ({ id, name, phone_number }) => {
+  const handleOnClickChat = ({ client_id, name, phone_number }) => {
     chatDispatch({
       type: "UPDATE",
       payload: {
-        clientId: id,
+        clientId: client_id,
         clientName: name,
         clientPhoneNumber: phone_number,
       },
@@ -47,13 +47,19 @@ const ChatList = ({
   const fetchData = useCallback(async () => {
     const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
     if (res.status === 200) {
-      const resData = await res.json();
+      let resData = await res.json();
+      resData = resData?.chats
+        ? {
+            ...resData,
+            chats: resData.chats.filter((c) => c.last_message),
+          }
+        : resData;
       setClients(resData.chats.map((c) => c.chat_session));
       setChatItems((prev) => {
         const updatedChats = [...prev.chats, ...resData.chats].reduce(
           (acc, incomingChat) => {
             const existingChatIndex = acc.findIndex(
-              (chat) => chat.chat_session.id === incomingChat.chat_session.id,
+              (chat) => chat.chat_session.id === incomingChat.chat_session.id
             );
 
             if (existingChatIndex > -1) {
@@ -71,14 +77,14 @@ const ChatList = ({
 
             return acc;
           },
-          [...prev.chats],
+          [...prev.chats]
         );
 
         // Sort the chats by the last_message's created_at date in descending order
         const sortedChats = updatedChats.sort(
           (a, b) =>
             new Date(b.last_message.created_at) -
-            new Date(a.last_message.created_at),
+            new Date(a.last_message.created_at)
         );
 
         return {
@@ -136,7 +142,7 @@ const ChatList = ({
           const findNewMessage = newMessage.find(
             (nm) =>
               nm.conversation_envelope.client_phone_number ===
-              chat.chat_session.phone_number,
+              chat.chat_session.phone_number
           );
           if (findNewMessage) {
             return {

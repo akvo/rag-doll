@@ -27,7 +27,7 @@ from models import (
     Client_Properties,
     Chat_Session,
 )
-from seeder.user import ValidatePhoneNumber
+from seeder.user import validate_phone_number
 
 
 def download_csv_from_google_sheet(sheet_id: str):
@@ -57,7 +57,7 @@ def download_csv_from_google_sheet(sheet_id: str):
 def seed_database(session: Session, csv_filepath: str):
     # Read the CSV file into a pandas DataFrame
     try:
-        data = pd.read_csv(csv_filepath)
+        data = pd.read_csv(csv_filepath, dtype=str)
 
         for _, row in data.iterrows():
             # Process Client
@@ -66,60 +66,70 @@ def seed_database(session: Session, csv_filepath: str):
             user_phone_number = row["linked_to_user_phone_number"]
             user_name = row["user_name"]
 
-            # Check if Client already exists
-            validated_client = ValidatePhoneNumber(
-                phone_number=client_phone_number
+            # Validate phone numbers
+            validated_client_phone_number = validate_phone_number(
+                client_phone_number
             )
+            if validated_client_phone_number is None:
+                print(f"Skipping client: {client_phone_number}")
+                continue
+
+            # Check if Client already exists
             client = session.exec(
                 select(Client).where(
-                    Client.phone_number == client_phone_number
+                    Client.phone_number == validated_client_phone_number
                 )
             ).first()
             if not client:
-                client = Client(
-                    phone_number=int(
-                        "".join(
-                            filter(str.isdigit, validated_client.phone_number)
-                        )
-                    )
-                )
+                client = Client(phone_number=validated_client_phone_number)
                 session.add(client)
 
-            # Create or update Client_Properties
-            client_properties = session.exec(
-                select(Client_Properties).where(
-                    Client_Properties.client_id == client.id
-                )
-            ).first()
-            if client_properties:
-                client_properties.name = client_name
-            else:
-                client_properties = Client_Properties(
-                    client_id=client.id, name=client_name
-                )
-                session.add(client_properties)
+            # Create or update Client_Properties if client_name is provided
+            if pd.notna(client_name):
+                client_properties = session.exec(
+                    select(Client_Properties).where(
+                        Client_Properties.client_id == client.id
+                    )
+                ).first()
+                if client_properties:
+                    client_properties.name = client_name
+                else:
+                    client_properties = Client_Properties(
+                        client_id=client.id, name=client_name
+                    )
+                    session.add(client_properties)
 
             # Check if User already exists
+            validated_user_phone_number = validate_phone_number(
+                user_phone_number
+            )
+            if validated_user_phone_number is None:
+                print(f"Skipping user: {user_phone_number}")
+                continue
+
             user = session.exec(
-                select(User).where(User.phone_number == user_phone_number)
+                select(User).where(
+                    User.phone_number == validated_user_phone_number
+                )
             ).first()
             if not user:
-                user = User(phone_number=user_phone_number)
+                user = User(phone_number=validated_user_phone_number)
                 session.add(user)
 
-            # Create or update User_Properties
-            user_properties = session.exec(
-                select(User_Properties).where(
-                    User_Properties.user_id == user.id
-                )
-            ).first()
-            if user_properties:
-                user_properties.name = user_name
-            else:
-                user_properties = User_Properties(
-                    user_id=user.id, name=user_name
-                )
-                session.add(user_properties)
+            # Create or update User_Properties if user_name is provided
+            if pd.notna(user_name):
+                user_properties = session.exec(
+                    select(User_Properties).where(
+                        User_Properties.user_id == user.id
+                    )
+                ).first()
+                if user_properties:
+                    user_properties.name = user_name
+                else:
+                    user_properties = User_Properties(
+                        user_id=user.id, name=user_name
+                    )
+                    session.add(user_properties)
 
             # Create Chat_Session
             chat_session = session.exec(

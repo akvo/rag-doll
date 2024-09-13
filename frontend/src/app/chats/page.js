@@ -48,25 +48,33 @@ const Chats = () => {
   useEffect(() => {
     const handleChats = (value, callback) => {
       if (value) {
+        const isMediaMessage = value?.media?.length > 0;
+
         const selectedClient = clients.find(
           (c) =>
             c.phone_number === value.conversation_envelope.client_phone_number
         );
         setReloadChatList(!selectedClient);
 
-        setWhisperChats((prev) => [
-          ...prev.filter(
+        setWhisperChats((prev) => {
+          const filteredWhisper = prev.filter(
             (p) =>
               p.clientPhoneNumber !==
               value.conversation_envelope.client_phone_number
-          ),
-          {
-            clientPhoneNumber: value.conversation_envelope.client_phone_number,
-            message: null,
-            timestamp: null,
-            loading: true,
-          },
-        ]);
+          );
+          return isMediaMessage
+            ? filteredWhisper
+            : [
+                ...filteredWhisper,
+                {
+                  clientPhoneNumber:
+                    value.conversation_envelope.client_phone_number,
+                  message: null,
+                  timestamp: null,
+                  loading: true,
+                },
+              ];
+        });
         setUseWhisperAsTemplate(false);
 
         setNewMessage((prev) => [

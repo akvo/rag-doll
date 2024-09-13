@@ -163,7 +163,7 @@ const Whisper = ({
               <div key={index} className="mb-4">
                 <div className="flex mb-2">
                   <div className="w-full">
-                    {chat.message.split("\n")?.map((line, index) => (
+                    {chat?.message?.split("\n")?.map((line, index) => (
                       <MarkdownRenderer
                         key={`ai-${index}`}
                         content={line}

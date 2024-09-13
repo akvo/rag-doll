@@ -240,6 +240,7 @@ const ChatWindow = ({
             <ClientChat
               key={`client-${ci}`}
               message={c.body}
+              media={c.media}
               timestamp={c.conversation_envelope.timestamp}
               ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
             />

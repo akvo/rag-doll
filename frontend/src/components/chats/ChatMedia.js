@@ -29,14 +29,15 @@ const ChatMedia = ({ type, url }) => {
             src={url}
             alt={url}
             className="rounded-md shadow-sm mb-1 cursor-pointer"
-            onClick={() => handleImageClick(url)} // Handle click to show modal
+            onClick={() => handleImageClick(url)}
+            quality={75}
           />
         </div>
         {/* Image Modal */}
         {selectedImage && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
-            onClick={handleModalClick} // Close modal when clicking outside the image
+            onClick={handleModalClick}
           >
             <div className="relative w-full">
               <Image
@@ -53,7 +54,7 @@ const ChatMedia = ({ type, url }) => {
             </div>
             <button
               className="absolute top-2 right-4 text-white text-lg"
-              onClick={closeModal} // Close modal with button click
+              onClick={closeModal}
             >
               ✕
             </button>

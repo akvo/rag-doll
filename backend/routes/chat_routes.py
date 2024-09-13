@@ -51,7 +51,10 @@ async def get_chats(
             .order_by(Chat.created_at.desc(), Chat.id.desc())
         ).first()
         last_chats.append(
-            {"chat_session": chat.serialize(), "last_message": last_message}
+            {
+                "chat_session": chat.serialize(),
+                "last_message": last_message.to_last_message(),
+            }
         )
 
     return {

@@ -10,7 +10,6 @@ const LoadingSpinner = () => (
 const ChatMedia = ({ type, url }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  console.log(isLoading);
 
   const handleImageLoad = () => {
     setIsLoading(false);
@@ -38,8 +37,8 @@ const ChatMedia = ({ type, url }) => {
         <div className="mt-2">
           {isLoading && <LoadingSpinner />}
           <Image
-            width={225}
-            height={175}
+            width={isLoading ? 0 : 225}
+            height={isLoading ? 0 : 175}
             src={url}
             alt={url}
             className="rounded-md shadow-sm mb-1 cursor-pointer"
@@ -57,8 +56,8 @@ const ChatMedia = ({ type, url }) => {
             <div className="relative w-full">
               {isLoading && <LoadingSpinner />}
               <Image
-                width={375}
-                height={250}
+                width={isLoading ? 0 : 375}
+                height={isLoading ? 0 : 250}
                 layout="responsive"
                 src={selectedImage}
                 alt="Full Image"

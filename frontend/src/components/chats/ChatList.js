@@ -10,24 +10,9 @@ import { deleteCookie } from "@/lib/cookies";
 import { formatChatTime, trimMessage } from "@/utils/formatter";
 import ChatHeader from "./ChatHeader";
 import Image from "next/image";
-import { PhotoIcon } from "@/utils/icons";
+import { renderTextForMediaMessage } from "@/app/chats/page";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
-
-const renderTextForMediaMessage = ({ type = "" }) => {
-  const mediaType = type.split("/")[0];
-  switch (mediaType) {
-    case "image":
-      return (
-        <div className="flex items-center">
-          <PhotoIcon />
-          <div className="ml-2">Photo</div>
-        </div>
-      );
-    default:
-      return "Media";
-  }
-};
 
 const ChatList = ({
   newMessage,
@@ -219,7 +204,7 @@ const ChatList = ({
                       {last_message.message.trim()
                         ? trimMessage(last_message.message)
                         : renderTextForMediaMessage({
-                            type: last_message.media.type,
+                            type: last_message?.media?.type,
                           })}
                     </p>
                   </div>

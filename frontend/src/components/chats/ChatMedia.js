@@ -1,15 +1,28 @@
 import React, { useState } from "react";
 import Image from "next/image";
 
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center w-full h-full">
+    <div className="w-6 h-6 border-2 border-green-500 border-t-transparent border-solid rounded-full animate-spin"></div>
+  </div>
+);
+
 const ChatMedia = ({ type, url }) => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  console.log(isLoading);
+
+  const handleImageLoad = () => {
+    setIsLoading(false);
+  };
 
   const handleImageClick = (url) => {
-    setSelectedImage(url); // Open modal with selected image
+    setIsLoading(true);
+    setSelectedImage(url);
   };
 
   const closeModal = () => {
-    setSelectedImage(null); // Close modal
+    setSelectedImage(null);
   };
 
   const handleModalClick = (e) => {
@@ -23,6 +36,7 @@ const ChatMedia = ({ type, url }) => {
     return (
       <>
         <div className="mt-2">
+          {isLoading && <LoadingSpinner />}
           <Image
             width={225}
             height={175}
@@ -31,6 +45,7 @@ const ChatMedia = ({ type, url }) => {
             className="rounded-md shadow-sm mb-1 cursor-pointer"
             onClick={() => handleImageClick(url)}
             quality={75}
+            onLoadingComplete={handleImageLoad}
           />
         </div>
         {/* Image Modal */}
@@ -40,6 +55,7 @@ const ChatMedia = ({ type, url }) => {
             onClick={handleModalClick}
           >
             <div className="relative w-full">
+              {isLoading && <LoadingSpinner />}
               <Image
                 width={375}
                 height={250}
@@ -50,6 +66,7 @@ const ChatMedia = ({ type, url }) => {
                 style={{
                   objectFit: "cover",
                 }}
+                onLoadingComplete={handleImageLoad}
               />
             </div>
             <button

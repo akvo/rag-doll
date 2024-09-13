@@ -94,6 +94,7 @@ class Chat(SQLModel, table=True):
         media = None
         if self.media:
             media = self.media[-1]
+            media = media.simplify()
         return {
             "id": self.id,
             "chat_session_id": self.chat_session_id,

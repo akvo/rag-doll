@@ -201,7 +201,7 @@ const ChatList = ({
                       </p>
                     </div>
                     <p className="text-gray-600 text-sm">
-                      {last_message.message.trim()
+                      {last_message.message?.trim()
                         ? trimMessage(last_message.message)
                         : renderTextForMediaMessage({
                             type: last_message?.media?.type,

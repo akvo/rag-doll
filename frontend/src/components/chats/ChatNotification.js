@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { formatChatTime } from "@/utils/formatter";
 import { renderTextForMediaMessage } from "@/app/chats/page";
+import { trimMessage } from "@/utils/formatter";
 
 const ChatNotification = ({
   visible,
@@ -32,7 +33,7 @@ const ChatNotification = ({
     >
       <p className="font-bold text-sm">{sender}</p>
       <p className="mt-1">
-        {message.trim()
+        {message?.trim()
           ? trimMessage(message)
           : renderTextForMediaMessage({
               type: media?.[0]?.type,

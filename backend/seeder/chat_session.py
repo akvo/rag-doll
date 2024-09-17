@@ -83,16 +83,21 @@ def seed_database(session: Session, csv_filepath: str):
             if not client:
                 client = Client(phone_number=validated_client_phone_number)
                 session.add(client)
+                session.commit()  # Commit so that client.id is available
 
             # Create or update Client_Properties if client_name is provided
             if pd.notna(client_name):
                 client_properties = session.exec(
                     select(Client_Properties).where(
-                        Client_Properties.client_id == client.id
+                        (Client_Properties.client_id == client.id)
+                        & (Client_Properties.name == client_name)
                     )
                 ).first()
                 if client_properties:
-                    client_properties.name = client_name
+                    print(
+                        f"Skipping client properties: {client_name} already"
+                        f" exists for client {client.id}"
+                    )
                 else:
                     client_properties = Client_Properties(
                         client_id=client.id, name=client_name
@@ -115,6 +120,7 @@ def seed_database(session: Session, csv_filepath: str):
             if not user:
                 user = User(phone_number=validated_user_phone_number)
                 session.add(user)
+                session.commit()  # Commit to get user.id
 
             # Create or update User_Properties if user_name is provided
             if pd.notna(user_name):

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger
+from sqlalchemy import Column, String, BigInteger, UniqueConstraint
 from sqlmodel import Field, SQLModel, Relationship
 from utils.util import sanitize_phone_number
 
@@ -28,6 +28,10 @@ class Client(SQLModel, table=True):
 class Client_Properties(SQLModel, table=True):
     client_id: int = Field(foreign_key="client.id", primary_key=True)
     name: str = Field(
-        sa_column=Column(String, unique=True),
+        sa_column=Column(String),
     )
     client: "Client" = Relationship(back_populates="properties")
+
+    __table_args__ = (
+        UniqueConstraint("client_id", "name", name="unique_client_name"),
+    )

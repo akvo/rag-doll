@@ -16,6 +16,7 @@ import Whisper from "./Whisper";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { BackIcon, SendIcon } from "@/utils/icons";
 import Image from "next/image";
+import ChatMedia from "./ChatMedia";
 
 const SenderRoleEnum = {
   USER: "user",
@@ -43,10 +44,13 @@ const UserChat = forwardRef(({ message, timestamp }, ref) => (
 ));
 UserChat.displayName = "UserChat";
 
-const ClientChat = forwardRef(({ message, timestamp }, ref) => (
+const ClientChat = forwardRef(({ message, timestamp, media = [] }, ref) => (
   <div className="flex mb-4" ref={ref}>
     <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
       <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+      {media.map((item, i) => (
+        <ChatMedia key={`media-${i}`} type={item.type} url={item.url} />
+      ))}
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer key={`client-${i}`} content={line} />
       ))}
@@ -206,6 +210,7 @@ const ChatWindow = ({
           <ClientChat
             key={`client-history-${ci}`}
             message={c.message}
+            media={c.media}
             timestamp={c.created_at}
           />
         );
@@ -235,6 +240,7 @@ const ChatWindow = ({
             <ClientChat
               key={`client-${ci}`}
               message={c.body}
+              media={c.media}
               timestamp={c.conversation_envelope.timestamp}
               ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
             />

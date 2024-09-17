@@ -90,6 +90,20 @@ class Chat(SQLModel, table=True):
             "media": media,
         }
 
+    def to_last_message(self) -> dict:
+        media = None
+        if self.media:
+            media = self.media[-1]
+            media = media.simplify()
+        return {
+            "id": self.id,
+            "chat_session_id": self.chat_session_id,
+            "message": self.message,
+            "sender_role": self.sender_role.value,
+            "created_at": self.created_at,
+            "media": media,
+        }
+
 
 class Chat_Media(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)

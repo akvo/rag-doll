@@ -2,6 +2,8 @@
 
 import React, { useEffect } from "react";
 import { formatChatTime } from "@/utils/formatter";
+import { renderTextForMediaMessage } from "@/app/chats/page";
+import { trimMessage } from "@/utils/formatter";
 
 const ChatNotification = ({
   visible,
@@ -10,6 +12,7 @@ const ChatNotification = ({
   message,
   timestamp,
   onClick,
+  media = [],
 }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,7 +32,13 @@ const ChatNotification = ({
       style={{ zIndex: 1000 }}
     >
       <p className="font-bold text-sm">{sender}</p>
-      <p className="mt-1">{message}</p>
+      <p className="mt-1">
+        {message?.trim()
+          ? trimMessage(message)
+          : renderTextForMediaMessage({
+              type: media?.[0]?.type,
+            })}
+      </p>
       <p className="text-right text-xs text-green-200 mt-2">
         {formatChatTime(timestamp)}
       </p>

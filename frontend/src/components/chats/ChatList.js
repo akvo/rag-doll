@@ -10,6 +10,7 @@ import { deleteCookie } from "@/lib/cookies";
 import { formatChatTime, trimMessage } from "@/utils/formatter";
 import ChatHeader from "./ChatHeader";
 import Image from "next/image";
+import { renderTextForMediaMessage } from "@/app/chats/page";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -200,7 +201,11 @@ const ChatList = ({
                       </p>
                     </div>
                     <p className="text-gray-600 text-sm">
-                      {trimMessage(last_message.message)}
+                      {last_message.message?.trim()
+                        ? trimMessage(last_message.message)
+                        : renderTextForMediaMessage({
+                            type: last_message?.media?.type,
+                          })}
                     </p>
                   </div>
                 </div>

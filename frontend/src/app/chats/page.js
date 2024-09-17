@@ -4,6 +4,22 @@ import { useEffect, useState } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { ChatWindow, ChatList, ChatNotification } from "@/components";
 import { socket } from "@/lib";
+import { PhotoIcon } from "@/utils/icons";
+
+export const renderTextForMediaMessage = ({ type = "" }) => {
+  const mediaType = type?.split("/")?.[0];
+  switch (mediaType) {
+    case "image":
+      return (
+        <div className="flex items-center">
+          <PhotoIcon />
+          <div className="ml-2">Photo</div>
+        </div>
+      );
+    default:
+      return "Media";
+  }
+};
 
 const Chats = () => {
   const chatDispatch = useChatDispatch();
@@ -48,25 +64,33 @@ const Chats = () => {
   useEffect(() => {
     const handleChats = (value, callback) => {
       if (value) {
+        const isMediaMessage = value?.media?.length > 0;
+
         const selectedClient = clients.find(
           (c) =>
             c.phone_number === value.conversation_envelope.client_phone_number
         );
         setReloadChatList(!selectedClient);
 
-        setWhisperChats((prev) => [
-          ...prev.filter(
+        setWhisperChats((prev) => {
+          const filteredWhisper = prev.filter(
             (p) =>
               p.clientPhoneNumber !==
               value.conversation_envelope.client_phone_number
-          ),
-          {
-            clientPhoneNumber: value.conversation_envelope.client_phone_number,
-            message: null,
-            timestamp: null,
-            loading: true,
-          },
-        ]);
+          );
+          return isMediaMessage
+            ? filteredWhisper
+            : [
+                ...filteredWhisper,
+                {
+                  clientPhoneNumber:
+                    value.conversation_envelope.client_phone_number,
+                  message: null,
+                  timestamp: null,
+                  loading: true,
+                },
+              ];
+        });
         setUseWhisperAsTemplate(false);
 
         setNewMessage((prev) => [
@@ -145,7 +169,13 @@ const Chats = () => {
           let showNotif = clientPhoneNumber
             ? nm?.conversation_envelope?.client_phone_number !==
               clientPhoneNumber
-            : true;
+            : clients.find(
+                (c) =>
+                  c.phone_number ===
+                  nm?.conversation_envelope?.client_phone_number
+              )?.id
+            ? true
+            : false;
 
           return (
             <ChatNotification
@@ -162,6 +192,7 @@ const Chats = () => {
               }
               sender={nm?.conversation_envelope?.client_phone_number}
               message={nm?.body}
+              media={nm?.media}
               timestamp={nm?.conversation_envelope?.timestamp}
               onClick={handleOnClickNotification}
               setNewMessage={setNewMessage}

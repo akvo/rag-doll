@@ -53,6 +53,7 @@ def test_get_chats_authenticated(client: TestClient, session: Session) -> None:
     sender = last_chat_message.get("sender_role")
     assert sender == Sender_Role_Enum.USER.value
     assert last_chat_message.get("message") == "Saved message with image"
+    assert last_chat_message.get("media")
 
 
 def test_get_chat_details_by_client_id(

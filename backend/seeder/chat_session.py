@@ -84,6 +84,11 @@ def seed_database(session: Session, csv_filepath: str):
                 client = Client(phone_number=validated_client_phone_number)
                 session.add(client)
                 session.commit()  # Commit to get client.id
+            else:
+                print(
+                    f"Client with phone number {validated_client_phone_number}"
+                    f" already registered for client_id {client.id}"
+                )
 
             # Create or update Client_Properties if client_name is provided
             if pd.notna(client_name):
@@ -124,6 +129,11 @@ def seed_database(session: Session, csv_filepath: str):
                 user = User(phone_number=validated_user_phone_number)
                 session.add(user)
                 session.commit()  # Commit to get user.id
+            else:
+                print(
+                    f"User with phone number {validated_client_phone_number}"
+                    f" already registered for user_id {user.id}"
+                )
 
             # Create or update User_Properties if user_name is provided
             if pd.notna(user_name):

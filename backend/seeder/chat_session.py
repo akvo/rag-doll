@@ -131,7 +131,7 @@ def seed_database(session: Session, csv_filepath: str):
                 session.commit()  # Commit to get user.id
             else:
                 print(
-                    f"User with phone number {validated_client_phone_number}"
+                    f"User with phone number {validated_user_phone_number}"
                     f" already registered for user_id {user.id}"
                 )
 

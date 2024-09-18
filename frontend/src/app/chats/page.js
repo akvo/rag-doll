@@ -166,16 +166,18 @@ const Chats = () => {
     <div className="w-full h-full">
       <div className="absolute right-4 top-4 flex flex-col gap-2">
         {newMessage.map((nm, index) => {
-          let showNotif = clientPhoneNumber
-            ? nm?.conversation_envelope?.client_phone_number !==
-              clientPhoneNumber
-            : clients.find(
-                (c) =>
-                  c.phone_number ===
-                  nm?.conversation_envelope?.client_phone_number
-              )?.id
+          const isClientInClientList = clients.find(
+            (c) =>
+              c.phone_number === nm?.conversation_envelope?.client_phone_number
+          )?.id
             ? true
             : false;
+
+          let showNotif = clientPhoneNumber
+            ? isClientInClientList &&
+              nm?.conversation_envelope?.client_phone_number !==
+                clientPhoneNumber
+            : isClientInClientList;
 
           return (
             <ChatNotification

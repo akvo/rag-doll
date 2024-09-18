@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
+import { useUserContext } from "@/context/UserContextProvider";
+import { useAuthContext } from "@/context/AuthContextProvider";
 import { ChatWindow, ChatList, ChatNotification } from "@/components";
 import { socket } from "@/lib";
 import { PhotoIcon } from "@/utils/icons";
@@ -24,12 +26,15 @@ export const renderTextForMediaMessage = ({ type = "" }) => {
 const Chats = () => {
   const chatDispatch = useChatDispatch();
   const { clientPhoneNumber } = useChatContext();
+  const user = useUserContext();
+  const auth = useAuthContext();
   const [chats, setChats] = useState([]);
   const [newMessage, setNewMessage] = useState([]);
   const [clients, setClients] = useState([]);
   const [reloadChatList, setReloadChatList] = useState(false);
   const [whisperChats, setWhisperChats] = useState([]);
   const [useWhisperAsTemplate, setUseWhisperAsTemplate] = useState(false);
+  console.log(user, "===");
 
   // Reset chats state when clientPhoneNumber changes
   useEffect(() => {

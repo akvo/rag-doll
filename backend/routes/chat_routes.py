@@ -53,7 +53,9 @@ async def get_chats(
         last_chats.append(
             {
                 "chat_session": chat.serialize(),
-                "last_message": last_message.to_last_message(),
+                "last_message": (
+                    last_message.to_last_message() if last_message else None
+                ),
             }
         )
 

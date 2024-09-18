@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, Enum, func
 from sqlmodel import Field, SQLModel, Relationship
 from typing import Optional
-from models.client import Client
+from models import Client, User
 
 
 tz = timezone.utc
@@ -36,6 +36,7 @@ class Chat_Session(SQLModel, table=True):
         default_factory=lambda: datetime.now(tz),
     )
     client: "Client" = Relationship()
+    user: "User" = Relationship()
 
     def __init__(self, **data):
         super().__init__(**data)

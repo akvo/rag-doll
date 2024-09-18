@@ -155,7 +155,7 @@ const Whisper = ({
                 <div className="w-1 h-1 bg-red-500 rounded-full animate-bounce delay-300"></div>
               </div>
               <p className="ml-4 text-sm font-medium text-gray-600">
-                AI is thinking
+                Loading suggested response
               </p>
             </div>
           ) : (

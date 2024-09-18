@@ -71,6 +71,18 @@ def init_db(session: Session) -> None:
         )
         session.add(chat)
         session.commit()
+    # chat session with no last message
+    client = Client(
+        phone_number="+6281234567891",
+    )
+    session.add(client)
+    session.commit()
+    chat_session = Chat_Session(
+        user_id=user.id,
+        client_id=client.id,
+    )
+    session.add(chat_session)
+    session.commit()
 
 
 @pytest.fixture

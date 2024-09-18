@@ -48,7 +48,12 @@ def test_get_chats_authenticated(client: TestClient, session: Session) -> None:
     assert chat_session.get("phone_number")
     assert chat_session.get("last_read")
 
+    # check for no last message
     last_chat_message = content["chats"][0].get("last_message")
+    assert last_chat_message is None
+
+    # check for with last message
+    last_chat_message = content["chats"][1].get("last_message")
     assert last_chat_message is not None
     sender = last_chat_message.get("sender_role")
     assert sender == Sender_Role_Enum.USER.value

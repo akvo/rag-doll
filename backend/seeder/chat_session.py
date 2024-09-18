@@ -83,6 +83,12 @@ def seed_database(session: Session, csv_filepath: str):
             if not client:
                 client = Client(phone_number=validated_client_phone_number)
                 session.add(client)
+                session.commit()  # Commit to get client.id
+            else:
+                print(
+                    f"Client with phone number {validated_client_phone_number}"
+                    f" already registered for client_id {client.id}"
+                )
 
             # Create or update Client_Properties if client_name is provided
             if pd.notna(client_name):
@@ -91,8 +97,15 @@ def seed_database(session: Session, csv_filepath: str):
                         Client_Properties.client_id == client.id
                     )
                 ).first()
+
                 if client_properties:
-                    client_properties.name = client_name
+                    # If properties exist and name is different, update the name
+                    if client_properties.name != client_name:
+                        print(
+                            f"Updating client name for client_id {client.id}"
+                            f" from {client_properties.name} to {client_name}"
+                        )
+                        client_properties.name = client_name
                 else:
                     client_properties = Client_Properties(
                         client_id=client.id, name=client_name
@@ -115,6 +128,12 @@ def seed_database(session: Session, csv_filepath: str):
             if not user:
                 user = User(phone_number=validated_user_phone_number)
                 session.add(user)
+                session.commit()  # Commit to get user.id
+            else:
+                print(
+                    f"User with phone number {validated_user_phone_number}"
+                    f" already registered for user_id {user.id}"
+                )
 
             # Create or update User_Properties if user_name is provided
             if pd.notna(user_name):

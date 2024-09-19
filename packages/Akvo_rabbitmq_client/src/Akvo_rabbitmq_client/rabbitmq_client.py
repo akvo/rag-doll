@@ -1,9 +1,8 @@
 import os
 import aio_pika
 import logging
-
+import asyncio
 from typing import Callable
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,12 +26,11 @@ class RabbitMQClient:
         self.RABBITMQ_EXCHANGE_USER_CHATS = os.getenv(
             "RABBITMQ_EXCHANGE_USER_CHATS"
         )
-
         self.validate_environment_variables()
-
         self.RABBITMQ_PORT = int(self.RABBITMQ_PORT)
         self.connection = None
         self.channel = None
+        self.exchange = None
 
     def validate_environment_variables(self):
         required_variables = [
@@ -47,13 +45,18 @@ class RabbitMQClient:
                 raise MissingEnvironmentVariableError(var)
 
     async def connect(self):
-        if not self.connection or self.connection.is_closed:
-            self.connection = await aio_pika.connect_robust(
-                host=self.RABBITMQ_HOST,
-                port=self.RABBITMQ_PORT,
-                login=self.RABBITMQ_USER,
-                password=self.RABBITMQ_PASS,
-            )
+        while self.connection is None or self.connection.is_closed:
+            try:
+                self.connection = await aio_pika.connect_robust(
+                    host=self.RABBITMQ_HOST,
+                    port=self.RABBITMQ_PORT,
+                    login=self.RABBITMQ_USER,
+                    password=self.RABBITMQ_PASS,
+                )
+                logger.info("Connected to RabbitMQ")
+            except Exception as e:
+                logger.error(f"Error connecting to RabbitMQ: {e}")
+                await asyncio.sleep(5)  # Wait before retrying
 
     async def disconnect(self):
         if self.connection and not self.connection.is_closed:
@@ -72,11 +75,7 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"Error initializing RabbitMQ client: {e}")
 
-    async def producer(
-        self,
-        body: str,
-        routing_key: str,
-    ):
+    async def producer(self, body: str, routing_key: str):
         try:
             await self.connect()
             message = aio_pika.Message(
@@ -106,18 +105,25 @@ class RabbitMQClient:
     async def consume(
         self, queue_name: str, routing_key: str, callback: Callable = None
     ):
-        try:
-            await self.connect()
-            queue = await self.channel.declare_queue(queue_name, durable=True)
-            await queue.bind(self.exchange, routing_key=routing_key)
-            await queue.consume(
-                lambda msg: self.consumer_callback(
-                    message=msg, routing_key=routing_key, callback=callback
+        while True:
+            try:
+                await self.connect()
+                queue = await self.channel.declare_queue(
+                    queue_name, durable=True
                 )
-            )
-            logger.info(f"Consume Q:{queue_name} | RK:{routing_key}")
-        except Exception as e:
-            logger.error(f"Error consuming {routing_key}: {e}")
+                await queue.bind(self.exchange, routing_key=routing_key)
+                await queue.consume(
+                    lambda msg: self.consumer_callback(
+                        message=msg, routing_key=routing_key, callback=callback
+                    )
+                )
+                logger.info(
+                    f"Consuming from Q:{queue_name} | RK:{routing_key}"
+                )
+                break  # Exit loop if successful
+            except Exception as e:
+                logger.error(f"Error consuming {routing_key}: {e}")
+                await asyncio.sleep(5)  # Wait before retrying
 
 
 try:

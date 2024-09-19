@@ -40,11 +40,11 @@ const ChatMedia = ({ type, url }) => {
             width={isLoading ? 0 : 225}
             height={isLoading ? 0 : 175}
             src={url}
-            alt={url}
+            alt={type}
             className="rounded-md shadow-sm mb-1 cursor-pointer"
             onClick={() => handleImageClick(url)}
             quality={75}
-            onLoadingComplete={handleImageLoad}
+            onLoad={handleImageLoad}
           />
         </div>
         {/* Image Modal */}
@@ -56,16 +56,16 @@ const ChatMedia = ({ type, url }) => {
             <div className="relative w-full">
               {isLoading && <LoadingSpinner />}
               <Image
-                width={isLoading ? 0 : 375}
-                height={isLoading ? 0 : 250}
-                layout="responsive"
                 src={selectedImage}
                 alt="Full Image"
-                className="max-w-full max-h-full"
+                sizes="100vw"
                 style={{
-                  objectFit: "cover",
+                  width: "100%",
+                  height: "auto",
                 }}
-                onLoadingComplete={handleImageLoad}
+                width={isLoading ? 0 : 500}
+                height={isLoading ? 0 : 300}
+                onLoad={handleImageLoad}
               />
             </div>
             <button

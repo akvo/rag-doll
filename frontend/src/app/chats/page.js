@@ -11,7 +11,7 @@ export const renderTextForMediaMessage = ({ type = "" }) => {
   switch (mediaType) {
     case "image":
       return (
-        <div className="flex items-center">
+        <div className="flex items-center text-gray-600 text-sm">
           <PhotoIcon />
           <div className="ml-2">Photo</div>
         </div>

@@ -200,13 +200,15 @@ const ChatList = ({
                         {formatChatTime(last_message.created_at)}
                       </p>
                     </div>
-                    <p className="text-gray-600 text-sm">
-                      {last_message.message?.trim()
-                        ? trimMessage(last_message.message)
-                        : renderTextForMediaMessage({
-                            type: last_message?.media?.type,
-                          })}
-                    </p>
+                    {last_message.message?.trim() ? (
+                      <p className="text-gray-600 text-sm">
+                        {trimMessage(last_message.message)}
+                      </p>
+                    ) : (
+                      renderTextForMediaMessage({
+                        type: last_message?.media?.type,
+                      })
+                    )}
                   </div>
                 </div>
               </div>

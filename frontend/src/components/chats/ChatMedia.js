@@ -44,6 +44,10 @@ const ChatMedia = ({ type, url }) => {
             className="rounded-md shadow-sm mb-1 cursor-pointer"
             onClick={() => handleImageClick(url)}
             quality={75}
+            style={{
+              width: "auto",
+              height: "auto",
+            }}
             onLoad={handleImageLoad}
           />
         </div>

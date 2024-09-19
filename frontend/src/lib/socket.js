@@ -18,8 +18,8 @@ if (typeof window !== "undefined") {
     reconnection: true,
     reconnectionAttempts: 20,
     reconnectionDelay: 5000,
-    pingInterval: 25000, // 25 seconds
-    pingTimeout: 20000, // 20 seconds
+    pingInterval: 65000, // 65 seconds
+    pingTimeout: 60000, // 60 seconds
     upgrade: isLocalhost ? false : true,
   });
 }

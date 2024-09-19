@@ -46,12 +46,17 @@ const Chats = () => {
       console.info("FE Connected");
     };
 
-    const handleDisconnect = (reason) => {
+    const handleDisconnect = (reason, details) => {
       console.info(`FE Disconnected: ${reason}`);
+      console.info("FE Disconnected", details);
     };
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
+
+    socket.on("connect_error", (err) => {
+      console.error("FE Connect_Error", err);
+    });
 
     return () => {
       socket.off("connect", handleConnect);

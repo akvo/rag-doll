@@ -178,15 +178,19 @@ const ChatWindow = ({
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending
       try {
-        const response = await socket
-          .timeout(5000)
-          .emitWithAck("chats", chatPayload);
-        console.info(`Success send message: ${JSON.stringify(response)}`);
-        if (useWhisperAsTemplate) {
-          // remove whisper
-          setWhisperChats((prev) =>
-            prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
-          );
+        if (socket.connected) {
+          const response = await socket
+            .timeout(5000)
+            .emitWithAck("chats", chatPayload);
+          console.info(`Success send message: ${JSON.stringify(response)}`);
+          if (useWhisperAsTemplate) {
+            // remove whisper
+            setWhisperChats((prev) =>
+              prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
+            );
+          }
+        } else {
+          console.info(`Socket status: ${socket.connected}`);
         }
       } catch (err) {
         console.error(`Failed send message: ${JSON.stringify(err)}`);

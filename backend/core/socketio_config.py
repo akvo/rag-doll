@@ -46,8 +46,8 @@ slackbot_client = SlackBotClient()
 
 sio_server = socketio.AsyncServer(
     async_mode="asgi",
-    ping_interval=65,  # 65 seconds
-    ping_timeout=60,  # 60 seconds
+    ping_interval=130,  # 130 seconds
+    ping_timeout=120,  # 120 seconds
     transports=["websocket", "polling"],
 )
 sio_app = socketio.ASGIApp(

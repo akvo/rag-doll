@@ -17,9 +17,9 @@ if (typeof window !== "undefined") {
     transports: transports,
     reconnection: true,
     reconnectionAttempts: 20,
-    reconnectionDelay: 5000,
-    pingInterval: 65000, // 65 seconds
-    pingTimeout: 60000, // 60 seconds
+    reconnectionDelay: 1000,
+    pingInterval: 130000, // 130 seconds
+    pingTimeout: 120000, // 120 seconds
     upgrade: isLocalhost ? false : true,
   });
 }

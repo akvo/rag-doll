@@ -3,6 +3,7 @@ import aio_pika
 import logging
 import asyncio
 from typing import Callable
+from aiormq.exceptions import AMQPConnectionError, ConnectionClosed
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,18 +46,23 @@ class RabbitMQClient:
                 raise MissingEnvironmentVariableError(var)
 
     async def connect(self):
-        while self.connection is None or self.connection.is_closed:
+        while True:
             try:
-                self.connection = await aio_pika.connect_robust(
+                self.connection = await aio_pika.connect(
                     host=self.RABBITMQ_HOST,
                     port=self.RABBITMQ_PORT,
                     login=self.RABBITMQ_USER,
                     password=self.RABBITMQ_PASS,
+                    timeout=60,
                 )
-                logger.info("Connected to RabbitMQ")
+                break
+            except (ConnectionClosed, AMQPConnectionError) as e:
+                logger.error(f"RabbitMQ connection error: {e}")
+                await asyncio.sleep(5)
+
             except Exception as e:
-                logger.error(f"Error connecting to RabbitMQ: {e}")
-                await asyncio.sleep(5)  # Wait before retrying
+                logger.error(f"Unexpected error connecting to RabbitMQ: {e}")
+                await asyncio.sleep(5)
 
     async def disconnect(self):
         if self.connection and not self.connection.is_closed:
@@ -72,20 +78,25 @@ class RabbitMQClient:
                 aio_pika.ExchangeType.DIRECT,
                 durable=True,
             )
+        except (ConnectionClosed, AMQPConnectionError) as e:
+            logger.error(f"RabbitMQ initialization error: {e}")
+            self.initialize()
         except Exception as e:
-            logger.error(f"Error initializing RabbitMQ client: {e}")
+            logger.error(f"Unexpected error initializing RabbitMQ client: {e}")
 
     async def producer(self, body: str, routing_key: str):
         try:
-            await self.connect()
+            await self.initialize()
             message = aio_pika.Message(
                 body=body.encode("utf-8"),
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
             )
             await self.exchange.publish(message, routing_key=routing_key)
             logger.info(f"Message sent: {body}, routing_key: {routing_key}")
+        except (ConnectionClosed, AMQPConnectionError) as e:
+            logger.error(f"RabbitMQ publish error: {e}")
         except Exception as e:
-            logger.error(f"Error publishing message: {e}")
+            logger.error(f"Unexpected error publishing message: {e}")
 
     async def consumer_callback(
         self,
@@ -107,23 +118,28 @@ class RabbitMQClient:
     ):
         while True:
             try:
-                await self.connect()
+                await self.initialize()
                 queue = await self.channel.declare_queue(
                     queue_name, durable=True
                 )
                 await queue.bind(self.exchange, routing_key=routing_key)
                 await queue.consume(
                     lambda msg: self.consumer_callback(
-                        message=msg, routing_key=routing_key, callback=callback
+                        message=msg,
+                        routing_key=routing_key,
+                        callback=callback,
                     )
                 )
                 logger.info(
                     f"Consuming from Q:{queue_name} | RK:{routing_key}"
                 )
-                break  # Exit loop if successful
+                await asyncio.sleep(25)
+            except (ConnectionClosed, AMQPConnectionError) as e:
+                logger.error(f"RabbitMQ consume error: {e}")
+                await asyncio.sleep(5)
             except Exception as e:
-                logger.error(f"Error consuming {routing_key}: {e}")
-                await asyncio.sleep(5)  # Wait before retrying
+                logger.error(f"Unexpected error consuming {routing_key}: {e}")
+                await asyncio.sleep(5)
 
 
 try:

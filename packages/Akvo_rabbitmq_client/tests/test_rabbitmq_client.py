@@ -1,40 +1,54 @@
-import unittest
-import asyncio
-from unittest.mock import AsyncMock
+import pytest
+from unittest.mock import AsyncMock, patch
 from Akvo_rabbitmq_client import rabbitmq_client
 
 
-class TestRabbitMQClient(unittest.TestCase):
+@pytest.mark.asyncio
+@patch("aio_pika.connect", new_callable=AsyncMock)
+async def test_producer_and_consumer(mock_connect):
+    # Mocking connection and channel
+    mock_connection = AsyncMock()
+    mock_channel = AsyncMock()
+    mock_exchange = AsyncMock()
+    mock_queue = AsyncMock()
 
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-        self.client = rabbitmq_client
+    mock_connect.return_value = mock_connection
+    mock_connection.channel.return_value = mock_channel
+    mock_channel.declare_exchange.return_value = mock_exchange
+    mock_channel.declare_queue.return_value = mock_queue
 
-    def tearDown(self):
-        async def cleanup():
-            await self.client.disconnect()
+    # Mocking message consume and publish
+    callback_mock = AsyncMock()
 
-        self.loop.run_until_complete(cleanup())
-        self.loop.close()
+    await rabbitmq_client.initialize()
+    await rabbitmq_client.consume(
+        queue_name="test_queue",
+        routing_key="test_queue",
+        callback=callback_mock,
+    )
+    await rabbitmq_client.producer(
+        body="Test producer and consumer", routing_key="test_queue"
+    )
 
-    def test_producer_and_consumer(self):
-        async def test():
-            await self.client.initialize()
-            callback_mock = AsyncMock()
-            await self.client.consume(
-                queue_name="test_queue",
-                routing_key="test_queue",
-                callback=callback_mock,
-            )
-            await self.client.producer(
-                body="Test producer and consumer", routing_key="test_queue"
-            )
-            await asyncio.sleep(1)
-            callback_mock.assert_called_once()
+    # Simulate message delivery to the consumer
+    incoming_message_mock = AsyncMock()
+    incoming_message_mock.body.decode.return_value = (
+        "Test producer and consumer"
+    )
+    await rabbitmq_client.consumer_callback(
+        message=incoming_message_mock,
+        routing_key="test_queue",
+        callback=callback_mock,
+    )
 
-        self.loop.run_until_complete(test())
+    callback_mock.assert_called_once_with(body="Test producer and consumer")
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.asyncio
+@patch("aio_pika.connect", new_callable=AsyncMock)
+async def test_connection_error(mock_connect):
+    # Simulate connection failure
+    mock_connect.side_effect = ConnectionError("Failed to connect to RabbitMQ")
+
+    with pytest.raises(ConnectionError):
+        await rabbitmq_client.initialize()

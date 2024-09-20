@@ -223,7 +223,10 @@ async def user_to_client(body: str):
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
     try:
-        cookie.load(environ.get("HTTP_COOKIE"))
+        httpCookie = environ.get("HTTP_COOKIE")
+        if not httpCookie:
+            return False
+        cookie.load(httpCookie)
         auth_token = cookie.get("AUTH_TOKEN")
         auth_token = auth_token.value if auth_token else None
         decoded_token = verify_jwt_token(auth_token)

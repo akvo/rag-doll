@@ -45,8 +45,9 @@ class RabbitMQClient:
             if getattr(self, var) is None:
                 raise MissingEnvironmentVariableError(var)
 
-    async def connect(self):
-        while True:
+    async def connect(self, max_retries=5):
+        retries = 0
+        while retries < max_retries:
             try:
                 self.connection = await aio_pika.connect(
                     host=self.RABBITMQ_HOST,
@@ -58,11 +59,14 @@ class RabbitMQClient:
                 break
             except (ConnectionClosed, AMQPConnectionError) as e:
                 logger.error(f"RabbitMQ connection error: {e}")
+                retries += 1
                 await asyncio.sleep(5)
-
             except Exception as e:
                 logger.error(f"Unexpected error connecting to RabbitMQ: {e}")
+                retries += 1
                 await asyncio.sleep(5)
+        if retries >= max_retries:
+            raise Exception("Maximum retries exceeded")
 
     async def disconnect(self):
         if self.connection and not self.connection.is_closed:
@@ -114,7 +118,11 @@ class RabbitMQClient:
             logger.error(f"Error processing {routing_key} message: {e}")
 
     async def consume(
-        self, queue_name: str, routing_key: str, callback: Callable = None
+        self,
+        queue_name: str,
+        routing_key: str,
+        callback: Callable = None,
+        sleepTime=25,
     ):
         while True:
             try:
@@ -125,15 +133,13 @@ class RabbitMQClient:
                 await queue.bind(self.exchange, routing_key=routing_key)
                 await queue.consume(
                     lambda msg: self.consumer_callback(
-                        message=msg,
-                        routing_key=routing_key,
-                        callback=callback,
+                        message=msg, routing_key=routing_key, callback=callback
                     )
                 )
                 logger.info(
                     f"Consuming from Q:{queue_name} | RK:{routing_key}"
                 )
-                await asyncio.sleep(25)
+                await asyncio.sleep(sleepTime)
             except (ConnectionClosed, AMQPConnectionError) as e:
                 logger.error(f"RabbitMQ consume error: {e}")
                 await asyncio.sleep(5)

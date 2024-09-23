@@ -109,6 +109,7 @@ def check_conversation_exist_and_generate_queue_message(
         platform = get_value_or_raise_error(conversation_envelope, "platform")
 
         queue_message = queue_message_util.create_queue_message(
+            chat_session_id=conversation_exist.id,
             message_id=get_value_or_raise_error(
                 conversation_envelope, "message_id"
             ),
@@ -202,7 +203,7 @@ def handle_incoming_message(session: Session, message: dict):
     session.flush()
 
     user = user.serialize()
-    return user["id"], user["phone_number"]
+    return user["id"], user["phone_number"], chat_session_id
 
 
 async def user_to_client(body: str):
@@ -286,7 +287,7 @@ async def chat_message(sid, msg):
                 await user_to_client(json.dumps(queue_message))
                 return {
                     "success": True,
-                    "message": "Message processed and sent to RabbitMQ",
+                    "message": "Message processed and sent to client",
                 }
             else:
                 error_message = (
@@ -317,7 +318,7 @@ async def client_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number = handle_incoming_message(
+        user_id, user_phone_number, chat_session_id = handle_incoming_message(
             session=session, message=message
         )
 
@@ -325,6 +326,7 @@ async def client_to_user(body: str):
             message, "conversation_envelope"
         )
         conversation_envelope.update({"user_phone_number": user_phone_number})
+        conversation_envelope.update({"chat_session_id": chat_session_id})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
@@ -371,7 +373,7 @@ async def assistant_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number = handle_incoming_message(
+        user_id, user_phone_number, chat_session_id = handle_incoming_message(
             session=session, message=message
         )
 
@@ -379,6 +381,7 @@ async def assistant_to_user(body: str):
             message, "conversation_envelope"
         )
         conversation_envelope.update({"user_phone_number": user_phone_number})
+        conversation_envelope.update({"chat_session_id": chat_session_id})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 

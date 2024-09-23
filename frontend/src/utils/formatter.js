@@ -19,6 +19,7 @@ export const generateMessage = ({
   sender_role,
   body,
   platform,
+  chat_session_id = null,
   timestamp = null,
   media = null,
   context = null,
@@ -41,6 +42,7 @@ export const generateMessage = ({
 
   const message = {
     conversation_envelope: {
+      chat_session_id: chat_session_id,
       message_id: message_id,
       client_phone_number: client_phone_number,
       sender_role: sender_role,

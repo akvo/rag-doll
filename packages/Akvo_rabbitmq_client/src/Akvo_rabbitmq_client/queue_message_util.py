@@ -12,6 +12,7 @@ class QueueMessageUtil:
         platform: str,
         platform_enum: Type[Enum],
         body: str,
+        chat_session_id: Optional[int] = None,
         timestamp: Optional[str] = None,
         user_phone_number: Optional[str] = None,
         client_phone_number: Optional[str] = None,
@@ -37,6 +38,7 @@ class QueueMessageUtil:
 
         message = {
             "conversation_envelope": {
+                "chat_session_id": chat_session_id,
                 "message_id": message_id,
                 "client_phone_number": client_phone_number,
                 "user_phone_number": user_phone_number,

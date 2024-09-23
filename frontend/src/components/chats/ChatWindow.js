@@ -153,8 +153,9 @@ const ChatWindow = ({
   };
 
   const handleLostMessage = async (chatPayload) => {
+    // TODO:: Handle chat_session_id correctly on BE and FE
     const res = await dbLib.messages.add({
-      chat_session_id: 1, // TODO:: need to provide later
+      chat_session_id: chatPayload.conversation_envelope.chat_session_id,
       message: chatPayload,
       sender_role: chatPayload.conversation_envelope.sender_role,
       created_at: chatPayload.conversation_envelope.timestamp,

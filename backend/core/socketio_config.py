@@ -158,7 +158,6 @@ def handle_incoming_message(session: Session, message: dict):
 
     if not prev_conversation_exist:
         user = session.exec(select(User).order_by(User.id)).first()
-        user_id = user.id
 
         curr_client = session.exec(
             select(Client).where(Client.phone_number == client_phone_number)
@@ -184,7 +183,7 @@ def handle_incoming_message(session: Session, message: dict):
         chat_session_id = new_chat_session.id
         session.flush()
     else:
-        user_id = prev_conversation_exist.user_id
+        user = prev_conversation_exist.user
         chat_session_id = prev_conversation_exist.id
 
     new_chat = Chat(
@@ -201,7 +200,9 @@ def handle_incoming_message(session: Session, message: dict):
     # eol handle media
 
     session.flush()
-    return str(user_id)
+
+    user = user.serialize()
+    return user["id"], user["phone_number"]
 
 
 async def user_to_client(body: str):
@@ -316,12 +317,14 @@ async def client_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id = handle_incoming_message(session=session, message=message)
+        user_id, user_phone_number = handle_incoming_message(
+            session=session, message=message
+        )
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
-        conversation_envelope.pop("user_phone_number", None)
+        conversation_envelope.update({"user_phone_number": user_phone_number})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
@@ -368,12 +371,14 @@ async def assistant_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id = handle_incoming_message(session=session, message=message)
+        user_id, user_phone_number = handle_incoming_message(
+            session=session, message=message
+        )
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
-        conversation_envelope.pop("user_phone_number", None)
+        conversation_envelope.update({"user_phone_number": user_phone_number})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 

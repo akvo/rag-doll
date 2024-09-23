@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { useUserContext, useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { useAuthDispatch } from "@/context/AuthContextProvider";
 import { deleteCookie } from "@/lib/cookies";
 import { BackIcon } from "@/utils/icons";
 import { ChatHeader } from "@/components";
-import { api, socket } from "@/lib";
+import { socket } from "@/lib";
 import Image from "next/image";
 
 const Account = () => {
@@ -15,18 +14,6 @@ const Account = () => {
   const router = useRouter();
   const userDispatch = useUserDispatch();
   const authDispatch = useAuthDispatch();
-
-  // get user me
-  useEffect(() => {
-    const fetchUserMe = async () => {
-      const res = await api.get("me");
-      if (res.status === 200) {
-        const resData = await res.json();
-        userDispatch({ type: "UPDATE", payload: { ...resData } });
-      }
-    };
-    fetchUserMe();
-  }, [userDispatch]);
 
   const handleOnClickBack = () => {
     router.replace("/chats");

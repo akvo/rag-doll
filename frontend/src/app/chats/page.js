@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
+import { useUserContext } from "@/context/UserContextProvider";
 import { ChatWindow, ChatList, ChatNotification } from "@/components";
 import { socket } from "@/lib";
 import { PhotoIcon } from "@/utils/icons";
@@ -24,6 +25,7 @@ export const renderTextForMediaMessage = ({ type = "" }) => {
 const Chats = () => {
   const chatDispatch = useChatDispatch();
   const { clientPhoneNumber } = useChatContext();
+  const { phone_number: userPhoneNumber } = useUserContext();
   const [chats, setChats] = useState([]);
   const [newMessage, setNewMessage] = useState([]);
   const [clients, setClients] = useState([]);
@@ -170,40 +172,39 @@ const Chats = () => {
   return (
     <div className="w-full h-full">
       <div className="absolute right-4 top-4 flex flex-col gap-2">
-        {newMessage.map((nm, index) => {
-          let showNotif = clientPhoneNumber
-            ? nm?.conversation_envelope?.client_phone_number !==
-              clientPhoneNumber
-            : clients.find(
-                (c) =>
-                  c.phone_number ===
-                  nm?.conversation_envelope?.client_phone_number
-              )?.id
-            ? true
-            : false;
+        {newMessage
+          .filter(
+            (nm) =>
+              nm?.conversation_envelope?.user_phone_number === userPhoneNumber
+          )
+          .map((nm, index) => {
+            const showNotif = clientPhoneNumber
+              ? nm?.conversation_envelope?.client_phone_number !==
+                clientPhoneNumber
+              : true;
 
-          return (
-            <ChatNotification
-              key={`chat-notification-${index}`}
-              visible={showNotif}
-              setVisible={() =>
-                setNewMessage((prev) =>
-                  prev.filter(
-                    (p) =>
-                      p.conversation_envelope.message_id !==
-                      nm?.conversation_envelope?.message_id
+            return (
+              <ChatNotification
+                key={`chat-notification-${index}`}
+                visible={showNotif}
+                setVisible={() =>
+                  setNewMessage((prev) =>
+                    prev.filter(
+                      (p) =>
+                        p.conversation_envelope.message_id !==
+                        nm?.conversation_envelope?.message_id
+                    )
                   )
-                )
-              }
-              sender={nm?.conversation_envelope?.client_phone_number}
-              message={nm?.body}
-              media={nm?.media}
-              timestamp={nm?.conversation_envelope?.timestamp}
-              onClick={handleOnClickNotification}
-              setNewMessage={setNewMessage}
-            />
-          );
-        })}
+                }
+                sender={nm?.conversation_envelope?.client_phone_number}
+                message={nm?.body}
+                media={nm?.media}
+                timestamp={nm?.conversation_envelope?.timestamp}
+                onClick={handleOnClickNotification}
+                setNewMessage={setNewMessage}
+              />
+            );
+          })}
       </div>
       {clientPhoneNumber ? (
         <ChatWindow

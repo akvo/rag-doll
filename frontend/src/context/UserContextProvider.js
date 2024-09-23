@@ -1,5 +1,8 @@
 "use client";
+
+import { useEffect } from "react";
 import { createContext, useContext, useReducer } from "react";
+import { api } from "@/lib";
 
 const UserContext = createContext(null);
 const UserDispatchContext = createContext(null);
@@ -30,6 +33,17 @@ const userReducer = (state, action) => {
 
 const UserContextProvider = ({ children }) => {
   const [user, dispatch] = useReducer(userReducer, initalUserState);
+
+  useEffect(() => {
+    const fetchUserMe = async () => {
+      const res = await api.get("me");
+      if (res.status === 200) {
+        const resData = await res.json();
+        dispatch({ type: "UPDATE", payload: { ...resData } });
+      }
+    };
+    fetchUserMe();
+  }, []);
 
   return (
     <UserContext.Provider value={user}>

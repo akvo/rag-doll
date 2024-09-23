@@ -44,8 +44,21 @@ const Chats = () => {
       socket.connect();
     }
 
-    const handleConnect = () => {
+    const handleConnect = async () => {
       console.info("FE Connected");
+      const messages = await dbLib.messages.getAll();
+      messages.forEach(async ({ id, message }) => {
+        try {
+          const response = await socket
+            .timeout(5000)
+            .emitWithAck("chats", message);
+          if (response?.success) {
+            dbLib.messages.delete(id);
+          }
+        } catch (err) {
+          console.info(`Failed to resend lost message: ${err}`);
+        }
+      });
     };
 
     const handleDisconnect = (reason, details) => {

@@ -25,7 +25,7 @@ const authReducer = (state, action) => {
       return initialAuthState;
     default:
       throw Error(
-        `Unknown action: ${action.type}. Remeber action type must be CAPITAL text.`
+        `Unknown action: ${action.type}. Remember action type must be CAPITAL text.`
       );
   }
 };
@@ -34,13 +34,17 @@ const AuthContextProvider = ({ children }) => {
   const [auth, dispatch] = useReducer(authReducer, initialAuthState);
 
   useEffect(() => {
-    const setApiToken = async () => {
+    const updateToken = async () => {
       const token = await getCookie("AUTH_TOKEN");
       if (token) {
         api.setToken(token);
+        dispatch({
+          type: "UPDATE",
+          payload: { token, isLogin: true },
+        });
       }
     };
-    setApiToken();
+    updateToken();
   }, []);
 
   return (

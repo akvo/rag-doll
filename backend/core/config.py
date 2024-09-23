@@ -28,15 +28,21 @@ RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
 async def lifespan(app: FastAPI):
     await rabbitmq_client.initialize()
     loop = asyncio.get_running_loop()
-    loop.create_task(
-        rabbitmq_client.consume(
+
+    async def consume_task():
+        await rabbitmq_client.consume(
             queue_name=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             routing_key=RABBITMQ_QUEUE_USER_CHAT_REPLIES,
             callback=assistant_to_user,
         )
-    )
-    yield
-    await rabbitmq_client.disconnect()
+
+    consumer_task = loop.create_task(consume_task())
+
+    try:
+        yield
+    finally:
+        consumer_task.cancel()
+        await rabbitmq_client.disconnect()
 
 
 app = FastAPI(

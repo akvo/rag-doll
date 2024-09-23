@@ -237,7 +237,7 @@ export const PhotoIcon = () => (
     xmlns="http://www.w3.org/2000/svg"
     className="w-4 h-4"
   >
-    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+    <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
     <g id="SVGRepo_iconCarrier">
       <path
         fillRule="evenodd"

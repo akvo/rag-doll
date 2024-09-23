@@ -46,8 +46,8 @@ slackbot_client = SlackBotClient()
 
 sio_server = socketio.AsyncServer(
     async_mode="asgi",
-    ping_interval=25,  # 25 seconds
-    ping_timeout=20,  # 20 seconds
+    ping_interval=130,  # 130 seconds
+    ping_timeout=120,  # 120 seconds
     transports=["websocket", "polling"],
 )
 sio_app = socketio.ASGIApp(
@@ -224,7 +224,10 @@ async def user_to_client(body: str):
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
     try:
-        cookie.load(environ.get("HTTP_COOKIE"))
+        httpCookie = environ.get("HTTP_COOKIE")
+        if not httpCookie:
+            return False
+        cookie.load(httpCookie)
         auth_token = cookie.get("AUTH_TOKEN")
         auth_token = auth_token.value if auth_token else None
         decoded_token = verify_jwt_token(auth_token)

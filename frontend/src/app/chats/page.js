@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { useUserContext } from "@/context/UserContextProvider";
 import { ChatWindow, ChatList, ChatNotification } from "@/components";
-import { socket } from "@/lib";
+import { socket, dbLib } from "@/lib";
 import { PhotoIcon } from "@/utils/icons";
 
 export const renderTextForMediaMessage = ({ type = "" }) => {

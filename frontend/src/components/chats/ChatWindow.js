@@ -9,7 +9,7 @@ import {
   forwardRef,
 } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
-import { socket, api } from "@/lib";
+import { socket, api, dbLib } from "@/lib";
 import { formatChatTime, generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
@@ -152,6 +152,16 @@ const ChatWindow = ({
     });
   };
 
+  const handleLostMessage = async (chatPayload) => {
+    const res = await dbLib.messages.add({
+      chat_session_id: 1, // TODO:: need to provide later
+      message: chatPayload,
+      sender_role: chatPayload.conversation_envelope.sender_role,
+      created_at: chatPayload.conversation_envelope.timestamp,
+    });
+    return res;
+  };
+
   const handleSend = async () => {
     if (message.trim()) {
       let chatBreakdown = {};
@@ -163,12 +173,12 @@ const ChatWindow = ({
         };
       } else {
         chatBreakdown = {
-          message_id: uuidv4(),
           platform: "WHATSAPP",
         };
       }
       const chatPayload = generateMessage({
         ...chatBreakdown,
+        message_id: uuidv4(),
         client_phone_number: clientPhoneNumber,
         sender_role: SenderRoleEnum.USER,
         body: message,
@@ -190,9 +200,11 @@ const ChatWindow = ({
             );
           }
         } else {
+          handleLostMessage(chatPayload);
           console.info(`Socket status: ${socket.connected}`);
         }
       } catch (err) {
+        handleLostMessage(chatPayload);
         console.error(`Failed send message: ${JSON.stringify(err)}`);
       }
     }

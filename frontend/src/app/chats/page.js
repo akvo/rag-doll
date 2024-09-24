@@ -127,7 +127,7 @@ const Chats = () => {
         }
 
         if (callback) {
-          callback({ success: true, message: "Message received by FE" });
+          callback({ success: true, message: value });
         }
       }
     };
@@ -153,7 +153,7 @@ const Chats = () => {
         );
 
         if (callback) {
-          callback({ success: true, message: "Whisper received by FE" });
+          callback({ success: true, message: value });
         }
       }
     };

@@ -203,7 +203,22 @@ def handle_incoming_message(session: Session, message: dict):
     session.flush()
 
     user = user.serialize()
-    return user["id"], user["phone_number"], chat_session_id
+    return user["id"], user["phone_number"], chat_session_id, new_chat.id
+
+
+def update_chat_status(session: Session, message: dict):
+    conversation_envelope = get_value_or_raise_error(
+        message, "conversation_envelope"
+    )
+    chat_id = conversation_envelope.get("message_id", None)
+    logger.info(f"Updating chat {chat_id} status")
+    chat = session.exec(select(Chat).where(Chat.id == chat_id)).first()
+    if not chat:
+        return None
+    chat.status = 1
+    session.commit()
+    session.flush()
+    logger.info(f"Chat {chat_id} status updated")
 
 
 async def user_to_client(body: str):
@@ -224,6 +239,7 @@ async def user_to_client(body: str):
 
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
+    # TODO :: resend/emit pending message when connected
     try:
         httpCookie = environ.get("HTTP_COOKIE")
         if not httpCookie:
@@ -305,6 +321,9 @@ async def chat_message(sid, msg):
 
 async def emit_chats_callback(value):
     logger.info(f"Emit chats callback {value}")
+    # update message status
+    session = Session(engine)
+    update_chat_status(session=session, message=value.get("message", {}))
 
 
 async def client_to_user(body: str):
@@ -318,34 +337,33 @@ async def client_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number, chat_session_id = handle_incoming_message(
-            session=session, message=message
+        user_id, user_phone_number, chat_session_id, chat_id = (
+            handle_incoming_message(session=session, message=message)
         )
+        user_sid = get_cache(user_id=user_id)
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
         conversation_envelope.update({"user_phone_number": user_phone_number})
         conversation_envelope.update({"chat_session_id": chat_session_id})
+        conversation_envelope.update({"message_id": chat_id})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = get_cache(user_id=user_id)
-
+        # send message to user_chats
+        await rabbitmq_client.producer(
+            body=body,
+            routing_key=RABBITMQ_QUEUE_USER_CHATS,
+        )
+        await sio_server.emit(
+            "chats", message, to=user_sid, callback=emit_chats_callback
+        )
         logger.info(
             f"Send client->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
         )
 
-        await sio_server.emit(
-            "chats", message, to=user_sid, callback=emit_chats_callback
-        )
-
-        await rabbitmq_client.initialize()
-        await rabbitmq_client.producer(
-            body=body,
-            routing_key=RABBITMQ_QUEUE_USER_CHATS,
-        )
     except Exception as e:
         logger.error(f"Error handling user_chats_callback: {e}")
         raise e
@@ -355,6 +373,9 @@ async def client_to_user(body: str):
 
 async def emit_whisper_callback(value):
     logger.info(f"Emit whisper callback {value}")
+    # update message status
+    session = Session(engine)
+    update_chat_status(session=session, message=value.get("message", {}))
 
 
 @sio_server.on("whisper")
@@ -373,28 +394,28 @@ async def assistant_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number, chat_session_id = handle_incoming_message(
-            session=session, message=message
+        user_id, user_phone_number, chat_session_id, chat_id = (
+            handle_incoming_message(session=session, message=message)
         )
+        user_sid = get_cache(user_id=user_id)
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
         conversation_envelope.update({"user_phone_number": user_phone_number})
         conversation_envelope.update({"chat_session_id": chat_session_id})
+        conversation_envelope.update({"message_id": chat_id})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = get_cache(user_id=user_id)
-
+        await sio_server.emit(
+            "whisper", message, to=user_sid, callback=emit_whisper_callback
+        )
         logger.info(
             f"Send assistant->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
         )
 
-        await sio_server.emit(
-            "whisper", message, to=user_sid, callback=emit_whisper_callback
-        )
     except Exception as e:
         logger.error(f"Error handling user_chats_callback: {e}")
         raise e

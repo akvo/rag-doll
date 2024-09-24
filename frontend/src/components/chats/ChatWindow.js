@@ -167,6 +167,8 @@ const ChatWindow = ({
     if (message.trim()) {
       let chatBreakdown = {};
       const lastChat = chats.slice(-1)[0];
+      // take last chat from chat history
+      const lastChatHistory = chatHistory.slice(-1)?.[0];
       if (lastChat && lastChat?.conversation_envelope) {
         chatBreakdown = {
           ...lastChat,
@@ -184,6 +186,7 @@ const ChatWindow = ({
         sender_role: SenderRoleEnum.USER,
         body: message,
         transformation_log: null,
+        chat_session_id: lastChatHistory?.chat_session_id || null,
       });
       setChats((previous) => [...previous, chatPayload]);
       setMessage(""); // Clear the textarea after sending

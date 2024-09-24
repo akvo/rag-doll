@@ -71,7 +71,7 @@ class Chat(SQLModel, table=True):
         ),
         default_factory=lambda: datetime.now(tz),
     )
-
+    chat_session: "Chat_Session" = Relationship()
     media: list["Chat_Media"] = Relationship(back_populates="chat")
 
     def __init__(self, **data):

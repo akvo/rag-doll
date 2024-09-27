@@ -139,6 +139,7 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `GOOGLE_APPLICATION_CREDENTIALS` | _CHANGEME_ | JSON key file name used for authentication and accessing Google Cloud services |
 | `BUCKET_NAME` | _CHANGEME_ | Bucket name for a storage object (offered by Google Cloud) |
 | `TESTING` | `None` | An environment variable used for testing purposes when running backend tests. This variable is automatically set to `1` by `conftest` to mock or skip certain steps related to third-party services. Please note that `TESTING` should not be included in the Docker Compose environment. |
+| `INITIAL_CHAT_TEMPLATE` | _CHANGEME_ | A template for initial chat message, e.g. "Hi {farmer_name}, You've been added to APP_NAME. Send us a message here to start chatting." |
 
 ### Chat Session Seeder
 

@@ -15,6 +15,7 @@ from models import (
 from core.database import get_session
 from clients.twilio_client import TwilioClient
 from middleware import verify_user
+from typing_extensions import Annotated
 
 
 router = APIRouter()
@@ -28,8 +29,8 @@ twilio_client = TwilioClient()
 
 @router.post("/client")
 async def add_client(
-    name: str = Form(...),
-    phone_number: PhoneNumber = Form(...),
+    name: Annotated[str, Form()],
+    phone_number: Annotated[PhoneNumber, Form()],
     session: Session = Depends(get_session),
     auth: credentials = Depends(security),
 ):
@@ -75,6 +76,7 @@ async def add_client(
     session.add(new_chat)
     session.commit()
     # eol create new chat session
+    session.flush()
 
     if environ.get("TESTING"):
         return new_client.serialize()

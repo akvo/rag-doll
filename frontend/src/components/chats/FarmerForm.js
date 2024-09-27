@@ -5,6 +5,8 @@ import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { ButtonLoadingIcon, PhoneIcon } from "@/utils/icons";
 import Notification from "../utils/Notification";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib";
 
 const FarmerForm = () => {
   const [farmerName, setFarmerName] = useState(null);
@@ -12,6 +14,7 @@ const FarmerForm = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationContent, setNotificationContent] = useState("");
   const [disabled, setDisabled] = useState(false);
+  const router = useRouter();
 
   const handleShowNotification = () => {
     setShowNotification(true);
@@ -21,7 +24,7 @@ const FarmerForm = () => {
     }, 3000);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setDisabled(true);
 
@@ -53,8 +56,33 @@ const FarmerForm = () => {
       return;
     }
 
-    setFarmerName("");
-    setPhoneNumber("");
+    const payload = new FormData();
+    payload.append("name", farmerName);
+    payload.append("phone_number", phoneNumber);
+
+    try {
+      const res = await api.post("client", payload);
+      if (res.status === 200) {
+        setNotificationContent("Farmer registered successfully.");
+        handleShowNotification();
+        setDisabled(false);
+        router.replace("/chats");
+        return;
+      } else if (res.status === 409) {
+        setNotificationContent(
+          `Sorry, farmer ${phoneNumber} already registered`
+        );
+        handleShowNotification();
+      } else {
+        setNotificationContent("Error, please try again later.");
+        handleShowNotification();
+      }
+      setDisabled(false);
+    } catch (error) {
+      setNotificationContent("Error, please try again later.");
+      handleShowNotification();
+      setDisabled(false);
+    }
   };
 
   return (
@@ -66,7 +94,7 @@ const FarmerForm = () => {
           <label className="block text-sm mb-2">Farmer Name</label>
           <input
             type="text"
-            value={farmerName}
+            value={farmerName || ""}
             onChange={(e) => setFarmerName(e.target.value)}
             placeholder="Enter farmer's name"
             className="w-full px-4 py-2 border-gray-400 border-b text-md"

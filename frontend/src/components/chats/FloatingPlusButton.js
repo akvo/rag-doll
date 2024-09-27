@@ -1,9 +1,13 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
 import { PlusIcon, CloseIcon } from "@/utils/icons";
+import { useRouter } from "next/navigation";
 
 const FloatingPlusButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
+  const router = useRouter();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -46,13 +50,13 @@ const FloatingPlusButton = () => {
       {isOpen && (
         <div
           ref={menuRef}
-          className="fixed bottom-36 right-5 bg-white rounded-lg shadow-md shadow-slate-300 border p-4 w-56 mb-4"
+          className="fixed bottom-36 right-5 bg-white rounded-lg shadow-md shadow-slate-300 border w-56 mb-4"
         >
           <ul>
             <li
-              className="text-black hover:text-akvo-green cursor-pointer"
+              className="text-black hover:bg-gray-100 cursor-pointer px-4 py-3"
               onClick={() => {
-                console.log("Add Farmer clicked");
+                router.push("/add-farmer");
                 setIsOpen(false);
               }}
             >

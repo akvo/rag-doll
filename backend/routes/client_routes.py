@@ -76,6 +76,9 @@ async def add_client(
     session.commit()
     # eol create new chat session
 
+    if environ.get("TESTING"):
+        return new_client.serialize()
+
     # send initial chat to client
     twilio_client.whatsapp_message_create(
         to=phone_number, body=initial_message

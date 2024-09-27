@@ -11,6 +11,7 @@ import { formatChatTime, trimMessage } from "@/utils/formatter";
 import ChatHeader from "./ChatHeader";
 import Image from "next/image";
 import { renderTextForMediaMessage } from "@/app/chats/page";
+import FloatingPlusButton from "./FloatingPlusButton";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -215,6 +216,7 @@ const ChatList = ({
             ))}
         </div>
       </div>
+      <FloatingPlusButton />
     </div>
   );
 };

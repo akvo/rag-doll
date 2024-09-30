@@ -66,7 +66,9 @@ const FarmerForm = () => {
         setNotificationContent("Farmer registered successfully.");
         handleShowNotification();
         setDisabled(false);
-        router.replace("/chats");
+        setTimeout(() => {
+          router.replace("/chats");
+        }, 1000);
         return;
       } else if (res.status === 409) {
         setNotificationContent(

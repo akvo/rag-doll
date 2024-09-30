@@ -15,7 +15,7 @@ from models import (
     Chat,
 )
 from core.database import engine
-from sqlmodel import Session, select
+from sqlmodel import Session, select, and_
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
@@ -222,18 +222,29 @@ def update_chat_status(session: Session, message: dict):
     logger.info(f"Chat {chat_id} status updated")
 
 
-async def resend_pending_message(session: Session, user_id=int):
-    #
-    pending_chats = session.exec(select(Chat).where(Chat.status == 0)).all()
-    for chat in pending_chats:
-        if chat.sender_role not in [
-            Sender_Role_Enum.CLIENT,
-            Sender_Role_Enum.ASSISTANT,
-        ]:
-            # skip for sender role another than client and assistant
-            continue
+async def resend_pending_message(session: Session, user_id=int, user_sid=str):
+    chat_session = session.exec(
+        select(Chat_Session).where(Chat_Session.user_id == user_id)
+    ).all()
+    if not chat_session:
+        return None
+    last_ten_chats = session.exec(
+        select(Chat)
+        .where(
+            and_(
+                Chat.chat_session_id.in_([cs.id for cs in chat_session]),
+                Chat.sender_role.in_(
+                    [Sender_Role_Enum.CLIENT, Sender_Role_Enum.ASSISTANT]
+                ),
+            )
+        )
+        .order_by(Chat.created_at.desc())
+        .limit(10)
+    ).all()
+    # Reorder the results by created_at in ascending order
+    last_ten_chats = sorted(last_ten_chats, key=lambda x: x.created_at)
+    for chat in last_ten_chats:
         # starting to resend message
-        user_sid = get_cache(user_id=chat.chat_session.user_id)
         media = []
         context = []
         if chat.media:
@@ -253,7 +264,7 @@ async def resend_pending_message(session: Session, user_id=int):
             user_phone_number=f"+{chat.chat_session.client.phone_number}",
             sender_role=chat.sender_role,
             sender_role_enum=Sender_Role_Enum,
-            platform=Platform_Enum.WHATSAPP,  # TODO:: save platform to DB
+            platform=chat.chat_session.platform,
             platform_enum=Platform_Enum,
             body=chat.message,
             media=media,
@@ -290,7 +301,6 @@ async def user_to_client(body: str):
 
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
-    # TODO :: resend/emit pending message when connected
     try:
         session = Session(engine)
         httpCookie = environ.get("HTTP_COOKIE")
@@ -306,7 +316,9 @@ async def sio_connect(sid, environ):
             sio_session["user_id"] = user_id
             sio_session["user_phone_number"] = user_phone_number
             set_cache(user_id=user_id, sid=sid)
-            await resend_pending_message(session=session, user_id=user_id)
+            await resend_pending_message(
+                session=session, user_id=user_id, user_sid=sid
+            )
         logger.info(f"User sid[{sid}] connected: {user_phone_number}")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")

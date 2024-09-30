@@ -222,7 +222,7 @@ def update_chat_status(session: Session, message: dict):
     logger.info(f"Chat {chat_id} status updated")
 
 
-async def resend_pending_message(session: Session, user_id=int, user_sid=str):
+async def resend_messages(session: Session, user_id=int, user_sid=str):
     chat_session = session.exec(
         select(Chat_Session).where(Chat_Session.user_id == user_id)
     ).all()
@@ -248,12 +248,12 @@ async def resend_pending_message(session: Session, user_id=int, user_sid=str):
         media = []
         context = []
         if chat.media:
-            for media in chat.media:
-                media.append({"url": media.url, "type": media.type})
+            for cm in chat.media:
+                media.append({"url": cm.url, "type": cm.type})
                 context.append(
                     {
-                        "url": media.url,
-                        "type": media.type,
+                        "url": cm.url,
+                        "type": cm.type,
                         "caption": chat.message,
                     }
                 )
@@ -281,6 +281,7 @@ async def resend_pending_message(session: Session, user_id=int, user_sid=str):
                 "whisper", message, to=user_sid, callback=emit_whisper_callback
             )
             logger.info(f"Resend message for assistant->user: {message}")
+    return last_ten_chats
 
 
 async def user_to_client(body: str):
@@ -316,7 +317,7 @@ async def sio_connect(sid, environ):
             sio_session["user_id"] = user_id
             sio_session["user_phone_number"] = user_phone_number
             set_cache(user_id=user_id, sid=sid)
-            await resend_pending_message(
+            await resend_messages(
                 session=session, user_id=user_id, user_sid=sid
             )
         logger.info(f"User sid[{sid}] connected: {user_phone_number}")

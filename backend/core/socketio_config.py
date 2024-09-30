@@ -306,7 +306,7 @@ async def sio_connect(sid, environ):
         session = Session(engine)
         httpCookie = environ.get("HTTP_COOKIE")
         if not httpCookie:
-            return False
+            return None
         cookie.load(httpCookie)
         auth_token = cookie.get("AUTH_TOKEN")
         auth_token = auth_token.value if auth_token else None

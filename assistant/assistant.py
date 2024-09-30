@@ -264,8 +264,8 @@ async def on_message(body: str) -> None:
     media = from_client.get("media")
     if media:
         logger.info("[ASSISTANT] -> skipping whisper because of media message")
-        return False
-    # EOL handle igonore media message
+        return None
+    # EOL handle ignore media message
 
     user_prompt = from_client["body"]
 

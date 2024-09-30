@@ -27,7 +27,7 @@ def validate_phone_number(phone_number: str):
 def save_user(session: Session, phone_number: str, name: str = None):
     validated_phone_number = validate_phone_number(phone_number)
     if validated_phone_number is None:
-        return False
+        return None
 
     user = User(phone_number=validated_phone_number, login_code=None)
     session.add(user)

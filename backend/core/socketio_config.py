@@ -148,6 +148,7 @@ def handle_incoming_message(session: Session, message: dict):
     sender_role = get_value_or_raise_error(
         conversation_envelope, "sender_role"
     )
+    platform = get_value_or_raise_error(conversation_envelope, "platform")
 
     media = get_value_or_raise_error(message, "media")
 
@@ -176,7 +177,7 @@ def handle_incoming_message(session: Session, message: dict):
             session.commit()
 
         new_chat_session = Chat_Session(
-            user_id=user.id, client_id=new_client.id
+            user_id=user.id, client_id=new_client.id, platform=platform
         )
         session.add(new_chat_session)
         session.commit()
@@ -221,14 +222,15 @@ def update_chat_status(session: Session, message: dict):
     logger.info(f"Chat {chat_id} status updated")
 
 
-async def resend_pending_message(session: Session):
+async def resend_pending_message(session: Session, user_id=int):
+    #
     pending_chats = session.exec(select(Chat).where(Chat.status == 0)).all()
     for chat in pending_chats:
         if chat.sender_role not in [
             Sender_Role_Enum.CLIENT,
             Sender_Role_Enum.ASSISTANT,
         ]:
-            # skip for sender role client and assistant
+            # skip for sender role another than client and assistant
             continue
         # starting to resend message
         user_sid = get_cache(user_id=chat.chat_session.user_id)
@@ -304,7 +306,7 @@ async def sio_connect(sid, environ):
             sio_session["user_id"] = user_id
             sio_session["user_phone_number"] = user_phone_number
             set_cache(user_id=user_id, sid=sid)
-            await resend_pending_message(session=session)
+            await resend_pending_message(session=session, user_id=user_id)
         logger.info(f"User sid[{sid}] connected: {user_phone_number}")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")

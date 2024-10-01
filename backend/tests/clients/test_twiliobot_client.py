@@ -108,9 +108,10 @@ def test_format_to_queue_message_invalid_phone_number(twilio_client):
         twilio_client.format_to_queue_message(values)
 
 
+@pytest.mark.asyncio
 @patch.object(Client, "messages", new_callable=MagicMock)
 @patch("clients.twilio_client.logger")
-def test_send_whatsapp_message_success(
+async def test_send_whatsapp_message_success(
     mock_logger, mock_messages, twilio_client
 ):
     message_body = json.dumps(
@@ -131,7 +132,7 @@ def test_send_whatsapp_message_success(
 
     mock_messages.create.return_value = MagicMock(error_code=None)
 
-    twilio_client.send_whatsapp_message(message_body)
+    await twilio_client.send_whatsapp_message(message_body)
 
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,
@@ -140,9 +141,10 @@ def test_send_whatsapp_message_success(
     )
 
 
+@pytest.mark.asyncio
 @patch.object(Client, "messages", new_callable=MagicMock)
 @patch("clients.twilio_client.logger")
-def test_send_whatsapp_message_twilio_error(
+async def test_send_whatsapp_message_twilio_error(
     mock_logger, mock_messages, twilio_client
 ):
     message_body = json.dumps(
@@ -165,7 +167,7 @@ def test_send_whatsapp_message_twilio_error(
         status=400, uri="http://test.uri", msg="Twilio error"
     )
 
-    twilio_client.send_whatsapp_message(message_body)
+    await twilio_client.send_whatsapp_message(message_body)
 
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,
@@ -178,14 +180,15 @@ def test_send_whatsapp_message_twilio_error(
     )
 
 
+@pytest.mark.asyncio
 @patch.object(Client, "messages", new_callable=MagicMock)
 @patch("clients.twilio_client.logger")
-def test_send_whatsapp_message_json_decode_error(
+async def test_send_whatsapp_message_json_decode_error(
     mock_logger, mock_messages, twilio_client
 ):
     message_body = b"invalid json"
 
-    twilio_client.send_whatsapp_message(message_body)
+    await twilio_client.send_whatsapp_message(message_body)
 
     assert not mock_messages.create.called
 
@@ -194,9 +197,10 @@ def test_send_whatsapp_message_json_decode_error(
     )
 
 
+@pytest.mark.asyncio
 @patch.object(Client, "messages", new_callable=MagicMock)
 @patch("clients.twilio_client.logger")
-def test_send_whatsapp_message_unexpected_error(
+async def test_send_whatsapp_message_unexpected_error(
     mock_logger, mock_messages, twilio_client
 ):
     message_body = json.dumps(
@@ -217,7 +221,7 @@ def test_send_whatsapp_message_unexpected_error(
 
     mock_messages.create.side_effect = Exception("Unexpected error")
 
-    twilio_client.send_whatsapp_message(message_body)
+    await twilio_client.send_whatsapp_message(message_body)
 
     mock_messages.create.assert_called_with(
         from_=twilio_client.TWILIO_WHATSAPP_FROM,

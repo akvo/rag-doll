@@ -1,6 +1,6 @@
 import phonenumbers
 from os import environ
-from fastapi import APIRouter, HTTPException, Depends, Form
+from fastapi import APIRouter, HTTPException, Depends, Form, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPBasicCredentials as credentials
 from sqlmodel import Session, select
 
@@ -21,9 +21,9 @@ from typing_extensions import Annotated
 router = APIRouter()
 security = HTTPBearer()
 
-webdomain = environ.get("WEBDOMAIN")
-INITIAL_CHAT_TEMPLATE = environ.get("INITIAL_CHAT_TEMPLATE")
-
+INITIAL_CHAT_TEMPLATE = environ.get(
+    "INITIAL_CHAT_TEMPLATE", "Hi {farmer_name}, welcome to Agriconnect."
+)
 twilio_client = TwilioClient()
 
 
@@ -31,10 +31,15 @@ twilio_client = TwilioClient()
 async def add_client(
     name: Annotated[str, Form()],
     phone_number: Annotated[PhoneNumber, Form()],
+    background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
     auth: credentials = Depends(security),
 ):
     user = verify_user(session, auth)
+
+    # format initial message for the client
+    initial_message = INITIAL_CHAT_TEMPLATE.format(farmer_name=name)
+
     phone_number = phonenumbers.parse(phone_number)
     phone_number = (
         f"+{phone_number.country_code}{phone_number.national_number}"
@@ -60,9 +65,6 @@ async def add_client(
     session.commit()
     # eol save client
 
-    # format initial message for the client
-    initial_message = INITIAL_CHAT_TEMPLATE.format(farmer_name=name)
-
     # create new chat session
     new_chat_session = Chat_Session(user_id=user.id, client_id=new_client.id)
     session.add(new_chat_session)
@@ -82,7 +84,9 @@ async def add_client(
         return new_client.serialize()
 
     # send initial chat to client
-    twilio_client.whatsapp_message_create(
-        to=phone_number, body=initial_message
+    background_tasks.add_task(
+        twilio_client.whatsapp_message_create,
+        to=phone_number,
+        body=initial_message,
     )
     return new_client.serialize()

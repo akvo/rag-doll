@@ -9,6 +9,7 @@ from fastapi import (
     Response,
     status,
     Depends,
+    BackgroundTasks,
 )
 from fastapi.security import HTTPBearer
 from pydantic import ValidationError
@@ -34,6 +35,7 @@ def get_twilio_client():
 @router.post("/whatsapp")
 async def receive_whatsapp_message(
     request: Request,
+    background_tasks: BackgroundTasks,
     twilio_client=Depends(get_twilio_client),
 ):
     try:
@@ -51,7 +53,8 @@ async def receive_whatsapp_message(
         message_type = values["MessageType"]
         if message_type not in ALLOWED_MESSAGE_TYPES:
             body = json.loads(body)
-            twilio_client.whatsapp_message_create(
+            background_tasks.add_task(
+                twilio_client.whatsapp_message_create,
                 to=body["conversation_envelope"].get("client_phone_number"),
                 body=f"This ({message_type}) media type is not yet supported.",
             )

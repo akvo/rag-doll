@@ -7,7 +7,13 @@ from fastapi import FastAPI, Depends
 from core.database import get_session
 from sqlmodel import Session, text
 
-from routes import user_routes, chat_routes, twilio_routes, slack_routes
+from routes import (
+    user_routes,
+    chat_routes,
+    twilio_routes,
+    slack_routes,
+    client_routes,
+)
 from Akvo_rabbitmq_client import rabbitmq_client
 from core.socketio_config import (
     sio_app,
@@ -62,6 +68,7 @@ app = FastAPI(
 )
 
 app.include_router(user_routes.router, tags=["auth"])
+app.include_router(client_routes.router, tags=["client"])
 app.include_router(chat_routes.router, tags=["chat"])
 app.include_router(slack_routes.router, tags=["slack"])
 app.include_router(twilio_routes.router, tags=["twilio"])

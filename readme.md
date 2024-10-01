@@ -134,11 +134,12 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `BACKEND_PORT` | 5000 | The external port used by the Backend |
 | `JWT_SECRET` | _CHANGEME_ | JWT-based auth secret key, used in the process of signing a token |
 | `WEBDOMAIN` | "http://localhost" | The base URL of the web application |
-| `MAGIC_LINK_CHAT_TEMPLATE` | _CHANGEME_ | A template for magic link message, e.g. "You can login into APP_NAME by clicking this link: {magic_link}" |
+| `MAGIC_LINK_CHAT_TEMPLATE` | _CHANGEME_ | A template for magic link message, e.g. "You can login into Agriconnect by clicking this link: {magic_link}" |
 | `GOOGLE_APPLICATION_CREDENTIALS_PATH` | _CHANGEME_ | Path to the service account JSON key file location used for authentication and accessing Google Cloud services (Development only) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | _CHANGEME_ | JSON key file name used for authentication and accessing Google Cloud services |
 | `BUCKET_NAME` | _CHANGEME_ | Bucket name for a storage object (offered by Google Cloud) |
 | `TESTING` | `None` | An environment variable used for testing purposes when running backend tests. This variable is automatically set to `1` by `conftest` to mock or skip certain steps related to third-party services. Please note that `TESTING` should not be included in the Docker Compose environment. |
+| `INITIAL_CHAT_TEMPLATE` | _CHANGEME_ | A template for initial chat message, e.g. "Hi {farmer_name}, You've been added to Agriconnect. Send us a message here to start chatting." |
 
 ### Chat Session Seeder
 

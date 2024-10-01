@@ -1,25 +1,29 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { formatChatTime } from "@/utils/formatter";
 import { renderTextForMediaMessage } from "@/app/chats/page";
 import { trimMessage } from "@/utils/formatter";
 
-const ChatNotification = ({
-  visible,
-  setVisible,
-  sender,
-  message,
-  timestamp,
-  onClick,
-  media = [],
-}) => {
+const ChatNotification = ({ visible, setVisible, notification, onClick }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setVisible();
-    }, 1500);
+    }, 1000);
     return () => clearTimeout(timer);
-  }, [message, setVisible]);
+  }, [notification, setVisible]);
+
+  const timestamp = useMemo(() => {
+    if (!notification?.messages?.length) {
+      return null;
+    }
+    const message = notification.messages[notification.messages.length - 1];
+    const tm = message?.conversation_envelope?.timestamp;
+    if (tm) {
+      return tm;
+    }
+    return null;
+  }, [notification]);
 
   if (!visible) return null;
 
@@ -31,17 +35,25 @@ const ChatNotification = ({
       onClick={() => onClick(sender)}
       style={{ zIndex: 1000 }}
     >
-      <p className="font-bold text-sm">{sender}</p>
-      <p className="mt-1">
-        {message?.trim()
-          ? trimMessage(message)
-          : renderTextForMediaMessage({
-              type: media?.[0]?.type,
-            })}
-      </p>
-      <p className="text-right text-xs text-green-200 mt-2">
-        {formatChatTime(timestamp)}
-      </p>
+      <p className="font-bold text-sm">{notification.sender}</p>
+      {notification.messages.map((m, index) => (
+        <div key={`notification-${index}`}>
+          {m.body ? (
+            <p className="mt-1">{trimMessage(m.body)}</p>
+          ) : (
+            renderTextForMediaMessage({
+              type: m?.media?.[0]?.type,
+            })
+          )}
+        </div>
+      ))}
+      {timestamp ? (
+        <p className="text-right text-xs text-green-200 mt-2">
+          {formatChatTime(timestamp)}
+        </p>
+      ) : (
+        ""
+      )}
     </div>
   );
 };

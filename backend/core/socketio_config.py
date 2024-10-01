@@ -431,7 +431,7 @@ async def client_to_user(body: str):
         )
 
     except Exception as e:
-        logger.error(f"Error handling user_chats_callback: {e}")
+        logger.error(f"Error handling client_to_user: {e}")
         raise e
     finally:
         session.close()
@@ -483,5 +483,5 @@ async def assistant_to_user(body: str):
         )
 
     except Exception as e:
-        logger.error(f"Error handling user_chats_callback: {e}")
+        logger.error(f"Error handling assistant_to_user: {e}")
         raise e

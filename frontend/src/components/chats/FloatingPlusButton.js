@@ -61,7 +61,7 @@ const FloatingPlusButton = () => {
               }}
             >
               Add Farmer
-              <div className="text-xs text-gray-500 border-t border-t-gray-500 pt-1 mt-1">
+              <div className="text-xs text-gray-500">
                 Onboarding farmer to the platform
               </div>
             </li>

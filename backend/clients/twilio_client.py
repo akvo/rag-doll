@@ -74,7 +74,6 @@ def save_chat_history(
             chat_session_id=conversation_exist.id,
             message=message_body,
             sender_role=(Sender_Role_Enum[sender_role.upper()]),
-            status=1
         )
         session.add(new_chat)
         session.commit()

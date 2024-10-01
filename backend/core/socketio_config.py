@@ -207,21 +207,6 @@ def handle_incoming_message(session: Session, message: dict):
     return user["id"], user["phone_number"], chat_session_id, new_chat.id
 
 
-def update_chat_status(session: Session, message: dict):
-    conversation_envelope = get_value_or_raise_error(
-        message, "conversation_envelope"
-    )
-    chat_id = conversation_envelope.get("message_id", None)
-    logger.info(f"Updating chat {chat_id} status")
-    chat = session.exec(select(Chat).where(Chat.id == chat_id)).first()
-    if not chat:
-        return None
-    chat.status = 1
-    session.commit()
-    session.flush()
-    logger.info(f"Chat {chat_id} status updated")
-
-
 async def resend_messages(session: Session, user_id=int, user_sid=str):
     chat_session = session.exec(
         select(Chat_Session).where(Chat_Session.user_id == user_id)
@@ -387,9 +372,6 @@ async def chat_message(sid, msg):
 
 async def emit_chats_callback(value):
     logger.info(f"Emit chats callback {value}")
-    # update message status
-    session = Session(engine)
-    update_chat_status(session=session, message=value.get("message", {}))
 
 
 async def client_to_user(body: str):
@@ -439,9 +421,6 @@ async def client_to_user(body: str):
 
 async def emit_whisper_callback(value):
     logger.info(f"Emit whisper callback {value}")
-    # update message status
-    session = Session(engine)
-    update_chat_status(session=session, message=value.get("message", {}))
 
 
 @sio_server.on("whisper")

@@ -1,8 +1,8 @@
-"""Add platform column into chat session table
+"""Add platform column into chat session
 
-Revision ID: f22f19678871
-Revises: cfc217bbdd23
-Create Date: 2024-09-30 04:41:08.624389
+Revision ID: 5bbf019dbb61
+Revises: 33e313a32ce6
+Create Date: 2024-10-01 12:46:52.920462
 
 """
 
@@ -14,8 +14,8 @@ import sqlmodel  # noqa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "f22f19678871"
-down_revision: Union[str, None] = "cfc217bbdd23"
+revision: str = "5bbf019dbb61"
+down_revision: Union[str, None] = "33e313a32ce6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

@@ -65,7 +65,6 @@ class Chat(SQLModel, table=True):
     sender_role: Sender_Role_Enum = Field(
         sa_column=Column(Enum(Sender_Role_Enum), nullable=False)
     )
-    status: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(),

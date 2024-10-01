@@ -33,10 +33,30 @@ const Chats = () => {
   const [whisperChats, setWhisperChats] = useState([]);
   const [useWhisperAsTemplate, setUseWhisperAsTemplate] = useState(false);
 
+  console.log("aaa", clientPhoneNumber);
+
   // Reset chats state when clientPhoneNumber changes
   useEffect(() => {
     setChats([]);
   }, [clientPhoneNumber]);
+
+  // handle check if selectedClient in local storage
+  // then forward to related chat window
+  useEffect(() => {
+    const res = localStorage.getItem("selectedClient");
+    if (res) {
+      const selectedClient = JSON.parse(res);
+      chatDispatch({
+        type: "UPDATE",
+        payload: {
+          clientId: selectedClient.id,
+          clientName: selectedClient.name || selectedClient.phone_number,
+          clientPhoneNumber: selectedClient.phone_number,
+        },
+      });
+      localStorage.removeItem("selectedClient");
+    }
+  }, [chatDispatch]);
 
   // Connect to socket on component mount and disconnect on unmount
   useEffect(() => {

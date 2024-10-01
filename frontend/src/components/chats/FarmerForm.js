@@ -65,21 +65,33 @@ const FarmerForm = () => {
       if (res.status === 200) {
         setNotificationContent("Farmer registered successfully.");
         handleShowNotification();
-        setDisabled(false);
         setTimeout(() => {
+          setDisabled(false);
           router.replace("/chats");
         }, 1000);
         return;
       } else if (res.status === 409) {
+        const response = await res.json();
         setNotificationContent(
-          `Sorry, farmer ${phoneNumber} already registered`
+          `Farmer ${phoneNumber} already registered. Forwarding to chat window.`
         );
         handleShowNotification();
+        if (response?.detail?.id) {
+          const { detail: selectedClient } = response;
+          localStorage.setItem(
+            "selectedClient",
+            JSON.stringify(selectedClient)
+          );
+          setTimeout(() => {
+            setDisabled(false);
+            router.back();
+          }, 1000);
+        }
       } else {
         setNotificationContent("Error, please try again later.");
         handleShowNotification();
+        setDisabled(false);
       }
-      setDisabled(false);
     } catch (error) {
       setNotificationContent("Error, please try again later.");
       handleShowNotification();

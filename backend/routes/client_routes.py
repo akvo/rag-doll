@@ -50,7 +50,7 @@ async def add_client(
     if client:
         raise HTTPException(
             status_code=409,
-            detail=f"Client {phone_number} already registered.",
+            detail=client.serialize(),
         )
 
     # save client

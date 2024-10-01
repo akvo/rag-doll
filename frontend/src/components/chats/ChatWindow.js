@@ -9,6 +9,8 @@ import {
   forwardRef,
 } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
+import { useAuthDispatch } from "@/context/AuthContextProvider";
+import { useUserDispatch } from "@/context/UserContextProvider";
 import { socket, api, dbLib } from "@/lib";
 import { formatChatTime, generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
@@ -17,6 +19,8 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import { BackIcon, SendIcon } from "@/utils/icons";
 import Image from "next/image";
 import ChatMedia from "./ChatMedia";
+import { deleteCookie } from "@/lib/cookies";
+import { useRouter } from "next/navigation";
 
 const SenderRoleEnum = {
   USER: "user",
@@ -70,6 +74,9 @@ const ChatWindow = ({
 }) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
+  const authDispatch = useAuthDispatch();
+  const userDispatch = useUserDispatch();
+  const router = useRouter();
 
   const { clientId, clientName, clientPhoneNumber } = chatContext;
 
@@ -118,12 +125,23 @@ const ChatWindow = ({
   }, [lastMessageRef, scrollToLastMessage]);
 
   // Load previous chats from /api/chat-details/{clientId}
+  // TODO:: Handle duplicated message from reconnected event with chat history
   useEffect(() => {
     async function fetchChats() {
       try {
         const res = await api.get(`/chat-details/${clientId}`);
-        const data = await res.json();
-        setChatHistory(data.messages);
+        if (res.status === 200) {
+          const data = await res.json();
+          setChatHistory(data.messages);
+        }
+        if (res.status === 401 || res.status === 403) {
+          userDispatch({
+            type: "DELETE",
+          });
+          authDispatch({ type: "DELETE" });
+          deleteCookie("AUTH_TOKEN");
+          router.replace("/login");
+        }
       } catch (error) {
         console.error(error);
       }
@@ -153,7 +171,6 @@ const ChatWindow = ({
   };
 
   const handleLostMessage = async (chatPayload) => {
-    // TODO:: Handle chat_session_id correctly on BE and FE
     const res = await dbLib.messages.add({
       chat_session_id: chatPayload.conversation_envelope.chat_session_id,
       message: chatPayload,
@@ -177,11 +194,11 @@ const ChatWindow = ({
       } else {
         chatBreakdown = {
           platform: "WHATSAPP",
+          message_id: uuidv4(),
         };
       }
       const chatPayload = generateMessage({
         ...chatBreakdown,
-        message_id: uuidv4(),
         client_phone_number: clientPhoneNumber,
         sender_role: SenderRoleEnum.USER,
         body: message,

@@ -74,6 +74,7 @@ def save_chat_history(
             chat_session_id=conversation_exist.id,
             message=message_body,
             sender_role=(Sender_Role_Enum[sender_role.upper()]),
+            status=1
         )
         session.add(new_chat)
         session.commit()
@@ -171,6 +172,8 @@ class TwilioClient:
         except JSONDecodeError as e:
             logger.error(f"Error decoding JSON message: {e}")
         except TwilioRestException as e:
+            # TODO:: If message sent fail,
+            # how we want to handle resend message to twilio?
             logger.error(f"Error sending message to Twilio: {e}")
         except Exception as e:
             logger.error(f"Unexpected error: {e}")

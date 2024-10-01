@@ -33,6 +33,7 @@ RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
+LAST_MESSAGES_LIMIT = int(os.getenv("LAST_MESSAGES_LIMIT", 10))
 
 
 def get_rabbitmq_client():
@@ -224,7 +225,7 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
             )
         )
         .order_by(Chat.created_at.desc())
-        .limit(10)
+        .limit(LAST_MESSAGES_LIMIT)
     ).all()
     # Reorder the results by created_at in ascending order
     last_ten_chats = sorted(last_ten_chats, key=lambda x: x.created_at)

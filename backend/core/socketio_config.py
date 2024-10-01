@@ -214,7 +214,7 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
     ).all()
     if not chat_session:
         return None
-    last_ten_chats = session.exec(
+    last_chats = session.exec(
         select(Chat)
         .where(
             and_(
@@ -228,8 +228,8 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
         .limit(LAST_MESSAGES_LIMIT)
     ).all()
     # Reorder the results by created_at in ascending order
-    last_ten_chats = sorted(last_ten_chats, key=lambda x: x.created_at)
-    for chat in last_ten_chats:
+    last_chats = sorted(last_chats, key=lambda x: x.created_at)
+    for chat in last_chats:
         # starting to resend message
         media = []
         context = []
@@ -267,7 +267,7 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
                 "whisper", message, to=user_sid, callback=emit_whisper_callback
             )
             logger.info(f"Resend message for assistant->user: {message}")
-    return last_ten_chats
+    return last_chats
 
 
 async def user_to_client(body: str):

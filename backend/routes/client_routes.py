@@ -11,6 +11,7 @@ from models import (
     Chat_Session,
     Chat,
     Sender_Role_Enum,
+    Platform_Enum,
 )
 from core.database import get_session
 from clients.twilio_client import TwilioClient
@@ -66,7 +67,11 @@ async def add_client(
     # eol save client
 
     # create new chat session
-    new_chat_session = Chat_Session(user_id=user.id, client_id=new_client.id)
+    new_chat_session = Chat_Session(
+        user_id=user.id,
+        client_id=new_client.id,
+        platform=Platform_Enum.WHATSAPP,
+    )
     session.add(new_chat_session)
     session.commit()
 

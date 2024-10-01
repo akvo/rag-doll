@@ -18,6 +18,9 @@ module.exports = {
         "akvo-green-100": "#EBFEDE",
         "akvo-green": "#006349",
       },
+      ringColor: {
+        "akvo-green": "#006349",
+      },
     },
   },
   plugins: [require("@tailwindcss/typography")],

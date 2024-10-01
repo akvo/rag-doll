@@ -1,6 +1,6 @@
 import phonenumbers
 from os import environ
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPBasicCredentials as credentials
 from sqlmodel import Session, select
 from uuid import uuid4
@@ -25,7 +25,9 @@ twilio_client = TwilioClient()
 
 @router.post("/login")
 async def send_login_link(
-    phone_number: PhoneNumber, session: Session = Depends(get_session)
+    phone_number: PhoneNumber,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
 ):
     phone_number = phonenumbers.parse(phone_number)
     phone_number = (
@@ -45,8 +47,10 @@ async def send_login_link(
 
     # format login link and message for the user
     link = f"{webdomain}/verify/{user.login_code}"
-    twilio_client.whatsapp_message_create(
-        to=phone_number, body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link)
+    background_tasks.add_task(
+        twilio_client.whatsapp_message_create,
+        to=phone_number,
+        body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
     )
     return {"message": "Login link sent via WhatsApp"}
 

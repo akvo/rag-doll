@@ -1,11 +1,11 @@
 const Notification = ({ message, show }) => {
   return (
     <div
-      className={`min-w-72 fixed top-4 left-1/2 transform -translate-x-1/2 p-4 bg-white border border-akvo-green text-gray-800 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${
+      className={`z-50 min-w-72 fixed top-4 left-1/2 transform -translate-x-1/2 p-4 bg-white border border-akvo-green text-gray-800 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${
         show ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
-      <div className="flex items-center">
+      <div className="flex items-start">
         <div className="flex-shrink-0">
           <svg
             xmlns="http://www.w3.org/2000/svg"

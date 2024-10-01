@@ -295,7 +295,7 @@ async def user_to_client(body: str):
     conversation_envelope = queue_message.get("conversation_envelope", {})
     platform = conversation_envelope.get("platform")
     if platform == Platform_Enum.WHATSAPP.value:
-        twilio_client.send_whatsapp_message(body=body)
+        await twilio_client.send_whatsapp_message(body=body)
     if platform == Platform_Enum.SLACK.value:
         await slackbot_client.send_message(body=body)
 
@@ -369,7 +369,7 @@ async def chat_message(sid, msg):
                 await user_to_client(json.dumps(queue_message))
                 return {
                     "success": True,
-                    "message": "Message processed and sent to client",
+                    "message": "Message processed and sent",
                 }
             else:
                 error_message = (

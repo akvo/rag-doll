@@ -133,14 +133,23 @@ class TwilioClient:
         urllib.request.urlretrieve(response.url, filepath)
         return filepath
 
-    def whatsapp_message_create(self, to: str, body: str):
-        return self.twilio_client.messages.create(
-            from_=self.TWILIO_WHATSAPP_FROM,
-            body=TextConverter(body).format_whatsapp(),
-            to=f"whatsapp:{to}",
-        )
+    async def whatsapp_message_create(self, to: str, body: str):
+        try:
+            response = self.twilio_client.messages.create(
+                from_=self.TWILIO_WHATSAPP_FROM,
+                body=TextConverter(body).format_whatsapp(),
+                to=f"whatsapp:{to}",
+            )
+            if response.error_code is not None:
+                logger.error(
+                    f"Failed to send message to WhatsApp number "
+                    f"{to}: {response.error_message}"
+                )
+            logger.info(f"Message sent to WhatsApp: {body}")
+        except TwilioRestException as e:
+            logger.error(f"Error sending message to Twilio: {e}")
 
-    def send_whatsapp_message(self, body: str) -> None:
+    async def send_whatsapp_message(self, body: str) -> None:
         try:
             session = Session(engine)
 
@@ -162,12 +171,7 @@ class TwilioClient:
                     message_body=text,
                     media=media
                 )
-            response = self.whatsapp_message_create(to=phone, body=text)
-            if response.error_code is not None:
-                logger.error(
-                    f"Failed to send message to WhatsApp number "
-                    f"{phone}: {response.error_message}"
-                )
+            await self.whatsapp_message_create(to=phone, body=text)
             logger.info(f"Message sent to WhatsApp: {text}")
         except JSONDecodeError as e:
             logger.error(f"Error decoding JSON message: {e}")

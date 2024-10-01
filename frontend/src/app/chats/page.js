@@ -33,10 +33,30 @@ const Chats = () => {
   const [whisperChats, setWhisperChats] = useState([]);
   const [useWhisperAsTemplate, setUseWhisperAsTemplate] = useState(false);
 
+  console.log("aaa", clientPhoneNumber);
+
   // Reset chats state when clientPhoneNumber changes
   useEffect(() => {
     setChats([]);
   }, [clientPhoneNumber]);
+
+  // handle check if selectedClient in local storage
+  // then forward to related chat window
+  useEffect(() => {
+    const res = localStorage.getItem("selectedClient");
+    if (res) {
+      const selectedClient = JSON.parse(res);
+      chatDispatch({
+        type: "UPDATE",
+        payload: {
+          clientId: selectedClient.id,
+          clientName: selectedClient.name || selectedClient.phone_number,
+          clientPhoneNumber: selectedClient.phone_number,
+        },
+      });
+      localStorage.removeItem("selectedClient");
+    }
+  }, [chatDispatch]);
 
   // Connect to socket on component mount and disconnect on unmount
   useEffect(() => {
@@ -190,34 +210,37 @@ const Chats = () => {
             (nm) =>
               nm?.conversation_envelope?.user_phone_number === userPhoneNumber
           )
-          .map((nm, index) => {
-            const showNotif = clientPhoneNumber
-              ? nm?.conversation_envelope?.client_phone_number !==
-                clientPhoneNumber
-              : true;
-
-            return (
-              <ChatNotification
-                key={`chat-notification-${index}`}
-                visible={showNotif}
-                setVisible={() =>
-                  setNewMessage((prev) =>
-                    prev.filter(
-                      (p) =>
-                        p.conversation_envelope.message_id !==
-                        nm?.conversation_envelope?.message_id
-                    )
-                  )
-                }
-                sender={nm?.conversation_envelope?.client_phone_number}
-                message={nm?.body}
-                media={nm?.media}
-                timestamp={nm?.conversation_envelope?.timestamp}
-                onClick={handleOnClickNotification}
-                setNewMessage={setNewMessage}
-              />
+          .reduce((acc, nm) => {
+            const existingNotification = acc.find(
+              (n) => n.sender === nm.conversation_envelope.client_phone_number
             );
-          })}
+            if (existingNotification) {
+              existingNotification.messages.push(nm);
+            } else {
+              acc.push({
+                sender: nm.conversation_envelope.client_phone_number,
+                messages: [nm],
+              });
+            }
+            return acc;
+          }, [])
+          .map((notification, index) => (
+            <ChatNotification
+              key={`chat-notification-${index}`}
+              visible={notification.sender !== clientPhoneNumber}
+              setVisible={() =>
+                setNewMessage((prev) =>
+                  prev.filter(
+                    (p) =>
+                      p.conversation_envelope.message_id !==
+                      notification.messages[0].conversation_envelope.message_id
+                  )
+                )
+              }
+              notification={notification}
+              onClick={handleOnClickNotification}
+            />
+          ))}
       </div>
       {clientPhoneNumber ? (
         <ChatWindow

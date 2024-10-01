@@ -7,12 +7,13 @@ const initConfig = {
 };
 
 const API = () => {
-  const getConfig = () => {
+  const getConfig = (data) => {
+    const isFormData = data instanceof FormData;
     return api?.token
       ? {
           ...initConfig,
           headers: {
-            ...initConfig.headers,
+            ...(isFormData ? {} : initConfig.headers),
             Authorization: `Bearer ${api.token}`,
           },
         }
@@ -25,21 +26,21 @@ const API = () => {
       fetch(`${baseURL}${url}`, {
         method: "POST",
         body: data,
-        ...getConfig(),
+        ...getConfig(data),
         ...config,
       }),
     put: (url, data, config) =>
       fetch(`${baseURL}${url}`, {
         method: "PUT",
         body: data,
-        ...getConfig(),
+        ...getConfig(data),
         ...config,
       }),
     patch: (url, data, config) =>
       fetch(`${baseURL}${url}`, {
         method: "PATCH",
         body: data,
-        ...getConfig(),
+        ...getConfig(data),
         ...config,
       }),
     delete: (url) =>

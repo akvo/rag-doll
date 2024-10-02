@@ -19,6 +19,7 @@ const Whisper = ({
   handleTextAreaDynamicHeight,
   setMessage,
   setUseWhisperAsTemplate,
+  clients,
 }) => {
   const whisperMessageRef = useRef(null);
   const chatContext = useChatContext();
@@ -29,17 +30,26 @@ const Whisper = ({
   const [whisperHeight, setWhisperHeight] = useState(0);
   const [maxHeight, setMaxHeight] = useState("0px");
 
-  const currentWhisper = useMemo(
-    () => whisperChats.find((c) => c.clientPhoneNumber === clientPhoneNumber),
-    [whisperChats, clientPhoneNumber]
-  );
+  // handle whisper deduplication here
+  const whispers = useMemo(() => {
+    const findClient = clients.find(
+      (c) => c.phone_number === clientPhoneNumber
+    );
+    // handle whisper deduplication
+    const filterWhisper = whisperChats.filter((wc) => {
+      const isMessageInMessageIds = findClient?.message_ids?.length
+        ? findClient.message_ids.find((id) => id === wc.message_id)
+        : false;
+      return (
+        wc.clientPhoneNumber === clientPhoneNumber && !isMessageInMessageIds
+      );
+    });
+    return filterWhisper;
+  }, [whisperChats, clientPhoneNumber, clients]);
 
-  const whispers = useMemo(
-    () =>
-      whisperChats.filter(
-        (chat) => chat.clientPhoneNumber === clientPhoneNumber
-      ),
-    [whisperChats, clientPhoneNumber]
+  const currentWhisper = useMemo(
+    () => whispers.find((c) => c.clientPhoneNumber === clientPhoneNumber),
+    [whispers, clientPhoneNumber]
   );
 
   const handleCopy = useCallback(

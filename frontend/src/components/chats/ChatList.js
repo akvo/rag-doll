@@ -56,10 +56,13 @@ const ChatList = ({
             chats: resData.chats.filter((c) => c.last_message),
           }
         : resData;
-      setClients(
+      setClients((prev) =>
         resData.chats.map((c) => ({
           ...c.chat_session,
           last_message_created_at: c.last_message.created_at,
+          message_ids:
+            prev.find((p) => c.chat_session.client_id === p.client_id)
+              ?.message_ids || [],
         }))
       );
       setChatItems((prev) => {

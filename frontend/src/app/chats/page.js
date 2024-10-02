@@ -141,7 +141,18 @@ const Chats = () => {
         ]);
 
         if (clientPhoneNumber) {
-          setChats((prev) => [...prev, value]);
+          // handle message deduplication
+          setChats((prev) => {
+            const findPrev = prev.find(
+              (p) =>
+                p.conversation_envelope.message_id ===
+                value.conversation_envelope.message_id
+            );
+            if (findPrev) {
+              return prev;
+            }
+            return [...prev, value];
+          });
         }
 
         if (callback) {
@@ -152,6 +163,7 @@ const Chats = () => {
 
     const handleWhisper = (value, callback) => {
       if (value) {
+        console.log(value, "whisper");
         setUseWhisperAsTemplate(false);
         setWhisperChats((prev) =>
           prev.map((p) => {
@@ -161,6 +173,7 @@ const Chats = () => {
             ) {
               return {
                 ...p,
+                message_id: value.conversation_envelope.message_id,
                 message: value.body,
                 timestamp: value.conversation_envelope.timestamp,
                 loading: false,
@@ -212,15 +225,22 @@ const Chats = () => {
                 nm?.conversation_envelope?.client_phone_number
             );
 
-            // use isNewMessage from timestamp if populated chat is empty
-            const isNewMessage =
-              findClient && nm?.conversation_envelope?.timestamp
-                ? new Date(nm?.conversation_envelope?.timestamp) >
-                  new Date(findClient?.last_message_created_at)
-                : true;
-
             // if populated chat is not empty, check message_id is in populated chat
-            // TODO:: Created populated chat
+            let isNewMessage = true;
+            if (findClient?.message_ids?.length) {
+              const isMessageInMessageIds = findClient.message_ids.find(
+                (id) => id === nm.conversation_envelope.message_id
+              );
+              isNewMessage = isMessageInMessageIds ? false : true;
+            } else {
+              // check by date/timestamp
+              isNewMessage =
+                findClient && nm?.conversation_envelope?.timestamp
+                  ? new Date(nm?.conversation_envelope?.timestamp) >
+                    new Date(findClient?.last_message_created_at)
+                  : true;
+            }
+            // eol handle deduplication
 
             return (
               nm?.conversation_envelope?.user_phone_number ===
@@ -267,6 +287,8 @@ const Chats = () => {
           setWhisperChats={setWhisperChats}
           useWhisperAsTemplate={useWhisperAsTemplate}
           setUseWhisperAsTemplate={setUseWhisperAsTemplate}
+          setClients={setClients}
+          clients={clients}
         />
       ) : (
         <ChatList

@@ -71,6 +71,8 @@ const ChatWindow = ({
   setWhisperChats,
   useWhisperAsTemplate,
   setUseWhisperAsTemplate,
+  setClients,
+  clients,
 }) => {
   const chatContext = useChatContext();
   const chatDispatch = useChatDispatch();
@@ -125,7 +127,6 @@ const ChatWindow = ({
   }, [lastMessageRef, scrollToLastMessage]);
 
   // Load previous chats from /api/chat-details/{clientId}
-  // TODO:: Handle duplicated message from reconnected event with chat history
   useEffect(() => {
     async function fetchChats() {
       try {
@@ -133,6 +134,17 @@ const ChatWindow = ({
         if (res.status === 200) {
           const data = await res.json();
           setChatHistory(data.messages);
+          setClients((prev) =>
+            prev.map((p) => {
+              if (p.client_id === clientId) {
+                return {
+                  ...p,
+                  message_ids: data.messages.map((d) => d.id),
+                };
+              }
+              return p;
+            })
+          );
         }
         if (res.status === 401 || res.status === 403) {
           userDispatch({
@@ -147,7 +159,14 @@ const ChatWindow = ({
       }
     }
     fetchChats();
-  }, [clientId, scrollToLastMessage]);
+  }, [
+    clientId,
+    scrollToLastMessage,
+    authDispatch,
+    router,
+    userDispatch,
+    setClients,
+  ]);
 
   const handleTextAreaDynamicHeight = () => {
     const textarea = textareaRef.current;
@@ -233,7 +252,10 @@ const ChatWindow = ({
 
   const renderChatHistory = useMemo(() => {
     return chatHistory?.map((c, ci) => {
-      if (c.sender_role === SenderRoleEnum.USER) {
+      if (
+        c.sender_role === SenderRoleEnum.USER ||
+        c.sender_role === SenderRoleEnum.SYSTEM
+      ) {
         return (
           <UserChat
             key={`user-history-${ci}`}
@@ -256,42 +278,58 @@ const ChatWindow = ({
   }, [chatHistory]);
 
   const renderChats = useMemo(() => {
-    return chats
-      .filter(
-        (chat) =>
-          chat.conversation_envelope.client_phone_number === clientPhoneNumber
+    // Handle duplicated message from reconnected event with chat history
+    const clientChats = chats.filter((chat) => {
+      const isChatInHistory = chatHistory.find(
+        (ch) => ch.id === chat.conversation_envelope.message_id
       )
-      .map((c, ci) => {
-        if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
-          return (
-            <UserChat
-              key={`user-${ci}`}
-              message={c.body}
-              timestamp={c.conversation_envelope.timestamp}
-              ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
-            />
-          );
-        }
-        if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
-          return (
-            <ClientChat
-              key={`client-${ci}`}
-              message={c.body}
-              media={c.media}
-              timestamp={c.conversation_envelope.timestamp}
-              ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
-            />
-          );
-        }
-      });
-  }, [chats, clientPhoneNumber]);
+        ? true
+        : false;
+      return (
+        chat.conversation_envelope.client_phone_number === clientPhoneNumber &&
+        !isChatInHistory
+      );
+    });
+    return clientChats.map((c, ci) => {
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.USER) {
+        return (
+          <UserChat
+            key={`user-${ci}`}
+            message={c.body}
+            timestamp={c.conversation_envelope.timestamp}
+            ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+          />
+        );
+      }
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.CLIENT) {
+        return (
+          <ClientChat
+            key={`client-${ci}`}
+            message={c.body}
+            media={c.media}
+            timestamp={c.conversation_envelope.timestamp}
+            ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+          />
+        );
+      }
+    });
+  }, [chats, clientPhoneNumber, chatHistory]);
 
-  const isWhisperVisible = useMemo(
-    () =>
-      whisperChats.filter((wc) => wc.clientPhoneNumber === clientPhoneNumber)
-        .length > 0,
-    [whisperChats, clientPhoneNumber]
-  );
+  const isWhisperVisible = useMemo(() => {
+    const findClient = clients.find(
+      (c) => c.phone_number === clientPhoneNumber
+    );
+    // handle whisper deduplication
+    const filterWhisper = whisperChats.filter((wc) => {
+      const isMessageInMessageIds = findClient?.message_ids?.length
+        ? findClient.message_ids.find((id) => id === wc.message_id)
+        : false;
+      return (
+        wc.clientPhoneNumber === clientPhoneNumber && !isMessageInMessageIds
+      );
+    });
+    return filterWhisper.length > 0;
+  }, [whisperChats, clientPhoneNumber, clients]);
 
   return (
     <div className="relative flex flex-col w-full bg-gray-100">
@@ -338,6 +376,7 @@ const ChatWindow = ({
           handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
           setMessage={setMessage}
           setUseWhisperAsTemplate={setUseWhisperAsTemplate}
+          clients={clients}
         />
       </div>
 

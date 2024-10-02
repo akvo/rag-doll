@@ -12,6 +12,7 @@ import { useChatContext } from "@/context/ChatContextProvider";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { CopiedIcon, ExpandIcon, CopyIcon } from "@/utils/icons";
 import Image from "next/image";
+import { SenderRoleEnum } from "./ChatWindow";
 
 const Whisper = ({
   whisperChats,
@@ -20,6 +21,7 @@ const Whisper = ({
   setMessage,
   setUseWhisperAsTemplate,
   clients,
+  lastChatHistory,
 }) => {
   const whisperMessageRef = useRef(null);
   const chatContext = useChatContext();
@@ -32,20 +34,23 @@ const Whisper = ({
 
   // handle whisper deduplication here
   const whispers = useMemo(() => {
+    const isWhisperInLastChatHistory =
+      lastChatHistory?.sender_role === SenderRoleEnum.ASSISTANT;
     const findClient = clients.find(
       (c) => c.phone_number === clientPhoneNumber
     );
     // handle whisper deduplication
     const filterWhisper = whisperChats.filter((wc) => {
       const isMessageInMessageIds = findClient?.message_ids?.length
-        ? findClient.message_ids.find((id) => id === wc.message_id)
+        ? findClient.message_ids.find((id) => id === wc.message_id) &&
+          !isWhisperInLastChatHistory
         : false;
       return (
         wc.clientPhoneNumber === clientPhoneNumber && !isMessageInMessageIds
       );
     });
     return filterWhisper;
-  }, [whisperChats, clientPhoneNumber, clients]);
+  }, [whisperChats, clientPhoneNumber, clients, lastChatHistory]);
 
   const currentWhisper = useMemo(
     () => whispers.find((c) => c.clientPhoneNumber === clientPhoneNumber),

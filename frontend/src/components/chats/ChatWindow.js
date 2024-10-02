@@ -23,7 +23,7 @@ import { deleteCookie } from "@/lib/cookies";
 import { useRouter } from "next/navigation";
 import Loading from "@/app/loading";
 
-const SenderRoleEnum = {
+export const SenderRoleEnum = {
   USER: "user",
   CLIENT: "client",
   ASSISTANT: "assistant",
@@ -174,6 +174,13 @@ const ChatWindow = ({
     setClients,
   ]);
 
+  const lastChatHistory = useMemo(() => {
+    if (chatHistory?.length) {
+      return chatHistory.slice(-1)[0];
+    }
+    return null;
+  }, [chatHistory]);
+
   const handleTextAreaDynamicHeight = () => {
     const textarea = textareaRef.current;
     const maxHeight = 250;
@@ -209,8 +216,6 @@ const ChatWindow = ({
     if (message.trim()) {
       let chatBreakdown = {};
       const lastChat = chats.slice(-1)[0];
-      // take last chat from chat history
-      const lastChatHistory = chatHistory.slice(-1)?.[0];
       if (lastChat && lastChat?.conversation_envelope) {
         chatBreakdown = {
           ...lastChat,
@@ -322,20 +327,23 @@ const ChatWindow = ({
   }, [chats, clientPhoneNumber, chatHistory]);
 
   const isWhisperVisible = useMemo(() => {
+    const isWhisperInLastChatHistory =
+      lastChatHistory?.sender_role === SenderRoleEnum.ASSISTANT;
     const findClient = clients.find(
       (c) => c.phone_number === clientPhoneNumber
     );
     // handle whisper deduplication
     const filterWhisper = whisperChats.filter((wc) => {
       const isMessageInMessageIds = findClient?.message_ids?.length
-        ? findClient.message_ids.find((id) => id === wc.message_id)
+        ? findClient.message_ids.find((id) => id === wc.message_id) &&
+          !isWhisperInLastChatHistory
         : false;
       return (
         wc.clientPhoneNumber === clientPhoneNumber && !isMessageInMessageIds
       );
     });
     return filterWhisper.length > 0;
-  }, [whisperChats, clientPhoneNumber, clients]);
+  }, [whisperChats, clientPhoneNumber, clients, lastChatHistory]);
 
   return (
     <div className="relative flex flex-col w-full bg-gray-100">
@@ -389,6 +397,7 @@ const ChatWindow = ({
               setMessage={setMessage}
               setUseWhisperAsTemplate={setUseWhisperAsTemplate}
               clients={clients}
+              lastChatHistory={lastChatHistory}
             />
           </>
         )}

@@ -19,7 +19,6 @@ class QueueMessageUtil:
         media: Optional[List[Dict[str, str]]] = None,
         context: Optional[List[Dict[str, str]]] = None,
         transformation_log: Optional[List[str]] = None,
-        status: int = 0  # 0: pending, 1: sent
     ) -> Dict[str, any]:
         if sender_role not in sender_role_enum.__members__.values():
             raise ValueError(
@@ -46,7 +45,6 @@ class QueueMessageUtil:
                 "sender_role": sender_role.value,
                 "platform": platform.value,
                 "timestamp": timestamp,
-                "status": status,
             },
             "body": body,
             "media": media,

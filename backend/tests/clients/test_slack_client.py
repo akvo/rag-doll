@@ -47,7 +47,6 @@ def test_format_to_queue_message(slack_bot_client):
             "sender_role": "client",
             "platform": "SLACK",
             "timestamp": "2022-02-01T13:50:00+00:00",
-            "status": 0,
         },
         "body": "text",
         "media": [],

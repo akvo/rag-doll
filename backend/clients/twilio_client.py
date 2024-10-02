@@ -17,19 +17,12 @@ from Akvo_rabbitmq_client import queue_message_util
 from models import (
     Sender_Role_Enum,
     Platform_Enum,
-    Chat_Session,
-    Chat,
-    User,
-    Client as ClientModel,
 )
-from typing import Optional, List
+from typing import Optional
 from pydub import AudioSegment
 from base64 import b64encode
-from sqlmodel import Session, select
-from core.database import engine
-from utils.util import get_value_or_raise_error, TextConverter
+from utils.util import TextConverter
 from utils.storage import upload
-from db import add_media
 
 
 logging.basicConfig(level=logging.INFO)
@@ -38,59 +31,6 @@ logger = logging.getLogger(__name__)
 MAX_WHATSAPP_MESSAGE_LENGTH = 1500
 STORAGE = "./storage"
 ALLOWED_MESSAGE_TYPES = ["text", "image"]
-
-
-def save_chat_history(
-    session: Session,
-    conversation_envelope: dict,
-    message_body: str,
-    media: Optional[List[dict]] = [],
-):
-    try:
-        user_phone_number = get_value_or_raise_error(
-            conversation_envelope, "user_phone_number"
-        )
-        client_phone_number = get_value_or_raise_error(
-            conversation_envelope, "client_phone_number"
-        )
-
-        conversation_exist = session.exec(
-            select(Chat_Session)
-            .join(User)
-            .join(ClientModel)
-            .where(
-                User.phone_number == user_phone_number,
-                ClientModel.phone_number == client_phone_number,
-            )
-        ).first()
-
-        if not conversation_exist:
-            return None
-
-        sender_role = get_value_or_raise_error(
-            conversation_envelope, "sender_role"
-        )
-        new_chat = Chat(
-            chat_session_id=conversation_exist.id,
-            message=message_body,
-            sender_role=(Sender_Role_Enum[sender_role.upper()]),
-        )
-        session.add(new_chat)
-        session.commit()
-
-        # handle media
-        if media:
-            add_media(session=session, chat=new_chat, media=media)
-        # eol handle media
-
-        session.flush()
-
-        return new_chat.id
-    except Exception as e:
-        logger.error(f"Save chat history failed: {e}")
-        raise e
-    finally:
-        session.close()
 
 
 class IncomingMessage(BaseModel):
@@ -150,8 +90,6 @@ class TwilioClient:
 
     async def send_whatsapp_message(self, body: str) -> None:
         try:
-            session = Session(engine)
-
             queue_message = json.loads(body)
             text = queue_message.get("body")
             conversation_envelope = queue_message.get(
@@ -160,16 +98,6 @@ class TwilioClient:
             phone = conversation_envelope.get(
                 "client_phone_number"
             ) or conversation_envelope.get("user_phone_number")
-            media = queue_message.get("media", [])
-
-            if not os.getenv("TESTING"):
-                # save sent message history here
-                save_chat_history(
-                    session=session,
-                    conversation_envelope=conversation_envelope,
-                    message_body=text,
-                    media=media
-                )
             await self.whatsapp_message_create(to=phone, body=text)
             logger.info(f"Message sent to WhatsApp: {text}")
         except JSONDecodeError as e:

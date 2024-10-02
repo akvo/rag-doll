@@ -23,6 +23,7 @@ from utils.util import get_value_or_raise_error
 from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
 from db import add_media
+from typing import Optional, List
 
 
 logging.basicConfig(level=logging.INFO)
@@ -80,6 +81,59 @@ def delete_cache(user_id: str):
     logger.info(f"[FastAPICache] delete_cache: {key}")
     if key in USER_CACHE_DICT:
         del USER_CACHE_DICT[key]
+
+
+def save_chat_history(
+    session: Session,
+    conversation_envelope: dict,
+    message_body: str,
+    media: Optional[List[dict]] = [],
+):
+    try:
+        user_phone_number = get_value_or_raise_error(
+            conversation_envelope, "user_phone_number"
+        )
+        client_phone_number = get_value_or_raise_error(
+            conversation_envelope, "client_phone_number"
+        )
+
+        conversation_exist = session.exec(
+            select(Chat_Session)
+            .join(User)
+            .join(Client)
+            .where(
+                User.phone_number == user_phone_number,
+                Client.phone_number == client_phone_number,
+            )
+        ).first()
+
+        if not conversation_exist:
+            return None
+
+        sender_role = get_value_or_raise_error(
+            conversation_envelope, "sender_role"
+        )
+        new_chat = Chat(
+            chat_session_id=conversation_exist.id,
+            message=message_body,
+            sender_role=(Sender_Role_Enum[sender_role.upper()]),
+        )
+        session.add(new_chat)
+        session.commit()
+
+        # handle media
+        if media:
+            add_media(session=session, chat=new_chat, media=media)
+        # eol handle media
+
+        session.flush()
+
+        return new_chat.id
+    except Exception as e:
+        logger.error(f"Save chat history failed: {e}")
+        raise e
+    finally:
+        session.close()
 
 
 def check_conversation_exist_and_generate_queue_message(
@@ -272,9 +326,21 @@ async def user_to_client(body: str):
     client routing, the message is posted onto the channel that the conversation
     is happening on.
     """
+    session = Session(engine)
     queue_message = json.loads(body)
     conversation_envelope = queue_message.get("conversation_envelope", {})
     platform = conversation_envelope.get("platform")
+    text = queue_message.get("body")
+    media = queue_message.get("media", [])
+    # save outgoing chat
+    if not os.getenv("TESTING"):
+        save_chat_history(
+            session=session,
+            conversation_envelope=conversation_envelope,
+            message_body=text,
+            media=media,
+        )
+    # eol save outgoing chat
     if platform == Platform_Enum.WHATSAPP.value:
         await twilio_client.send_whatsapp_message(body=body)
     if platform == Platform_Enum.SLACK.value:

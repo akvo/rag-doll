@@ -33,8 +33,6 @@ const Chats = () => {
   const [whisperChats, setWhisperChats] = useState([]);
   const [useWhisperAsTemplate, setUseWhisperAsTemplate] = useState(false);
 
-  console.log("aaa", clientPhoneNumber);
-
   // Reset chats state when clientPhoneNumber changes
   useEffect(() => {
     setChats([]);
@@ -206,10 +204,29 @@ const Chats = () => {
     <div className="w-full h-full">
       <div className="absolute right-4 top-4 flex flex-col gap-2">
         {newMessage
-          .filter(
-            (nm) =>
-              nm?.conversation_envelope?.user_phone_number === userPhoneNumber
-          )
+          .filter((nm) => {
+            // handle deduplication
+            const findClient = clients.find(
+              (c) =>
+                c.phone_number ===
+                nm?.conversation_envelope?.client_phone_number
+            );
+
+            // use isNewMessage from timestamp if populated chat is empty
+            const isNewMessage =
+              findClient && nm?.conversation_envelope?.timestamp
+                ? new Date(nm?.conversation_envelope?.timestamp) >
+                  new Date(findClient?.last_message_created_at)
+                : true;
+
+            // if populated chat is not empty, check message_id is in populated chat
+            // TODO:: Created populated chat
+
+            return (
+              nm?.conversation_envelope?.user_phone_number ===
+                userPhoneNumber && isNewMessage
+            );
+          })
           .reduce((acc, nm) => {
             const existingNotification = acc.find(
               (n) => n.sender === nm.conversation_envelope.client_phone_number

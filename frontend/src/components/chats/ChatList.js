@@ -56,7 +56,12 @@ const ChatList = ({
             chats: resData.chats.filter((c) => c.last_message),
           }
         : resData;
-      setClients(resData.chats.map((c) => c.chat_session));
+      setClients(
+        resData.chats.map((c) => ({
+          ...c.chat_session,
+          last_message_created_at: c.last_message.created_at,
+        }))
+      );
       setChatItems((prev) => {
         const updatedChats = [...prev.chats, ...resData.chats].reduce(
           (acc, incomingChat) => {
@@ -141,11 +146,16 @@ const ChatList = ({
     if (newMessage.length) {
       setChatItems((prev) => {
         const updatedChatItems = prev.chats.map((chat) => {
-          const findNewMessage = newMessage.find(
-            (nm) =>
+          const findNewMessage = newMessage.find((nm) => {
+            // message deduplication
+            const isNewMessage =
+              new Date(nm.conversation_envelope.timestamp) >
+              new Date(chat.last_message.created_at);
+            return (
               nm.conversation_envelope.client_phone_number ===
-              chat.chat_session.phone_number
-          );
+                chat.chat_session.phone_number && isNewMessage
+            );
+          });
           if (findNewMessage) {
             return {
               ...chat,

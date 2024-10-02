@@ -15,7 +15,7 @@ from models import (
     Chat,
 )
 from core.database import engine
-from sqlmodel import Session, select, and_
+from sqlmodel import Session, select
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
@@ -217,12 +217,7 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
     last_chats = session.exec(
         select(Chat)
         .where(
-            and_(
-                Chat.chat_session_id.in_([cs.id for cs in chat_session]),
-                Chat.sender_role.in_(
-                    [Sender_Role_Enum.CLIENT, Sender_Role_Enum.ASSISTANT]
-                ),
-            )
+            Chat.chat_session_id.in_([cs.id for cs in chat_session]),
         )
         .order_by(Chat.created_at.desc())
         .limit(LAST_MESSAGES_LIMIT)
@@ -255,7 +250,7 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
             body=chat.message,
             media=media,
             context=context,
-            timestamp=chat.created_at.isoformat() + "+00:00",
+            timestamp=chat.created_at.isoformat(),
         )
         if chat.sender_role == Sender_Role_Enum.CLIENT:
             await sio_server.emit(

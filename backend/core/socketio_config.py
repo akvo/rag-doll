@@ -23,6 +23,7 @@ from utils.util import get_value_or_raise_error
 from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
 from db import add_media
+from typing import Optional, List
 
 
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +34,7 @@ RABBITMQ_QUEUE_USER_CHATS = os.getenv("RABBITMQ_QUEUE_USER_CHATS")
 RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
+LAST_MESSAGES_LIMIT = int(os.getenv("LAST_MESSAGES_LIMIT", 10))
 
 
 def get_rabbitmq_client():
@@ -81,6 +83,59 @@ def delete_cache(user_id: str):
         del USER_CACHE_DICT[key]
 
 
+def save_chat_history(
+    session: Session,
+    conversation_envelope: dict,
+    message_body: str,
+    media: Optional[List[dict]] = [],
+):
+    try:
+        user_phone_number = get_value_or_raise_error(
+            conversation_envelope, "user_phone_number"
+        )
+        client_phone_number = get_value_or_raise_error(
+            conversation_envelope, "client_phone_number"
+        )
+
+        conversation_exist = session.exec(
+            select(Chat_Session)
+            .join(User)
+            .join(Client)
+            .where(
+                User.phone_number == user_phone_number,
+                Client.phone_number == client_phone_number,
+            )
+        ).first()
+
+        if not conversation_exist:
+            return None
+
+        sender_role = get_value_or_raise_error(
+            conversation_envelope, "sender_role"
+        )
+        new_chat = Chat(
+            chat_session_id=conversation_exist.id,
+            message=message_body,
+            sender_role=(Sender_Role_Enum[sender_role.upper()]),
+        )
+        session.add(new_chat)
+        session.commit()
+
+        # handle media
+        if media:
+            add_media(session=session, chat=new_chat, media=media)
+        # eol handle media
+
+        session.flush()
+
+        return new_chat.id
+    except Exception as e:
+        logger.error(f"Save chat history failed: {e}")
+        raise e
+    finally:
+        session.close()
+
+
 def check_conversation_exist_and_generate_queue_message(
     session: Session, msg: dict, user_phone_number: str
 ):
@@ -109,6 +164,7 @@ def check_conversation_exist_and_generate_queue_message(
         platform = get_value_or_raise_error(conversation_envelope, "platform")
 
         queue_message = queue_message_util.create_queue_message(
+            chat_session_id=conversation_exist.id,
             message_id=get_value_or_raise_error(
                 conversation_envelope, "message_id"
             ),
@@ -147,6 +203,7 @@ def handle_incoming_message(session: Session, message: dict):
     sender_role = get_value_or_raise_error(
         conversation_envelope, "sender_role"
     )
+    platform = get_value_or_raise_error(conversation_envelope, "platform")
 
     media = get_value_or_raise_error(message, "media")
 
@@ -175,7 +232,7 @@ def handle_incoming_message(session: Session, message: dict):
             session.commit()
 
         new_chat_session = Chat_Session(
-            user_id=user.id, client_id=new_client.id
+            user_id=user.id, client_id=new_client.id, platform=platform
         )
         session.add(new_chat_session)
         session.commit()
@@ -202,7 +259,64 @@ def handle_incoming_message(session: Session, message: dict):
     session.flush()
 
     user = user.serialize()
-    return user["id"], user["phone_number"]
+    return user["id"], user["phone_number"], chat_session_id, new_chat.id
+
+
+async def resend_messages(session: Session, user_id=int, user_sid=str):
+    chat_session = session.exec(
+        select(Chat_Session).where(Chat_Session.user_id == user_id)
+    ).all()
+    if not chat_session:
+        return None
+    last_chats = session.exec(
+        select(Chat)
+        .where(
+            Chat.chat_session_id.in_([cs.id for cs in chat_session]),
+        )
+        .order_by(Chat.created_at.desc())
+        .limit(LAST_MESSAGES_LIMIT)
+    ).all()
+    # Reorder the results by created_at in ascending order
+    last_chats = sorted(last_chats, key=lambda x: x.created_at)
+    for chat in last_chats:
+        # starting to resend message
+        media = []
+        context = []
+        if chat.media:
+            for cm in chat.media:
+                media.append({"url": cm.url, "type": cm.type})
+                context.append(
+                    {
+                        "url": cm.url,
+                        "type": cm.type,
+                        "caption": chat.message,
+                    }
+                )
+        message = queue_message_util.create_queue_message(
+            chat_session_id=chat.chat_session_id,
+            message_id=chat.id,
+            client_phone_number=f"+{chat.chat_session.client.phone_number}",
+            user_phone_number=f"+{chat.chat_session.client.phone_number}",
+            sender_role=chat.sender_role,
+            sender_role_enum=Sender_Role_Enum,
+            platform=chat.chat_session.platform,
+            platform_enum=Platform_Enum,
+            body=chat.message,
+            media=media,
+            context=context,
+            timestamp=chat.created_at.isoformat(),
+        )
+        if chat.sender_role == Sender_Role_Enum.CLIENT:
+            await sio_server.emit(
+                "chats", message, to=user_sid, callback=emit_chats_callback
+            )
+            logger.info(f"Resend message for client->user: {message}")
+        if chat.sender_role == Sender_Role_Enum.ASSISTANT:
+            await sio_server.emit(
+                "whisper", message, to=user_sid, callback=emit_whisper_callback
+            )
+            logger.info(f"Resend message for assistant->user: {message}")
+    return last_chats
 
 
 async def user_to_client(body: str):
@@ -212,9 +326,21 @@ async def user_to_client(body: str):
     client routing, the message is posted onto the channel that the conversation
     is happening on.
     """
+    session = Session(engine)
     queue_message = json.loads(body)
     conversation_envelope = queue_message.get("conversation_envelope", {})
     platform = conversation_envelope.get("platform")
+    text = queue_message.get("body")
+    media = queue_message.get("media", [])
+    # save outgoing chat
+    if not os.getenv("TESTING"):
+        save_chat_history(
+            session=session,
+            conversation_envelope=conversation_envelope,
+            message_body=text,
+            media=media,
+        )
+    # eol save outgoing chat
     if platform == Platform_Enum.WHATSAPP.value:
         await twilio_client.send_whatsapp_message(body=body)
     if platform == Platform_Enum.SLACK.value:
@@ -224,9 +350,10 @@ async def user_to_client(body: str):
 @sio_server.on("connect")
 async def sio_connect(sid, environ):
     try:
+        session = Session(engine)
         httpCookie = environ.get("HTTP_COOKIE")
         if not httpCookie:
-            return False
+            return None
         cookie.load(httpCookie)
         auth_token = cookie.get("AUTH_TOKEN")
         auth_token = auth_token.value if auth_token else None
@@ -237,6 +364,9 @@ async def sio_connect(sid, environ):
             sio_session["user_id"] = user_id
             sio_session["user_phone_number"] = user_phone_number
             set_cache(user_id=user_id, sid=sid)
+            await resend_messages(
+                session=session, user_id=user_id, user_sid=sid
+            )
         logger.info(f"User sid[{sid}] connected: {user_phone_number}")
     except HTTPException as e:
         logger.error(f"User sid[{sid}] can't connect: {e}")
@@ -317,35 +447,35 @@ async def client_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number = handle_incoming_message(
-            session=session, message=message
+        user_id, user_phone_number, chat_session_id, chat_id = (
+            handle_incoming_message(session=session, message=message)
         )
+        user_sid = get_cache(user_id=user_id)
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
         conversation_envelope.update({"user_phone_number": user_phone_number})
+        conversation_envelope.update({"chat_session_id": chat_session_id})
+        conversation_envelope.update({"message_id": chat_id})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = get_cache(user_id=user_id)
-
+        # send message to user_chats
+        await rabbitmq_client.producer(
+            body=body,
+            routing_key=RABBITMQ_QUEUE_USER_CHATS,
+        )
+        await sio_server.emit(
+            "chats", message, to=user_sid, callback=emit_chats_callback
+        )
         logger.info(
             f"Send client->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
         )
 
-        await sio_server.emit(
-            "chats", message, to=user_sid, callback=emit_chats_callback
-        )
-
-        await rabbitmq_client.initialize()
-        await rabbitmq_client.producer(
-            body=body,
-            routing_key=RABBITMQ_QUEUE_USER_CHATS,
-        )
     except Exception as e:
-        logger.error(f"Error handling user_chats_callback: {e}")
+        logger.error(f"Error handling client_to_user: {e}")
         raise e
     finally:
         session.close()
@@ -371,27 +501,28 @@ async def assistant_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number = handle_incoming_message(
-            session=session, message=message
+        user_id, user_phone_number, chat_session_id, chat_id = (
+            handle_incoming_message(session=session, message=message)
         )
+        user_sid = get_cache(user_id=user_id)
 
         conversation_envelope = get_value_or_raise_error(
             message, "conversation_envelope"
         )
         conversation_envelope.update({"user_phone_number": user_phone_number})
+        conversation_envelope.update({"chat_session_id": chat_session_id})
+        conversation_envelope.update({"message_id": chat_id})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
-        user_sid = get_cache(user_id=user_id)
-
+        await sio_server.emit(
+            "whisper", message, to=user_sid, callback=emit_whisper_callback
+        )
         logger.info(
             f"Send assistant->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
         )
 
-        await sio_server.emit(
-            "whisper", message, to=user_sid, callback=emit_whisper_callback
-        )
     except Exception as e:
-        logger.error(f"Error handling user_chats_callback: {e}")
+        logger.error(f"Error handling assistant_to_user: {e}")
         raise e

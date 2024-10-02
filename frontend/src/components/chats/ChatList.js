@@ -12,6 +12,7 @@ import ChatHeader from "./ChatHeader";
 import Image from "next/image";
 import { renderTextForMediaMessage } from "@/app/chats/page";
 import FloatingPlusButton from "./FloatingPlusButton";
+import Loading from "@/app/loading";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -28,6 +29,7 @@ const ChatList = ({
   const [chatItems, setChatItems] = useState(initialChatItems);
   const [offset, setOffset] = useState(0);
   const limit = 10;
+  const [loading, setLoading] = useState(true);
 
   const chatListRef = useRef(null);
 
@@ -47,6 +49,7 @@ const ChatList = ({
   };
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
     if (res.status === 200) {
       let resData = await res.json();
@@ -56,7 +59,15 @@ const ChatList = ({
             chats: resData.chats.filter((c) => c.last_message),
           }
         : resData;
-      setClients(resData.chats.map((c) => c.chat_session));
+      setClients((prev) =>
+        resData.chats.map((c) => ({
+          ...c.chat_session,
+          last_message_created_at: c.last_message.created_at,
+          message_ids:
+            prev.find((p) => c.chat_session.client_id === p.client_id)
+              ?.message_ids || [],
+        }))
+      );
       setChatItems((prev) => {
         const updatedChats = [...prev.chats, ...resData.chats].reduce(
           (acc, incomingChat) => {
@@ -96,6 +107,7 @@ const ChatList = ({
           offset: resData.offset,
         };
       });
+      setLoading(false);
     }
     if (res.status === 401 || res.status === 403) {
       userDispatch({
@@ -103,6 +115,7 @@ const ChatList = ({
       });
       authDispatch({ type: "DELETE" });
       deleteCookie("AUTH_TOKEN");
+      setLoading(false);
       router.replace("/login");
     }
   }, [offset, authDispatch, router, setClients, userDispatch]);
@@ -141,11 +154,16 @@ const ChatList = ({
     if (newMessage.length) {
       setChatItems((prev) => {
         const updatedChatItems = prev.chats.map((chat) => {
-          const findNewMessage = newMessage.find(
-            (nm) =>
+          const findNewMessage = newMessage.find((nm) => {
+            // message deduplication
+            const isNewMessage =
+              new Date(nm.conversation_envelope.timestamp) >
+              new Date(chat.last_message.created_at);
+            return (
               nm.conversation_envelope.client_phone_number ===
-              chat.chat_session.phone_number
-          );
+                chat.chat_session.phone_number && isNewMessage
+            );
+          });
           if (findNewMessage) {
             return {
               ...chat,
@@ -173,50 +191,56 @@ const ChatList = ({
       ref={chatListRef}
     >
       <ChatHeader />
-      <div className="pt-20 pb-24 w-full">
-        {/* Chat List */}
-        <div className="bg-white overflow-hidden px-2">
-          {chatItems.chats
-            .filter((c) => c.last_message)
-            .map(({ chat_session, last_message }) => (
-              <div
-                key={`chat-list-${chat_session.id}`}
-                className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
-                onClick={() => handleOnClickChat(chat_session)}
-              >
-                <div className="flex items-center">
-                  <Image
-                    src="/images/bg-login-page.png"
-                    alt="User Avatar"
-                    className="rounded-full w-12 h-12 mr-4 bg-gray-300"
-                    height={12}
-                    width={12}
-                  />
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <h3 className="text-md font-semibold text-gray-800">
-                        {chat_session.name || chat_session.phone_number}
-                      </h3>
-                      <p className="text-xs text-gray-500">
-                        {formatChatTime(last_message.created_at)}
-                      </p>
+      {loading ? (
+        <Loading />
+      ) : (
+        <>
+          <div className="pt-20 pb-24 w-full">
+            {/* Chat List */}
+            <div className="bg-white overflow-hidden px-2">
+              {chatItems.chats
+                .filter((c) => c.last_message)
+                .map(({ chat_session, last_message }) => (
+                  <div
+                    key={`chat-list-${chat_session.id}`}
+                    className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
+                    onClick={() => handleOnClickChat(chat_session)}
+                  >
+                    <div className="flex items-center">
+                      <Image
+                        src="/images/bg-login-page.png"
+                        alt="User Avatar"
+                        className="rounded-full w-12 h-12 mr-4 bg-gray-300"
+                        height={12}
+                        width={12}
+                      />
+                      <div className="flex-1">
+                        <div className="flex justify-between">
+                          <h3 className="text-md font-semibold text-gray-800">
+                            {chat_session.name || chat_session.phone_number}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {formatChatTime(last_message.created_at)}
+                          </p>
+                        </div>
+                        {last_message.message?.trim() ? (
+                          <p className="text-gray-600 text-sm">
+                            {trimMessage(last_message.message)}
+                          </p>
+                        ) : (
+                          renderTextForMediaMessage({
+                            type: last_message?.media?.type,
+                          })
+                        )}
+                      </div>
                     </div>
-                    {last_message.message?.trim() ? (
-                      <p className="text-gray-600 text-sm">
-                        {trimMessage(last_message.message)}
-                      </p>
-                    ) : (
-                      renderTextForMediaMessage({
-                        type: last_message?.media?.type,
-                      })
-                    )}
                   </div>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-      <FloatingPlusButton />
+                ))}
+            </div>
+          </div>
+          <FloatingPlusButton />
+        </>
+      )}
     </div>
   );
 };

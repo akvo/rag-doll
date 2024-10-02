@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { useUserContext } from "@/context/UserContextProvider";
 import { ChatWindow, ChatList, ChatNotification } from "@/components";
-import { socket } from "@/lib";
+import { socket, dbLib } from "@/lib";
 import { PhotoIcon } from "@/utils/icons";
 
 export const renderTextForMediaMessage = ({ type = "" }) => {
@@ -32,8 +32,6 @@ const Chats = () => {
   const [reloadChatList, setReloadChatList] = useState(false);
   const [whisperChats, setWhisperChats] = useState([]);
   const [useWhisperAsTemplate, setUseWhisperAsTemplate] = useState(false);
-
-  console.log("aaa", clientPhoneNumber);
 
   // Reset chats state when clientPhoneNumber changes
   useEffect(() => {
@@ -64,8 +62,21 @@ const Chats = () => {
       socket.connect();
     }
 
-    const handleConnect = () => {
+    const handleConnect = async () => {
       console.info("FE Connected");
+      const messages = await dbLib.messages.getAll();
+      messages.forEach(async ({ id, message }) => {
+        try {
+          const response = await socket
+            .timeout(5000)
+            .emitWithAck("chats", message);
+          if (response?.success) {
+            dbLib.messages.delete(id);
+          }
+        } catch (err) {
+          console.info(`Failed to resend lost message: ${err}`);
+        }
+      });
     };
 
     const handleDisconnect = (reason, details) => {
@@ -130,11 +141,22 @@ const Chats = () => {
         ]);
 
         if (clientPhoneNumber) {
-          setChats((prev) => [...prev, value]);
+          // handle message deduplication
+          setChats((prev) => {
+            const findPrev = prev.find(
+              (p) =>
+                p.conversation_envelope.message_id ===
+                value.conversation_envelope.message_id
+            );
+            if (findPrev) {
+              return prev;
+            }
+            return [...prev, value];
+          });
         }
 
         if (callback) {
-          callback({ success: true, message: "Message received by FE" });
+          callback({ success: true, message: value });
         }
       }
     };
@@ -150,6 +172,7 @@ const Chats = () => {
             ) {
               return {
                 ...p,
+                message_id: value.conversation_envelope.message_id,
                 message: value.body,
                 timestamp: value.conversation_envelope.timestamp,
                 loading: false,
@@ -160,7 +183,7 @@ const Chats = () => {
         );
 
         if (callback) {
-          callback({ success: true, message: "Whisper received by FE" });
+          callback({ success: true, message: value });
         }
       }
     };
@@ -193,10 +216,36 @@ const Chats = () => {
     <div className="w-full h-full">
       <div className="absolute right-4 top-4 flex flex-col gap-2">
         {newMessage
-          .filter(
-            (nm) =>
-              nm?.conversation_envelope?.user_phone_number === userPhoneNumber
-          )
+          .filter((nm) => {
+            // handle deduplication
+            const findClient = clients.find(
+              (c) =>
+                c.phone_number ===
+                nm?.conversation_envelope?.client_phone_number
+            );
+
+            // if populated chat is not empty, check message_id is in populated chat
+            let isNewMessage = true;
+            if (findClient?.message_ids?.length) {
+              const isMessageInMessageIds = findClient.message_ids.find(
+                (id) => id === nm.conversation_envelope.message_id
+              );
+              isNewMessage = isMessageInMessageIds ? false : true;
+            } else {
+              // check by date/timestamp
+              isNewMessage =
+                findClient && nm?.conversation_envelope?.timestamp
+                  ? new Date(nm?.conversation_envelope?.timestamp) >
+                    new Date(findClient?.last_message_created_at)
+                  : true;
+            }
+            // eol handle deduplication
+
+            return (
+              nm?.conversation_envelope?.user_phone_number ===
+                userPhoneNumber && isNewMessage
+            );
+          })
           .reduce((acc, nm) => {
             const existingNotification = acc.find(
               (n) => n.sender === nm.conversation_envelope.client_phone_number
@@ -237,6 +286,8 @@ const Chats = () => {
           setWhisperChats={setWhisperChats}
           useWhisperAsTemplate={useWhisperAsTemplate}
           setUseWhisperAsTemplate={setUseWhisperAsTemplate}
+          setClients={setClients}
+          clients={clients}
         />
       ) : (
         <ChatList

@@ -40,6 +40,7 @@ def test_format_to_queue_message(slack_bot_client):
     res = json.loads(queue_message)
     assert res == {
         "conversation_envelope": {
+            "chat_session_id": None,
             "message_id": "client_msg_id",
             "client_phone_number": "channel",
             "user_phone_number": None,

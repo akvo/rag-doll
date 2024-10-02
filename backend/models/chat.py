@@ -27,6 +27,9 @@ class Chat_Session(SQLModel, table=True):
     client_id: Optional[int] = Field(
         default=None, foreign_key="client.id", nullable=False
     )
+    platform: Platform_Enum = Field(
+        sa_column=Column(Enum(Platform_Enum), nullable=False)
+    )
     last_read: datetime = Field(
         sa_column=Column(
             DateTime(),
@@ -70,7 +73,7 @@ class Chat(SQLModel, table=True):
         ),
         default_factory=lambda: datetime.now(tz),
     )
-
+    chat_session: "Chat_Session" = Relationship()
     media: list["Chat_Media"] = Relationship(back_populates="chat")
 
     def __init__(self, **data):

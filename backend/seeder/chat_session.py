@@ -26,6 +26,7 @@ from models import (
     Client,
     Client_Properties,
     Chat_Session,
+    Platform_Enum,
 )
 from seeder.user import validate_phone_number
 
@@ -159,7 +160,9 @@ def seed_database(session: Session, csv_filepath: str):
             ).first()
             if not chat_session:
                 chat_session = Chat_Session(
-                    user_id=user.id, client_id=client.id
+                    user_id=user.id,
+                    client_id=client.id,
+                    platform=Platform_Enum.WHATSAPP,
                 )
                 session.add(chat_session)
 

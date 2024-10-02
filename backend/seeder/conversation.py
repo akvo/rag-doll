@@ -2,7 +2,7 @@ import json
 from faker import Faker
 from models.user import User
 from models.client import Client, Client_Properties
-from models.chat import Chat, Sender_Role_Enum, Chat_Session
+from models.chat import Chat, Sender_Role_Enum, Chat_Session, Platform_Enum
 from sqlalchemy.exc import IntegrityError
 from core.database import engine
 from sqlmodel import Session, select
@@ -42,7 +42,9 @@ def create_client(session: Session):
 
 def seed_chat_data(session: Session, user_id: int, client_id: int):
     # Create a chat session
-    chat_session = Chat_Session(user_id=user_id, client_id=client_id)
+    chat_session = Chat_Session(
+        user_id=user_id, client_id=client_id, platform=Platform_Enum.WHATSAPP
+    )
     session.add(chat_session)
     session.commit()
 

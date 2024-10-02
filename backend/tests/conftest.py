@@ -13,7 +13,14 @@ from sqlmodel import create_engine, Session
 from core.config import app
 from core.database import get_db_url, get_session
 from routes.twilio_routes import get_twilio_client
-from models import User, Client, Chat_Session, Chat, Sender_Role_Enum
+from models import (
+    User,
+    Client,
+    Chat_Session,
+    Chat,
+    Sender_Role_Enum,
+    Platform_Enum,
+)
 
 
 def truncate(session: Session, table: str):
@@ -40,8 +47,7 @@ def init_db(session: Session) -> None:
     session.add(client)
     session.commit()
     chat_session = Chat_Session(
-        user_id=user.id,
-        client_id=client.id,
+        user_id=user.id, client_id=client.id, platform=Platform_Enum.WHATSAPP
     )
     session.add(chat_session)
     session.commit()
@@ -78,8 +84,7 @@ def init_db(session: Session) -> None:
     session.add(client)
     session.commit()
     chat_session = Chat_Session(
-        user_id=user.id,
-        client_id=client.id,
+        user_id=user.id, client_id=client.id, platform=Platform_Enum.WHATSAPP
     )
     session.add(chat_session)
     session.commit()

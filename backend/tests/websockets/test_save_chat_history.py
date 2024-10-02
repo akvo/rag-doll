@@ -1,10 +1,10 @@
 from sqlmodel import Session, select
-from clients.twilio_client import (
+from core.socketio_config import (
     save_chat_history,
     Sender_Role_Enum,
     Platform_Enum,
     Chat_Session,
-    ClientModel,
+    Client,
     User,
     Chat,
 )
@@ -14,7 +14,7 @@ from models import Chat_Media
 def test_save_chat_history_when_send_a_message_into_platform(session: Session):
     conversation = session.exec(select(Chat_Session)).first()
     client = session.exec(
-        select(ClientModel).where(ClientModel.id == conversation.client_id)
+        select(Client).where(Client.id == conversation.client_id)
     ).first()
     user = session.exec(
         select(User).where(User.id == conversation.user_id)
@@ -43,7 +43,7 @@ def test_save_chat_history_when_send_a_message_into_platform(session: Session):
 def test_save_chat_history_with_image(session: Session):
     conversation = session.exec(select(Chat_Session)).first()
     client = session.exec(
-        select(ClientModel).where(ClientModel.id == conversation.client_id)
+        select(Client).where(Client.id == conversation.client_id)
     ).first()
     user = session.exec(
         select(User).where(User.id == conversation.user_id)

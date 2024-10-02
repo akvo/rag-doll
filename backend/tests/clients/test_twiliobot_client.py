@@ -44,6 +44,7 @@ def test_format_to_queue_message_valid(twilio_client):
     timestamp = conversation_envelope.get("timestamp")
     assert queue_message == {
         "conversation_envelope": {
+            "chat_session_id": None,
             "message_id": "1234567890",
             "client_phone_number": "+6281234567890",
             "user_phone_number": None,
@@ -74,6 +75,7 @@ def test_format_to_queue_message_valid_with_voice_notes(twilio_client):
     timestamp = conversation_envelope.get("timestamp")
     assert queue_message == {
         "conversation_envelope": {
+            "chat_session_id": None,
             "message_id": "1234567890",
             "client_phone_number": "+6281234567890",
             "user_phone_number": None,

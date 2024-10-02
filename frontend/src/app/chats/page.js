@@ -163,7 +163,6 @@ const Chats = () => {
 
     const handleWhisper = (value, callback) => {
       if (value) {
-        console.log(value, "whisper");
         setUseWhisperAsTemplate(false);
         setWhisperChats((prev) =>
           prev.map((p) => {

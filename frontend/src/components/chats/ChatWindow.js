@@ -21,6 +21,7 @@ import Image from "next/image";
 import ChatMedia from "./ChatMedia";
 import { deleteCookie } from "@/lib/cookies";
 import { useRouter } from "next/navigation";
+import Loading from "@/app/loading";
 
 const SenderRoleEnum = {
   USER: "user",
@@ -88,6 +89,7 @@ const ChatWindow = ({
 
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const scrollToLastMessage = useCallback(() => {
     if (messagesContainerRef.current) {
@@ -130,6 +132,7 @@ const ChatWindow = ({
   useEffect(() => {
     async function fetchChats() {
       try {
+        setLoading(true);
         const res = await api.get(`/chat-details/${clientId}`);
         if (res.status === 200) {
           const data = await res.json();
@@ -145,6 +148,7 @@ const ChatWindow = ({
               return p;
             })
           );
+          setLoading(false);
         }
         if (res.status === 401 || res.status === 403) {
           userDispatch({
@@ -152,10 +156,12 @@ const ChatWindow = ({
           });
           authDispatch({ type: "DELETE" });
           deleteCookie("AUTH_TOKEN");
+          setLoading(false);
           router.replace("/login");
         }
       } catch (error) {
         console.error(error);
+        setLoading(false);
       }
     }
     fetchChats();
@@ -362,22 +368,30 @@ const ChatWindow = ({
         }`}
         style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
       >
-        {/* User Messages */}
-        <div ref={messagesContainerRef} className="flex-1 p-4 overflow-auto">
-          {renderChatHistory}
-          {renderChats}
-        </div>
-
-        {/* AI Messages */}
-        <Whisper
-          whisperChats={whisperChats}
-          setWhisperChats={setWhisperChats}
-          textareaRef={textareaRef}
-          handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
-          setMessage={setMessage}
-          setUseWhisperAsTemplate={setUseWhisperAsTemplate}
-          clients={clients}
-        />
+        {loading ? (
+          <Loading />
+        ) : (
+          <>
+            {/* User Messages */}
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 p-4 overflow-auto"
+            >
+              {renderChatHistory}
+              {renderChats}
+            </div>
+            {/* AI Messages */}
+            <Whisper
+              whisperChats={whisperChats}
+              setWhisperChats={setWhisperChats}
+              textareaRef={textareaRef}
+              handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
+              setMessage={setMessage}
+              setUseWhisperAsTemplate={setUseWhisperAsTemplate}
+              clients={clients}
+            />
+          </>
+        )}
       </div>
 
       {/* TextArea */}

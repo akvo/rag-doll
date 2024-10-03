@@ -108,6 +108,17 @@ class Chat(SQLModel, table=True):
             "media": media,
         }
 
+    def to_assistant_history(self) -> dict:
+        assistant_role = "system"
+        if self.sender_role == Sender_Role_Enum.USER:
+            assistant_role = "assistant"
+        if self.sender_role == Sender_Role_Enum.CLIENT:
+            assistant_role = "user"
+        return {
+            "role": assistant_role,
+            "content": self.message,
+        }
+
 
 class Chat_Media(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)

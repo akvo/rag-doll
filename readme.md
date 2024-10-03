@@ -141,6 +141,7 @@ The backend of this project is built using [FastAPI](https://fastapi.tiangolo.co
 | `TESTING` | `None` | An environment variable used for testing purposes when running backend tests. This variable is automatically set to `1` by `conftest` to mock or skip certain steps related to third-party services. Please note that `TESTING` should not be included in the Docker Compose environment. |
 | `INITIAL_CHAT_TEMPLATE` | _CHANGEME_ | A template for initial chat message, e.g. "Hi {farmer_name}, You've been added to Agriconnect. Send us a message here to start chatting." |
 | `LAST_MESSAGES_LIMIT` | 10 | The maximum number of last messages to resend to a user in a chat session. |
+| `ASSISTANT_LAST_MESSAGES_LIMIT` | 10 | The maximum number of previous chat messages to retrieve and feed into the assistant for generating suggestions. |
 
 ### Chat Session Seeder
 

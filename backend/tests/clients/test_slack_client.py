@@ -52,6 +52,7 @@ def test_format_to_queue_message(slack_bot_client):
         "media": [],
         "context": [],
         "transformation_log": ["text"],
+        "history": None,
     }
 
 

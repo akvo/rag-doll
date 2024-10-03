@@ -338,11 +338,14 @@ def get_chat_history_for_assistant(session: Session, chat_session_id: int):
             )
         )
         .order_by(Chat.created_at.desc())
-        .limit(ASSISTANT_LAST_MESSAGES_LIMIT)
+        .offset(1)  # skip the latest message
+        .limit(ASSISTANT_LAST_MESSAGES_LIMIT)  # retrieve the next N messages
     ).all()
-    if last_chats:
-        return [lc.to_assistant_history() for lc in last_chats]
-    return None
+    if not last_chats:
+        return None
+    # Reorder the results by created_at in ascending order
+    last_chats = sorted(last_chats, key=lambda x: x.created_at)
+    return [lc.to_assistant_history() for lc in last_chats]
 
 
 async def user_to_client(body: str):
@@ -477,10 +480,14 @@ async def client_to_user(body: str):
             handle_incoming_message(session=session, message=message)
         )
 
-        # TODO :: query message history here
+        # add history to queue
+        body = json.loads(body)
         last_chats = get_chat_history_for_assistant(
             session=session, chat_session_id=chat_session_id
         )
+        body.update({"history": last_chats})
+        body = json.dumps(body)
+        # eol add history to queue
 
         user_sid = get_cache(user_id=user_id)
 

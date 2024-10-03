@@ -17,13 +17,12 @@ def test_get_chat_history_for_assistant_if_chat_session_exist(
     assert res is not None
     assert len(res) > 0
     assert res == [
-        {"role": "user", "content": "Yes, I need help with something."},
+        {"role": "user", "content": "Hello Admin!"},
+        {"role": "assistant", "content": "Hello, +62 812 3456 7890"},
         {
             "role": "assistant",
             "content": "Is there anything I can help you with?",
         },
-        {"role": "assistant", "content": "Hello, +62 812 3456 7890"},
-        {"role": "user", "content": "Hello Admin!"},
     ]
 
 

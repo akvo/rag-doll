@@ -322,7 +322,9 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
     return last_chats
 
 
-def get_chat_history_for_assistant(session: Session, chat_session_id: int):
+def get_chat_history_for_assistant(
+    session: Session, chat_session_id: int, body: str
+):
     last_chats = session.exec(
         select(Chat)
         .where(
@@ -342,10 +344,15 @@ def get_chat_history_for_assistant(session: Session, chat_session_id: int):
         .limit(ASSISTANT_LAST_MESSAGES_LIMIT)  # retrieve the next N messages
     ).all()
     if not last_chats:
-        return None
+        return body
+    # append history to message body
+    body = json.loads(body)
     # Reorder the results by created_at in ascending order
     last_chats = sorted(last_chats, key=lambda x: x.created_at)
-    return [lc.to_assistant_history() for lc in last_chats]
+    history = [lc.to_assistant_history() for lc in last_chats]
+    body.update({"history": history})
+    body = json.dumps(body)
+    return body
 
 
 async def user_to_client(body: str):
@@ -480,15 +487,6 @@ async def client_to_user(body: str):
             handle_incoming_message(session=session, message=message)
         )
 
-        # add history to queue
-        body = json.loads(body)
-        last_chats = get_chat_history_for_assistant(
-            session=session, chat_session_id=chat_session_id
-        )
-        body.update({"history": last_chats})
-        body = json.dumps(body)
-        # eol add history to queue
-
         user_sid = get_cache(user_id=user_id)
 
         conversation_envelope = get_value_or_raise_error(
@@ -499,6 +497,12 @@ async def client_to_user(body: str):
         conversation_envelope.update({"message_id": chat_id})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
+
+        # add history to queue
+        body = get_chat_history_for_assistant(
+            session=session, chat_session_id=chat_session_id, body=body
+        )
+        # eol add history to queue
 
         # send message to user_chats
         await rabbitmq_client.producer(

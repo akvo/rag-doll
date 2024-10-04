@@ -8,6 +8,7 @@ from openai import OpenAI
 from langdetect import detect
 from datetime import datetime, timezone
 from Akvo_rabbitmq_client import rabbitmq_client
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +153,7 @@ def query_llm(
     rag_prompt_template: str,
     context: list[str],
     prompt: str,
+    history: Optional[list[dict]] = [],
 ) -> tuple[str, datetime]:
     """
     Queries the LLM with the given model and prompts, building the final prompt
@@ -182,12 +184,18 @@ def query_llm(
         final_prompt = ragless_prompt_template.format(prompt=prompt)
     logger.info(f"[ASSISTANT] -> final prompt: {final_prompt}")
 
+    llm_messages = [
+        {"role": "system", "content": system_prompt},
+    ]
+    if history:
+        llm_messages.extend(history)
+    llm_messages.append({"role": "user", "content": final_prompt})
+
+    logger.info(f"[ASSISTANT] -> query_llm with messages: {llm_messages}")
+
     response = llm_client.chat.completions.create(
         model=model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": final_prompt},
-        ],
+        messages=llm_messages,
     )
     iso_timestamp = datetime.fromtimestamp(
         int(response.created), tz=timezone.utc
@@ -267,6 +275,7 @@ async def on_message(body: str) -> None:
         return None
     # EOL handle ignore media message
 
+    history = from_client.get("history", [])
     user_prompt = from_client["body"]
 
     detected_language = get_language(user_prompt)
@@ -289,6 +298,7 @@ async def on_message(body: str) -> None:
         rag_prompt,
         rag_context,
         user_prompt,
+        history,
     )
     logger.info(f"[ASSISTANT] -> LLM replied: {llm_response}")
 

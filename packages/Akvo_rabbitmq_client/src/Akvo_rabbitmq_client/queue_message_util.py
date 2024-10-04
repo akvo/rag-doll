@@ -19,6 +19,7 @@ class QueueMessageUtil:
         media: Optional[List[Dict[str, str]]] = None,
         context: Optional[List[Dict[str, str]]] = None,
         transformation_log: Optional[List[str]] = None,
+        history: Optional[List[dict]] = None
     ) -> Dict[str, any]:
         if sender_role not in sender_role_enum.__members__.values():
             raise ValueError(
@@ -49,7 +50,8 @@ class QueueMessageUtil:
             "body": body,
             "media": media,
             "context": context,
-            "transformation_log": transformation_log
+            "transformation_log": transformation_log,
+            "history": history
         }
         return message
 

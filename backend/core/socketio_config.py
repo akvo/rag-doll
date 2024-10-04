@@ -15,7 +15,7 @@ from models import (
     Chat,
 )
 from core.database import engine
-from sqlmodel import Session, select
+from sqlmodel import Session, select, and_
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from socketio.exceptions import ConnectionRefusedError
@@ -35,6 +35,9 @@ RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
     "RABBITMQ_QUEUE_USER_CHAT_REPLIES"
 )
 LAST_MESSAGES_LIMIT = int(os.getenv("LAST_MESSAGES_LIMIT", 10))
+ASSISTANT_LAST_MESSAGES_LIMIT = int(
+    os.getenv("ASSISTANT_LAST_MESSAGES_LIMIT", 10)
+)
 
 
 def get_rabbitmq_client():
@@ -319,6 +322,39 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
     return last_chats
 
 
+def get_chat_history_for_assistant(
+    session: Session, chat_session_id: int, body: str
+):
+    last_chats = session.exec(
+        select(Chat)
+        .where(
+            and_(
+                Chat.chat_session_id == chat_session_id,
+                Chat.sender_role.in_(
+                    [
+                        Sender_Role_Enum.USER,
+                        Sender_Role_Enum.CLIENT,
+                        Sender_Role_Enum.ASSISTANT,
+                    ]
+                ),
+            )
+        )
+        .order_by(Chat.created_at.desc())
+        .offset(1)  # skip the latest message
+        .limit(ASSISTANT_LAST_MESSAGES_LIMIT)  # retrieve the next N messages
+    ).all()
+    if not last_chats:
+        return body
+    # append history to message body
+    body = json.loads(body)
+    # Reorder the results by created_at in ascending order
+    last_chats = sorted(last_chats, key=lambda x: x.created_at)
+    history = [lc.to_assistant_history() for lc in last_chats]
+    body.update({"history": history})
+    body = json.dumps(body)
+    return body
+
+
 async def user_to_client(body: str):
     """
     This function (functionally) routes messages that come in from the user to
@@ -450,6 +486,7 @@ async def client_to_user(body: str):
         user_id, user_phone_number, chat_session_id, chat_id = (
             handle_incoming_message(session=session, message=message)
         )
+
         user_sid = get_cache(user_id=user_id)
 
         conversation_envelope = get_value_or_raise_error(
@@ -460,6 +497,12 @@ async def client_to_user(body: str):
         conversation_envelope.update({"message_id": chat_id})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
+
+        # add history to queue
+        body = get_chat_history_for_assistant(
+            session=session, chat_session_id=chat_session_id, body=body
+        )
+        # eol add history to queue
 
         # send message to user_chats
         await rabbitmq_client.producer(

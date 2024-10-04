@@ -56,6 +56,7 @@ def test_format_to_queue_message_valid(twilio_client):
         "media": [],
         "context": [],
         "transformation_log": ["Test message"],
+        "history": None,
     }
 
 
@@ -87,6 +88,7 @@ def test_format_to_queue_message_valid_with_voice_notes(twilio_client):
         "media": [],
         "context": [],
         "transformation_log": [""],
+        "history": None,
     }
 
 

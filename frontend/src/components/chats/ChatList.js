@@ -117,6 +117,8 @@ const ChatList = ({
       deleteCookie("AUTH_TOKEN");
       setLoading(false);
       router.replace("/login");
+    } else {
+      setLoading(false);
     }
   }, [offset, authDispatch, router, setClients, userDispatch]);
 

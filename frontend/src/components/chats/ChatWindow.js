@@ -148,7 +148,6 @@ const ChatWindow = ({
               return p;
             })
           );
-          setLoading(false);
         }
         if (res.status === 401 || res.status === 403) {
           userDispatch({
@@ -158,9 +157,12 @@ const ChatWindow = ({
           deleteCookie("AUTH_TOKEN");
           setLoading(false);
           router.replace("/login");
+        } else {
+          setLoading(false);
         }
       } catch (error) {
         console.error(error);
+      } finally {
         setLoading(false);
       }
     }

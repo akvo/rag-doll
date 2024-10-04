@@ -3,6 +3,10 @@ from sqlmodel import Session, select
 from core.socketio_config import (
     get_chat_history_for_assistant,
     Chat,
+    Chat_Session,
+    Client,
+    User,
+    Platform_Enum,
 )
 
 
@@ -65,6 +69,36 @@ def test_get_chat_history_for_assistant_if_chat_session_not_exist(
     res = get_chat_history_for_assistant(
         session=session,
         chat_session_id=0,
+        body=json.dumps(MESSAGE),
+    )
+    assert res == json.dumps(MESSAGE)
+
+
+def test_get_chat_history_for_assistant_if_chat_session_doesnt_have_chats(
+    session: Session,
+):
+    user = session.exec(select(User)).first()
+
+    new_client = Client(phone_number="+628923456789")
+    session.add(new_client)
+    session.commit()
+
+    new_chat_session = Chat_Session(
+        user_id=user.id,
+        client_id=new_client.id,
+        platform=Platform_Enum.WHATSAPP,
+    )
+    session.add(new_chat_session)
+    session.commit()
+
+    find_chat = session.exec(
+        select(Chat).where(Chat.chat_session_id == new_chat_session.id)
+    ).first()
+    assert find_chat is None
+
+    res = get_chat_history_for_assistant(
+        session=session,
+        chat_session_id=new_chat_session.id,
         body=json.dumps(MESSAGE),
     )
     assert res == json.dumps(MESSAGE)

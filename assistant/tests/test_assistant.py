@@ -18,12 +18,29 @@ def test_connect_to_sqlite():
 
 def test_get_stable_prompt():
     conn = connect_to_sqlite()
+    prompt = get_stable_prompt(lang="id", conn=conn)
+    assert prompt is None
+
     prompt = get_stable_prompt(lang="en", conn=conn)
     assert prompt is not None
     assert prompt["language"] == "en"
+    assert prompt["system_prompt"] is not None
+    assert prompt["rag_prompt"] is not None
+    assert prompt["ragless_prompt"] is not None
 
-    prompt = get_stable_prompt(lang="id", conn=conn)
-    assert prompt is None
+    prompt = get_stable_prompt(lang="fr", conn=conn)
+    assert prompt is not None
+    assert prompt["language"] == "fr"
+    assert prompt["system_prompt"] is not None
+    assert prompt["rag_prompt"] is not None
+    assert prompt["ragless_prompt"] is not None
+
+    prompt = get_stable_prompt(lang="sw", conn=conn)
+    assert prompt is not None
+    assert prompt["language"] == "sw"
+    assert prompt["system_prompt"] is not None
+    assert prompt["rag_prompt"] is not None
+    assert prompt["ragless_prompt"] is not None
     conn.close()
 
 

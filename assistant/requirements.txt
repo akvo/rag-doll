@@ -5,3 +5,4 @@ black==24.4.2
 flake8==7.1.0
 langdetect==1.0.9
 pytest==8.3.2
+pandas==1.5.3

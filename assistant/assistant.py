@@ -350,26 +350,14 @@ def main():
         prompt = get_stable_prompt(lang=language, conn=sqlite_conn)
         assert prompt is not None
 
-        # system_prompt = os.getenv(f"SYSTEM_PROMPT_{language}")
-        # assert (
-        #     system_prompt is not None
-        # ), f"missing environment variable SYSTEM_PROMPT_{language}"
         system_prompt = prompt["system_prompt"]
         assert isinstance(system_prompt, str)
         assert len(system_prompt) > 0
 
-        # rag_prompt = os.getenv(f"RAG_PROMPT_{language}")
-        # assert (
-        #     rag_prompt is not None
-        # ), f"missing environment variable RAG_PROMPT_{language}"
         rag_prompt = prompt["rag_prompt"]
         assert isinstance(rag_prompt, str)
         assert len(rag_prompt) > 0
 
-        # ragless_prompt = os.getenv(f"RAGLESS_PROMPT_{language}")
-        # assert (
-        #     ragless_prompt is not None
-        # ), f"missing environment variable RAGLESS_PROMPT_{language}"
         ragless_prompt = prompt["ragless_prompt"]
         assert isinstance(ragless_prompt, str)
         assert len(ragless_prompt) > 0

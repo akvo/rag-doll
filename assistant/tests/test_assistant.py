@@ -1,11 +1,53 @@
 import logging
 
-from os import environ
-from assistant import get_language, assistant_data, query_llm
+from assistant import (
+    main,
+    get_language,
+    assistant_data,
+    query_llm,
+    connect_to_sqlite,
+    get_stable_prompt,
+)
 from unittest.mock import patch, MagicMock
 
 
+def test_connect_to_sqlite():
+    conn = connect_to_sqlite()
+    assert conn is not None
+
+
+def test_get_stable_prompt():
+    conn = connect_to_sqlite()
+    prompt = get_stable_prompt(lang="en", conn=conn)
+    assert prompt is not None
+    assert prompt["language"] == "en"
+
+    prompt = get_stable_prompt(lang="id", conn=conn)
+    assert prompt is None
+    conn.close()
+
+
 def test_language_support():
+    main()
+    conn = connect_to_sqlite()
+    en_prompt = get_stable_prompt(lang="en", conn=conn)
+    fr_prompt = get_stable_prompt(lang="fr", conn=conn)
+    sw_prompt = get_stable_prompt(lang="sw", conn=conn)
+    conn.close()
+    # not defined language default to english
+    detected_language = get_language(
+        "Halo, tolong kirimkan saya rekomendasi tentang pertanian di Kenya."
+    )
+    assert detected_language == "en"
+    knowledge_base = assistant_data[detected_language]["knowledge_base"]
+    system_prompt = assistant_data[detected_language]["system_prompt"]
+    rag_prompt = assistant_data[detected_language]["rag_prompt"]
+    ragless_prompt = assistant_data[detected_language]["ragless_prompt"]
+    assert knowledge_base.name == "EPPO-datasheets-en"
+    assert system_prompt == en_prompt["system_prompt"]
+    assert rag_prompt == en_prompt["rag_prompt"]
+    assert ragless_prompt == en_prompt["ragless_prompt"]
+
     detected_language = get_language(
         "Bonjour, veuillez m'envoyer les recommandations d'agriculture au Kenya"
     )
@@ -15,9 +57,9 @@ def test_language_support():
     rag_prompt = assistant_data[detected_language]["rag_prompt"]
     ragless_prompt = assistant_data[detected_language]["ragless_prompt"]
     assert knowledge_base.name == "EPPO-datasheets-fr"
-    assert system_prompt == environ["SYSTEM_PROMPT_fr"]
-    assert rag_prompt == environ["RAG_PROMPT_fr"]
-    assert ragless_prompt == environ["RAGLESS_PROMPT_fr"]
+    assert system_prompt == fr_prompt["system_prompt"]
+    assert rag_prompt == fr_prompt["rag_prompt"]
+    assert ragless_prompt == fr_prompt["ragless_prompt"]
 
     detected_language = get_language(
         "Hello, please send me the recommendations of agriculture in Kenya"
@@ -28,9 +70,9 @@ def test_language_support():
     rag_prompt = assistant_data[detected_language]["rag_prompt"]
     ragless_prompt = assistant_data[detected_language]["ragless_prompt"]
     assert knowledge_base.name == "EPPO-datasheets-en"
-    assert system_prompt == environ["SYSTEM_PROMPT_en"]
-    assert rag_prompt == environ["RAG_PROMPT_en"]
-    assert ragless_prompt == environ["RAGLESS_PROMPT_en"]
+    assert system_prompt == en_prompt["system_prompt"]
+    assert rag_prompt == en_prompt["rag_prompt"]
+    assert ragless_prompt == en_prompt["ragless_prompt"]
 
     detected_language = get_language(
         "Hujambo, tafadhali nitumie mapendekezo ya kilimo nchini Kenya"
@@ -41,13 +83,17 @@ def test_language_support():
     rag_prompt = assistant_data[detected_language]["rag_prompt"]
     ragless_prompt = assistant_data[detected_language]["ragless_prompt"]
     assert knowledge_base.name == "EPPO-datasheets-sw"
-    assert system_prompt == environ["SYSTEM_PROMPT_sw"]
-    assert rag_prompt == environ["RAG_PROMPT_sw"]
-    assert ragless_prompt == environ["RAGLESS_PROMPT_sw"]
+    assert system_prompt == sw_prompt["system_prompt"]
+    assert rag_prompt == sw_prompt["rag_prompt"]
+    assert ragless_prompt == sw_prompt["ragless_prompt"]
 
 
 def test_query_llm():
     with patch("assistant.OpenAI") as mock_openai:
+        conn = connect_to_sqlite()
+        en_prompt = get_stable_prompt(lang="en", conn=conn)
+        conn.close()
+
         mock_content = MagicMock()
         mock_content.content = "Mocked response"
         mock_choices = MagicMock()
@@ -62,9 +108,9 @@ def test_query_llm():
 
         llm_client = mock_openai()
         model = "my_model"
-        system_prompt = environ["SYSTEM_PROMPT_en"]
-        ragless_prompt_template = environ["RAGLESS_PROMPT_en"]
-        rag_prompt_template = environ["RAG_PROMPT_en"]
+        system_prompt = en_prompt["system_prompt"]
+        ragless_prompt_template = en_prompt["ragless_prompt"]
+        rag_prompt_template = en_prompt["rag_prompt"]
         context = ["Knowledge base chunk 1", "Knowledge base chunk 2"]
         prompt = (
             "Hello, please send me the recommendations of agriculture in Kenya"

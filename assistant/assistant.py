@@ -3,15 +3,21 @@ import json
 import asyncio
 import logging
 import chromadb
+import sqlite3
+import pandas as pd
+
 from time import sleep
 from openai import OpenAI
 from langdetect import detect
 from datetime import datetime, timezone
 from Akvo_rabbitmq_client import rabbitmq_client
 from typing import Optional
+from sqlite3 import Connection
 
 logger = logging.getLogger(__name__)
 
+
+openai = OpenAI()
 
 CHROMADB_HOST: str = os.getenv("CHROMADB_HOST")
 CHROMADB_PORT: int = os.getenv("CHROMADB_PORT")
@@ -40,6 +46,23 @@ RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
 # the collection of knowledge base connections and prompts,
 # indexed by question language.
 assistant_data = {}
+
+
+def connect_to_sqlite():
+    try:
+        conn = sqlite3.connect("./db/assistant.sqlite")
+        return conn
+    except Exception as e:
+        print(f"Error connecting to SQLite: {e}")
+        return None
+
+
+def get_stable_prompt(lang: str, conn: Connection):
+    query = f"SELECT * from prompt WHERE stable == 1 AND language == '{lang}'"
+    df = pd.read_sql_query(query, conn)
+    if df.empty:
+        return None
+    return df.iloc[0]
 
 
 def connect_to_chromadb(
@@ -311,44 +334,56 @@ async def on_message(body: str) -> None:
     await publish_reliably(queue_message=reply_message)
 
 
-# Connect to all knowledge bases and store the language-specific connections
-# and prompts in the assistant data dictionary.
-for language in ASSISTANT_LANGUAGES:
-    collection_name = CHROMADB_COLLECTION_TEMPLATE.format(language)
-    knowledge_base = connect_to_chromadb(
-        CHROMADB_HOST, CHROMADB_PORT, collection_name
-    )
+def main():
+    # Connect to all knowledge bases and store the language-specific connections
+    # and prompts in the assistant data dictionary.
+    sqlite_conn = connect_to_sqlite()
+    assert sqlite_conn is not None
 
-    system_prompt = os.getenv(f"SYSTEM_PROMPT_{language}")
-    assert (
-        system_prompt is not None
-    ), f"missing environment variable SYSTEM_PROMPT_{language}"
-    assert isinstance(system_prompt, str)
-    assert len(system_prompt) > 0
-    rag_prompt = os.getenv(f"RAG_PROMPT_{language}")
-    assert (
-        rag_prompt is not None
-    ), f"missing environment variable RAG_PROMPT_{language}"
-    assert isinstance(rag_prompt, str)
-    assert len(rag_prompt) > 0
-    ragless_prompt = os.getenv(f"RAGLESS_PROMPT_{language}")
-    assert (
-        ragless_prompt is not None
-    ), f"missing environment variable RAGLESS_PROMPT_{language}"
-    assert isinstance(ragless_prompt, str)
-    assert len(ragless_prompt) > 0
+    for language in ASSISTANT_LANGUAGES:
+        collection_name = CHROMADB_COLLECTION_TEMPLATE.format(language)
+        knowledge_base = connect_to_chromadb(
+            CHROMADB_HOST, CHROMADB_PORT, collection_name
+        )
 
-    assistant_data[language] = {
-        "knowledge_base": knowledge_base,
-        "system_prompt": system_prompt,
-        "rag_prompt": rag_prompt,
-        "ragless_prompt": ragless_prompt,
-    }
+        # TODO: Change this to get prompt from sqlite
+        prompt = get_stable_prompt(lang=language, conn=sqlite_conn)
+        assert prompt is not None
 
-openai = OpenAI()
+        # system_prompt = os.getenv(f"SYSTEM_PROMPT_{language}")
+        # assert (
+        #     system_prompt is not None
+        # ), f"missing environment variable SYSTEM_PROMPT_{language}"
+        system_prompt = prompt["system_prompt"]
+        assert isinstance(system_prompt, str)
+        assert len(system_prompt) > 0
+
+        # rag_prompt = os.getenv(f"RAG_PROMPT_{language}")
+        # assert (
+        #     rag_prompt is not None
+        # ), f"missing environment variable RAG_PROMPT_{language}"
+        rag_prompt = prompt["rag_prompt"]
+        assert isinstance(rag_prompt, str)
+        assert len(rag_prompt) > 0
+
+        # ragless_prompt = os.getenv(f"RAGLESS_PROMPT_{language}")
+        # assert (
+        #     ragless_prompt is not None
+        # ), f"missing environment variable RAGLESS_PROMPT_{language}"
+        ragless_prompt = prompt["ragless_prompt"]
+        assert isinstance(ragless_prompt, str)
+        assert len(ragless_prompt) > 0
+
+        assistant_data[language] = {
+            "knowledge_base": knowledge_base,
+            "system_prompt": system_prompt,
+            "rag_prompt": rag_prompt,
+            "ragless_prompt": ragless_prompt,
+        }
+    sqlite_conn.close()
 
 
-async def main():
+async def consumer():
     await rabbitmq_client.initialize()
 
     await rabbitmq_client.consume(
@@ -367,5 +402,5 @@ async def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-
-    asyncio.run(main())
+    main()
+    asyncio.run(consumer())

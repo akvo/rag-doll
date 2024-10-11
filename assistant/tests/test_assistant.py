@@ -1,13 +1,7 @@
 import logging
 
-from assistant import (
-    main,
-    get_language,
-    assistant_data,
-    query_llm,
-    connect_to_sqlite,
-    get_stable_prompt,
-)
+from db import connect_to_sqlite, get_stable_prompt
+from assistant import main, get_language, assistant_data, query_llm
 from unittest.mock import patch, MagicMock
 
 
@@ -18,24 +12,24 @@ def test_connect_to_sqlite():
 
 def test_get_stable_prompt():
     conn = connect_to_sqlite()
-    prompt = get_stable_prompt(lang="id", conn=conn)
+    prompt = get_stable_prompt(conn=conn, language="id")
     assert prompt is None
 
-    prompt = get_stable_prompt(lang="en", conn=conn)
+    prompt = get_stable_prompt(conn=conn, language="en")
     assert prompt is not None
     assert prompt["language"] == "en"
     assert prompt["system_prompt"] is not None
     assert prompt["rag_prompt"] is not None
     assert prompt["ragless_prompt"] is not None
 
-    prompt = get_stable_prompt(lang="fr", conn=conn)
+    prompt = get_stable_prompt(conn=conn, language="fr")
     assert prompt is not None
     assert prompt["language"] == "fr"
     assert prompt["system_prompt"] is not None
     assert prompt["rag_prompt"] is not None
     assert prompt["ragless_prompt"] is not None
 
-    prompt = get_stable_prompt(lang="sw", conn=conn)
+    prompt = get_stable_prompt(conn=conn, language="sw")
     assert prompt is not None
     assert prompt["language"] == "sw"
     assert prompt["system_prompt"] is not None
@@ -47,9 +41,9 @@ def test_get_stable_prompt():
 def test_language_support():
     main()
     conn = connect_to_sqlite()
-    en_prompt = get_stable_prompt(lang="en", conn=conn)
-    fr_prompt = get_stable_prompt(lang="fr", conn=conn)
-    sw_prompt = get_stable_prompt(lang="sw", conn=conn)
+    en_prompt = get_stable_prompt(conn=conn, language="en")
+    fr_prompt = get_stable_prompt(conn=conn, language="fr")
+    sw_prompt = get_stable_prompt(conn=conn, language="sw")
     conn.close()
     # not defined language default to english
     detected_language = get_language(
@@ -108,7 +102,7 @@ def test_language_support():
 def test_query_llm():
     with patch("assistant.OpenAI") as mock_openai:
         conn = connect_to_sqlite()
-        en_prompt = get_stable_prompt(lang="en", conn=conn)
+        en_prompt = get_stable_prompt(conn=conn, language="en")
         conn.close()
 
         mock_content = MagicMock()

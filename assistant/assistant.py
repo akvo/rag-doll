@@ -3,8 +3,6 @@ import json
 import asyncio
 import logging
 import chromadb
-import sqlite3
-import pandas as pd
 
 from time import sleep
 from openai import OpenAI
@@ -12,7 +10,7 @@ from langdetect import detect
 from datetime import datetime, timezone
 from Akvo_rabbitmq_client import rabbitmq_client
 from typing import Optional
-from sqlite3 import Connection
+from db import connect_to_sqlite, get_stable_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -46,23 +44,6 @@ RABBITMQ_QUEUE_USER_CHAT_REPLIES = os.getenv(
 # the collection of knowledge base connections and prompts,
 # indexed by question language.
 assistant_data = {}
-
-
-def connect_to_sqlite():
-    try:
-        conn = sqlite3.connect("./db/assistant.sqlite")
-        return conn
-    except Exception as e:
-        print(f"Error connecting to SQLite: {e}")
-        return None
-
-
-def get_stable_prompt(lang: str, conn: Connection):
-    query = f"SELECT * from prompt WHERE stable == 1 AND language == '{lang}'"
-    df = pd.read_sql_query(query, conn)
-    if df.empty:
-        return None
-    return df.iloc[0]
 
 
 def connect_to_chromadb(
@@ -346,8 +327,10 @@ def main():
             CHROMADB_HOST, CHROMADB_PORT, collection_name
         )
 
-        # TODO: Change this to get prompt from sqlite
-        prompt = get_stable_prompt(lang=language, conn=sqlite_conn)
+        prompt = get_stable_prompt(
+            conn=sqlite_conn,
+            language=language,
+        )
         assert prompt is not None
 
         system_prompt = prompt["system_prompt"]

@@ -170,7 +170,7 @@ def make_chunks(df: pd.DataFrame, chunk_size: int, overlap_size: int) -> pd.Data
     return pd.DataFrame(all_chunks)
 
 
-def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.Collection:
+def connect_to_chromadb(host: str, port: int, collection_name: str, recreate_collection: bool = False) -> chromadb.Collection:
     '''
         Connect to ChromaDB. The ChromaDB service takes a second or so to start,
         so we have a crude retry loop. Once connected, we look up or create the
@@ -180,6 +180,14 @@ def connect_to_chromadb(host: str, port: int, collection_name: str) -> chromadb.
     while chromadb_client == None:
         try:
             chromadb_client = chromadb.HttpClient(host=host, port=port, settings=chromadb.Settings(anonymized_telemetry=False))
+
+            if recreate_collection:
+                try:
+                    chromadb_client.delete_collection(collection_name)
+                    logger.info(f"deleted collection {collection_name}...")
+                except Exception:
+                    pass
+
             chromadb_collection = chromadb_client.get_or_create_collection(collection_name)
             logger.info(f"Connected to http://{host}:{port}/{chromadb_collection.name}, which has {chromadb_collection.count()} records.")
             return chromadb_collection

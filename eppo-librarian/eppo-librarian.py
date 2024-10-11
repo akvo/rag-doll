@@ -142,7 +142,7 @@ def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
     return df.apply(download_and_extract_text, axis=1)
 
 
-def make_chunks(df: pd.DataFrame, chunk_size: int, overlap_size: int) -> pd.DataFrame:
+def make_chunks(df: pd.DataFrame, from_column: str, chunk_size: int, overlap_size: int, to_column: str) -> pd.DataFrame:
     """
     Splits the text into chunks of sentences using a roof tiling method. By
     splitting the datasheets into chunks we expect that the RAG queries
@@ -163,9 +163,9 @@ def make_chunks(df: pd.DataFrame, chunk_size: int, overlap_size: int) -> pd.Data
     all_chunks = []
     for index, row in df.iterrows():
         eppo_code = row[COL_EPPO_CODE]
-        chunks = create_chunks(row[COL_TEXT_EN])
+        chunks = create_chunks(row[from_column])
         for chunk in chunks:
-            all_chunks.append({COL_EPPO_CODE: eppo_code, COL_CHUNK: chunk})
+            all_chunks.append({COL_EPPO_CODE: eppo_code, to_column: chunk})
 
     return pd.DataFrame(all_chunks)
 
@@ -280,7 +280,7 @@ if __name__ == "__main__":
     datasheets_df = download_datasheets(eppo_code_df)
 
     logger.info("generating chunks...")
-    chunks_df = make_chunks(datasheets_df, CHUNK_SIZE, OVERLAP_SIZE)
+    chunks_df = make_chunks(datasheets_df, COL_TEXT_EN, CHUNK_SIZE, OVERLAP_SIZE, COL_CHUNK)
 
     for to_language in ASSISTANT_LANGUAGES:
         collection_name = CHROMADB_COLLECTION_TEMPLATE.format(to_language)

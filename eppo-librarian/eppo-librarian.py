@@ -8,6 +8,7 @@ import chromadb
 import pandas as pd
 from lxml import html
 from time import sleep
+from openai import OpenAI
 from lxml.html import HtmlElement
 from nltk.tokenize import sent_tokenize
 from deep_translator import GoogleTranslator
@@ -49,11 +50,24 @@ ASSISTANT_LANGUAGES: list[str] = os.getenv('ASSISTANT_LANGUAGES').replace(' ', '
 assert not ASSISTANT_LANGUAGES is None
 assert len(ASSISTANT_LANGUAGES) > 0
 
-COL_EPPO_CODE: str = 'EPPOCode'
-COL_COUNTRY: str   = 'country code (ISO 3166-1)'
-COL_URL: str       = 'EPPO datasheet url'
-COL_TEXT_EN: str   = 'datasheet (en)'
-COL_CHUNK: str     = 'chunk (en)'
+OPENAI_CHAT_MODEL: str = os.getenv('OPENAI_CHAT_MODEL')
+assert not OPENAI_CHAT_MODEL is None
+assert isinstance(OPENAI_CHAT_MODEL, str)
+
+PLAIN_TEXT_SYSTEM_PROMPT: str = os.getenv('PLAIN_TEXT_SYSTEM_PROMPT')
+assert not PLAIN_TEXT_SYSTEM_PROMPT is None
+assert isinstance(PLAIN_TEXT_SYSTEM_PROMPT, str)
+PLAIN_TEXT_PROMPT: str = os.getenv('PLAIN_TEXT_PROMPT')
+assert not PLAIN_TEXT_PROMPT is None
+assert isinstance(PLAIN_TEXT_PROMPT, str)
+
+
+COL_EPPO_CODE: str  = 'EPPOCode'
+COL_COUNTRY: str    = 'country code (ISO 3166-1)'
+COL_URL: str        = 'EPPO datasheet url'
+COL_TEXT_EN: str    = 'datasheet (en)'
+COL_TEXT_PLAIN: str = 'datasheet (plain en)'
+COL_CHUNK: str      = 'chunk (en)'
 
 
 def download_eppo_code_registry(url: str, countries: list[str]) -> pd.DataFrame:
@@ -140,6 +154,26 @@ def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
         })
 
     return df.apply(download_and_extract_text, axis=1)
+
+
+def translate_to_plain_text(df: pd.DataFrame,
+                        llm_client: OpenAI, model: str,
+                        system_prompt: str, prompt_template: str,
+                        col_from: str, col_to: str) -> pd.DataFrame:
+
+    def to_plain(llm_client: OpenAI, model: str, system_prompt: str, prompt_template: str, text: str) -> str:
+        llm_messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": prompt_template.format(text=text)}
+        ]
+        response = llm_client.chat.completions.create(
+            model=model,
+            messages=llm_messages,
+        )
+        return response.choices[0].message.content.strip()
+
+    df[col_to] = df.apply(lambda row: to_plain(llm_client, model, system_prompt, prompt_template, row[col_from]), axis=1)
+    return df
 
 
 def make_chunks(df: pd.DataFrame, from_column: str, chunk_size: int, overlap_size: int, to_column: str) -> pd.DataFrame:
@@ -277,6 +311,15 @@ if __name__ == "__main__":
     eppo_code_df = download_eppo_code_registry(EPPO_COUNTRY_ORGANISM_URL, EPPO_COUNTRIES)
 
     logger.info("loading datasheets...")
+    datasheets_df = download_datasheets(eppo_code_df)
+
+    logger.info("translating datasheets into plain language...")
+    openai = OpenAI()
+    datasheets_df = translate_to_plain_text(datasheets_df,
+                        openai, OPENAI_CHAT_MODEL,
+                        PLAIN_TEXT_SYSTEM_PROMPT, PLAIN_TEXT_PROMPT,
+                        COL_TEXT_EN, COL_TEXT_PLAIN)
+
     datasheets_df = download_datasheets(eppo_code_df)
 
     logger.info("generating chunks...")

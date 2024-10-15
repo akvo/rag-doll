@@ -468,6 +468,12 @@ async def chat_message(sid, msg):
         session.close()
 
 
+@sio_server.on("read_message")
+async def read_message(sid, chat_session_id):
+    # TODO :: update message status to read by chat_session_id
+    return None
+
+
 async def emit_chats_callback(value):
     logger.info(f"Emit chats callback {value}")
 

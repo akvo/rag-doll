@@ -187,6 +187,7 @@ const ChatList = ({
     }
   }, [newMessage]);
 
+  // TODO :: render unread chat count badge
   return (
     <div
       className="w-full h-screen bg-white overflow-y-scroll flex-shrink-0"

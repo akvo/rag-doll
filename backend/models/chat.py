@@ -22,8 +22,8 @@ class Platform_Enum(enum.Enum):
 
 
 class Chat_Status_Enum(enum.Enum):
-    UNREAD = "unread"
-    READ = "read"
+    UNREAD = "UNREAD"
+    READ = "READ"
 
 
 class Chat_Session(SQLModel, table=True):

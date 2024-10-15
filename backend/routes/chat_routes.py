@@ -46,10 +46,24 @@ async def get_chats(
                 and_(
                     Chat.chat_session_id == chat.id,
                     Chat.status == Chat_Status_Enum.UNREAD,
+                    Chat.sender_role == Sender_Role_Enum.CLIENT,
                 )
             )
         ).all()
         unread_message_count = len(unread_messages)
+
+        # unread_assistant_message
+        unread_assistant_message = session.exec(
+            select(Chat.id)
+            .where(
+                and_(
+                    Chat.chat_session_id == chat.id,
+                    Chat.status == Chat_Status_Enum.UNREAD,
+                    Chat.sender_role == Sender_Role_Enum.ASSISTANT,
+                )
+            )
+            .order_by(Chat.created_at.desc(), Chat.id.desc())
+        ).first()
 
         last_message = session.exec(
             select(Chat)
@@ -67,6 +81,9 @@ async def get_chats(
                     last_message.to_last_message() if last_message else None
                 ),
                 "unread_message_count": unread_message_count,
+                "unread_assistant_message": (
+                    True if unread_assistant_message else False
+                ),
             }
         )
 

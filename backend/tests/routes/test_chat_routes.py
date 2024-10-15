@@ -50,6 +50,7 @@ def test_get_chats_authenticated(client: TestClient, session: Session) -> None:
 
     # check for no last message
     assert "unread_message_count" in content["chats"][0]
+    assert "unread_assistant_message" in content["chats"][0]
     assert content["chats"][0]["unread_message_count"] == 0
 
     last_chat_message = content["chats"][0].get("last_message")
@@ -57,6 +58,7 @@ def test_get_chats_authenticated(client: TestClient, session: Session) -> None:
 
     # check with last message
     assert "unread_message_count" in content["chats"][1]
+    assert "unread_assistant_message" in content["chats"][1]
     assert content["chats"][1]["unread_message_count"] == 1
 
     last_chat_message = content["chats"][1].get("last_message")

@@ -1,9 +1,14 @@
 import os
 import sqlite3
 import pandas as pd
+import logging
 
 from db import DB_NAME, DB_PATH
 from typing import Optional
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 FILENAME = "prompt"
 
@@ -13,7 +18,7 @@ def main(db_name: Optional[str] = DB_NAME):
     sqlite_db = DB_PATH.format(db_name=db_name)
 
     if not os.path.exists(csv_file):
-        print(f"404 - File not found: {csv_file}")
+        logger.info(f"404 - File not found: {csv_file}")
         return None
 
     try:
@@ -28,13 +33,12 @@ def main(db_name: Optional[str] = DB_NAME):
             prompt_group_df.set_index("stable")["id"]
         )
         prompt_detail = prompt_detail.drop(columns=["stable"])
-        print(prompt_detail)
     except Exception as e:
-        print(f"Error reading CSV: {e}")
+        logger.info(f"Error reading CSV: {e}")
         return None
 
     if prompt_detail.empty or prompt_group_df.empty:
-        print("404 - CSV file is empty")
+        logger.info("404 - CSV file is empty")
         return None
 
     try:
@@ -46,9 +50,9 @@ def main(db_name: Optional[str] = DB_NAME):
             "prompt_detail", conn, if_exists="replace", index=False
         )
         conn.close()
-        print(f"{sqlite_db} generated successfully")
+        logger.info(f"{sqlite_db} generated successfully")
     except Exception as e:
-        print(f"Error writing to SQLite: {e}")
+        logger.info(f"Error writing to SQLite: {e}")
 
 
 if __name__ == "__main__":

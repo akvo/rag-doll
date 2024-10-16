@@ -13,6 +13,7 @@ from models import (
     Sender_Role_Enum,
     Platform_Enum,
     Chat,
+    Chat_Status_Enum,
 )
 from core.database import engine
 from sqlmodel import Session, select, and_
@@ -265,6 +266,26 @@ def handle_incoming_message(session: Session, message: dict):
     return user["id"], user["phone_number"], chat_session_id, new_chat.id
 
 
+def handle_read_message(session: Session, chat_session_id: int):
+    try:
+        unread_messages = session.exec(
+            select(Chat).where(
+                and_(
+                    Chat.chat_session_id == chat_session_id,
+                    Chat.status == Chat_Status_Enum.UNREAD,
+                )
+            )
+        ).all()
+        for um in unread_messages:
+            um.status = Chat_Status_Enum.READ
+        session.commit()
+        session.flush()
+        return unread_messages
+    except Exception as e:
+        logger.error(f"Error handle read message: {e}")
+        raise e
+
+
 async def resend_messages(session: Session, user_id=int, user_sid=str):
     chat_session = session.exec(
         select(Chat_Session).where(Chat_Session.user_id == user_id)
@@ -470,8 +491,8 @@ async def chat_message(sid, msg):
 
 @sio_server.on("read_message")
 async def read_message(sid, chat_session_id):
-    # TODO :: update message status to read by chat_session_id
-    return None
+    session = Session(engine)
+    handle_read_message(session=session, chat_session_id=chat_session_id)
 
 
 async def emit_chats_callback(value):

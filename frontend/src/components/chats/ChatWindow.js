@@ -113,6 +113,13 @@ const ChatWindow = ({
     }
   }, []);
 
+  // handle onRead message
+  useEffect(() => {
+    if (firstUnreadMessage?.chat_session_id && socket.connected) {
+      socket.emit("read_message", firstUnreadMessage.chat_session_id);
+    }
+  }, [socket, firstUnreadMessage]);
+
   // Scroll to the last message whenever chats or chatHistory state changes
   useEffect(() => {
     if (!firstUnreadMessage && (chats?.length > 0 || chatHistory?.length > 0)) {

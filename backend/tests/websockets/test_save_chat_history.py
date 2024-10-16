@@ -7,6 +7,7 @@ from core.socketio_config import (
     Client,
     User,
     Chat,
+    Chat_Status_Enum,
 )
 from models import Chat_Media
 
@@ -38,6 +39,7 @@ def test_save_chat_history_when_send_a_message_into_platform(session: Session):
     chat = session.exec(select(Chat).where(Chat.id == result)).first()
     assert chat.message == "Saved message"
     assert chat.sender_role == Sender_Role_Enum.USER
+    assert chat.status == Chat_Status_Enum.READ
 
 
 def test_save_chat_history_with_image(session: Session):
@@ -76,6 +78,7 @@ def test_save_chat_history_with_image(session: Session):
     chat = session.exec(select(Chat).where(Chat.id == result)).first()
     assert chat.message == "Saved message with image"
     assert chat.sender_role == Sender_Role_Enum.USER
+    assert chat.status == Chat_Status_Enum.READ
 
     chat_media = session.exec(
         select(Chat_Media).where(Chat_Media.chat_id == chat.id)

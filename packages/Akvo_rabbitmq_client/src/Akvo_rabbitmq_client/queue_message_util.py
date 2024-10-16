@@ -19,16 +19,19 @@ class QueueMessageUtil:
         media: Optional[List[Dict[str, str]]] = None,
         context: Optional[List[Dict[str, str]]] = None,
         transformation_log: Optional[List[str]] = None,
-        history: Optional[List[dict]] = None
+        history: Optional[List[dict]] = None,
+        status: Optional[str] = None,
     ) -> Dict[str, any]:
         if sender_role not in sender_role_enum.__members__.values():
             raise ValueError(
                 f"Invalid sender_role value: {sender_role}. Must be one of: {
-                    list(sender_role_enum.__members__.values())}")
+                    list(sender_role_enum.__members__.values())}"
+            )
         if platform not in platform_enum.__members__.values():
             raise ValueError(
                 f"Invalid platform value: {platform}. Must be one of: {
-                    list(platform_enum.__members__.values())}")
+                    list(platform_enum.__members__.values())}"
+            )
 
         if media is None:
             media = []
@@ -46,12 +49,13 @@ class QueueMessageUtil:
                 "sender_role": sender_role.value,
                 "platform": platform.value,
                 "timestamp": timestamp,
+                "status": status,
             },
             "body": body,
             "media": media,
             "context": context,
             "transformation_log": transformation_log,
-            "history": history
+            "history": history,
         }
         return message
 

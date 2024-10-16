@@ -20,6 +20,7 @@ from models import (
     Chat,
     Sender_Role_Enum,
     Platform_Enum,
+    Chat_Status_Enum,
 )
 
 
@@ -55,18 +56,22 @@ def init_db(session: Session) -> None:
         {
             "message": "Hello Admin!",
             "sender": Sender_Role_Enum.CLIENT,
+            "status": Chat_Status_Enum.READ,
         },
         {
             "message": "Hello, +62 812 3456 7890",
             "sender": Sender_Role_Enum.USER,
+            "status": Chat_Status_Enum.READ,
         },
         {
             "message": "Is there anything I can help you with?",
             "sender": Sender_Role_Enum.USER,
+            "status": Chat_Status_Enum.READ,
         },
         {
             "message": "Yes, I need help with something.",
             "sender": Sender_Role_Enum.CLIENT,
+            "status": Chat_Status_Enum.UNREAD,
         },
     ]
     for message in messages:
@@ -74,6 +79,7 @@ def init_db(session: Session) -> None:
             chat_session_id=chat_session.id,
             message=message["message"],
             sender_role=message["sender"],
+            status=message["status"],
         )
         session.add(chat)
         session.commit()

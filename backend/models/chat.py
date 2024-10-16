@@ -21,6 +21,11 @@ class Platform_Enum(enum.Enum):
     SLACK = "SLACK"
 
 
+class Chat_Status_Enum(enum.Enum):
+    UNREAD = "UNREAD"
+    READ = "READ"
+
+
 class Chat_Session(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
@@ -65,6 +70,13 @@ class Chat(SQLModel, table=True):
     sender_role: Sender_Role_Enum = Field(
         sa_column=Column(Enum(Sender_Role_Enum), nullable=False)
     )
+    status: Chat_Status_Enum = Field(
+        sa_column=Column(
+            Enum(Chat_Status_Enum),
+            default=Chat_Status_Enum.UNREAD,
+            nullable=False,
+        )
+    )
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(),
@@ -92,6 +104,7 @@ class Chat(SQLModel, table=True):
             "sender_role": self.sender_role.value,
             "created_at": self.created_at,
             "media": media,
+            "status": self.status.value,
         }
 
     def to_last_message(self) -> dict:

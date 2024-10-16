@@ -30,7 +30,7 @@ export const SenderRoleEnum = {
   SYSTEM: "system",
 };
 
-const ChatStatusEnum = {
+export const ChatStatusEnum = {
   UNREAD: "UNREAD",
   READ: "READ",
 };

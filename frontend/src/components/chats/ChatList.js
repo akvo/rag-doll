@@ -13,6 +13,7 @@ import Image from "next/image";
 import { renderTextForMediaMessage } from "@/app/chats/page";
 import FloatingPlusButton from "./FloatingPlusButton";
 import Loading from "@/app/loading";
+import { ChatStatusEnum, SenderRoleEnum } from "./ChatWindow";
 
 const initialChatItems = { chats: [], limit: 10, offset: 0 };
 
@@ -167,6 +168,14 @@ const ChatList = ({
             );
           });
           if (findNewMessage) {
+            // handle message count
+            const isUnread =
+              findNewMessage.conversation_envelope.status ===
+              ChatStatusEnum.UNREAD;
+            const isAssistant =
+              findNewMessage.conversation_envelope.sender_role ===
+              SenderRoleEnum.ASSISTANT;
+            const prevCount = chat?.unread_message_count || 0;
             return {
               ...chat,
               last_message: {
@@ -174,6 +183,9 @@ const ChatList = ({
                 created_at: findNewMessage.conversation_envelope.timestamp,
                 message: findNewMessage.body,
               },
+              unread_assistant_message: isAssistant && isUnread,
+              unread_message_count:
+                !isAssistant && isUnread ? prevCount + 1 : prevCount,
             };
           }
           return chat;

@@ -23,7 +23,8 @@ router = APIRouter()
 security = HTTPBearer()
 
 INITIAL_CHAT_TEMPLATE = environ.get(
-    "INITIAL_CHAT_TEMPLATE", "Hi {farmer_name}, welcome to Agriconnect."
+    "INITIAL_CHAT_TEMPLATE",
+    "Hi {farmer_name}, I'm {officer_name} the extension officer.",
 )
 twilio_client = TwilioClient()
 
@@ -39,7 +40,10 @@ async def add_client(
     user = verify_user(session, auth)
 
     # format initial message for the client
-    initial_message = INITIAL_CHAT_TEMPLATE.format(farmer_name=name)
+    user_name = user.properties.name if user.properties else user.phone_number
+    initial_message = INITIAL_CHAT_TEMPLATE.format(
+        farmer_name=name, officer_name=user_name
+    )
 
     phone_number = phonenumbers.parse(phone_number)
     phone_number = (

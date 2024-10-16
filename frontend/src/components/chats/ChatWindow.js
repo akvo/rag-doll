@@ -37,7 +37,7 @@ export const ChatStatusEnum = {
 
 const ChatIDPrefix = "CHAT-";
 
-const UserChat = forwardRef(({ message, timestamp, refTemp }) => {
+const UserChat = forwardRef(({ message, timestamp, refTemp }, ref) => {
   return (
     <div className="flex mb-4 justify-end" ref={refTemp}>
       <div className="relative bg-akvo-green-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
@@ -59,7 +59,7 @@ const UserChat = forwardRef(({ message, timestamp, refTemp }) => {
 UserChat.displayName = "UserChat";
 
 const ClientChat = forwardRef(
-  ({ message, timestamp, media = [], refTemp, id }) => {
+  ({ message, timestamp, media = [], refTemp, id }, ref) => {
     return (
       <div className="flex mb-4" ref={refTemp} id={id}>
         <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
@@ -117,11 +117,11 @@ const ChatWindow = ({
 
   // handle onRead message for chat history and incoming chat
   useEffect(() => {
-    if (
-      (firstUnreadMessage?.chat_session_id || chats.length) &&
-      socket.connected
-    ) {
-      let chat_session_id = firstUnreadMessage.chat_session_id;
+    if (firstUnreadMessage?.chat_session_id && socket.connected) {
+      socket.emit("read_message", firstUnreadMessage.chat_session_id);
+    }
+    if (chats.length && socket.connected) {
+      let chat_session_id = null;
       const findChat = chats.find(
         (c) => c.conversation_envelope.client_phone_number === clientPhoneNumber
       );

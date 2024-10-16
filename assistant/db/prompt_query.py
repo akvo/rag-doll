@@ -11,6 +11,7 @@ def get_stable_prompt(conn: Connection, language: str):
         ON pd.prompt_id == p.id
         WHERE p.stable == 1
         AND pd.language == '{language}'
+        ORDER BY pd.id DESC
     """
     query = query.format(language=language)
     df = pd.read_sql_query(query, conn)

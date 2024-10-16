@@ -46,6 +46,38 @@ def test_get_stable_prompt():
     conn.close()
 
 
+def test_get_stable_if_more_than_one_stable_prompt_for_a_given_language():
+    conn = connect_to_sqlite(db_name=db_name)
+    cursor = conn.cursor()
+    # add more prompt into db
+    cursor.execute(
+        """
+        INSERT INTO prompt_detail (
+            id, language,
+            system_prompt, rag_prompt, ragless_prompt,
+            prompt_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            1000,
+            "en",
+            "Second system prompt",
+            "Second rag prompt",
+            "Second ragless prompt",
+            1,
+        ),
+    )
+    conn.commit()
+    df = get_stable_prompt(conn=conn, language="en")
+    assert df["language"] == "en"
+    assert df["stable"] == 1
+    assert df["system_prompt"] == "Second system prompt"
+    assert df["rag_prompt"] == "Second rag prompt"
+    assert df["ragless_prompt"] == "Second ragless prompt"
+    conn.close()
+
+
 def test_remove_sqlite():
     os.remove(DB_PATH.format(db_name=db_name))
     assert os.path.exists(DB_PATH.format(db_name=db_name)) is False

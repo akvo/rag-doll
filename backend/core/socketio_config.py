@@ -121,6 +121,7 @@ def save_chat_history(
             chat_session_id=conversation_exist.id,
             message=message_body,
             sender_role=(Sender_Role_Enum[sender_role.upper()]),
+            status=Chat_Status_Enum.READ,  # user/officer message mark as READ
         )
         session.add(new_chat)
         session.commit()

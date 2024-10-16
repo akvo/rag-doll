@@ -37,9 +37,9 @@ const ChatStatusEnum = {
 
 const ChatIDPrefix = "CHAT-";
 
-const UserChat = forwardRef(({ message, timestamp, ref }) => {
+const UserChat = forwardRef(({ message, timestamp, refTemp }) => {
   return (
-    <div className="flex mb-4 justify-end" ref={ref}>
+    <div className="flex mb-4 justify-end" ref={refTemp}>
       <div className="relative bg-akvo-green-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
         <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-akvo-green-100 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
         {message?.split("\n")?.map((line, i) => (
@@ -58,22 +58,24 @@ const UserChat = forwardRef(({ message, timestamp, ref }) => {
 });
 UserChat.displayName = "UserChat";
 
-const ClientChat = forwardRef(({ message, timestamp, media = [], ref, id }) => {
-  return (
-    <div className="flex mb-4" ref={ref} id={id}>
-      <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
-        <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-        {media.map((item, i) => (
-          <ChatMedia key={`media-${i}`} type={item.type} url={item.url} />
-        ))}
-        {message?.split("\n")?.map((line, i) => (
-          <MarkdownRenderer key={`client-${i}`} content={line} />
-        ))}
-        <p className="text-right text-xs mt-2">{formatChatTime(timestamp)}</p>
+const ClientChat = forwardRef(
+  ({ message, timestamp, media = [], refTemp, id }) => {
+    return (
+      <div className="flex mb-4" ref={refTemp} id={id}>
+        <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
+          <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+          {media.map((item, i) => (
+            <ChatMedia key={`media-${i}`} type={item.type} url={item.url} />
+          ))}
+          {message?.split("\n")?.map((line, i) => (
+            <MarkdownRenderer key={`client-${i}`} content={line} />
+          ))}
+          <p className="text-right text-xs mt-2">{formatChatTime(timestamp)}</p>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 ClientChat.displayName = "ClientChat";
 
 const ChatWindow = ({
@@ -113,12 +115,22 @@ const ChatWindow = ({
     }
   }, []);
 
-  // handle onRead message
+  // handle onRead message for chat history and incoming chat
   useEffect(() => {
-    if (firstUnreadMessage?.chat_session_id && socket.connected) {
-      socket.emit("read_message", firstUnreadMessage.chat_session_id);
+    if (
+      (firstUnreadMessage?.chat_session_id || chats.length) &&
+      socket.connected
+    ) {
+      let chat_session_id = firstUnreadMessage.chat_session_id;
+      const findChat = chats.find(
+        (c) => c.conversation_envelope.client_phone_number === clientPhoneNumber
+      );
+      if (findChat?.conversation_envelope?.chat_session_id) {
+        chat_session_id = findChat.conversation_envelope.chat_session_id;
+      }
+      socket.emit("read_message", chat_session_id);
     }
-  }, [socket, firstUnreadMessage]);
+  }, [firstUnreadMessage, chats, clientPhoneNumber]);
 
   // Scroll to the last message whenever chats or chatHistory state changes
   useEffect(() => {
@@ -338,7 +350,7 @@ const ChatWindow = ({
             key={`user-${ci}`}
             message={c.body}
             timestamp={c.conversation_envelope.timestamp}
-            ref={ci === chats.length - 1 ? lastMessageRef : null}
+            refTemp={ci === chats.length - 1 ? lastMessageRef : null}
           />
         );
       }
@@ -349,7 +361,7 @@ const ChatWindow = ({
             message={c.body}
             media={c.media}
             timestamp={c.conversation_envelope.timestamp}
-            ref={ci === chats.length - 1 ? lastMessageRef : null}
+            refTemp={ci === chats.length - 1 ? lastMessageRef : null}
           />
         );
       }

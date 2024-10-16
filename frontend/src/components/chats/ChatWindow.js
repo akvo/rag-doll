@@ -30,39 +30,50 @@ export const SenderRoleEnum = {
   SYSTEM: "system",
 };
 
-const UserChat = forwardRef(({ message, timestamp }, ref) => (
-  <div className="flex mb-4 justify-end" ref={ref}>
-    <div className="relative bg-akvo-green-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-      <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-akvo-green-100 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
-      {message?.split("\n")?.map((line, i) => (
-        <MarkdownRenderer
-          key={`user-${i}`}
-          content={line}
-          className={`prose-headings:text-gray-800 prose-strong:text-gray-800 prose-p:text-gray-800 prose-a:text-gray-800 prose-li:text-gray-800 prose-ol:text-gray-800 prose-ul:text-gray-800 prose-code:text-gray-800 text-gray-800`}
-        />
-      ))}
-      <p className="text-right text-xs mt-2 text-gray-800">
-        {formatChatTime(timestamp)}
-      </p>
+const ChatStatusEnum = {
+  UNREAD: "UNREAD",
+  READ: "READ",
+};
+
+const ChatIDPrefix = "CHAT-";
+
+const UserChat = forwardRef(({ message, timestamp, ref }) => {
+  return (
+    <div className="flex mb-4 justify-end" ref={ref}>
+      <div className="relative bg-akvo-green-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+        <div className="absolute bottom-0 right-0 w-0 h-0 border-t-8 border-t-akvo-green-100 border-r-8 border-r-transparent border-b-0 border-l-8 border-l-transparent transform -translate-x-1/2 translate-y-1/2"></div>
+        {message?.split("\n")?.map((line, i) => (
+          <MarkdownRenderer
+            key={`user-${i}`}
+            content={line}
+            className={`prose-headings:text-gray-800 prose-strong:text-gray-800 prose-p:text-gray-800 prose-a:text-gray-800 prose-li:text-gray-800 prose-ol:text-gray-800 prose-ul:text-gray-800 prose-code:text-gray-800 text-gray-800`}
+          />
+        ))}
+        <p className="text-right text-xs mt-2 text-gray-800">
+          {formatChatTime(timestamp)}
+        </p>
+      </div>
     </div>
-  </div>
-));
+  );
+});
 UserChat.displayName = "UserChat";
 
-const ClientChat = forwardRef(({ message, timestamp, media = [] }, ref) => (
-  <div className="flex mb-4" ref={ref}>
-    <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
-      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
-      {media.map((item, i) => (
-        <ChatMedia key={`media-${i}`} type={item.type} url={item.url} />
-      ))}
-      {message?.split("\n")?.map((line, i) => (
-        <MarkdownRenderer key={`client-${i}`} content={line} />
-      ))}
-      <p className="text-right text-xs mt-2">{formatChatTime(timestamp)}</p>
+const ClientChat = forwardRef(({ message, timestamp, media = [], ref, id }) => {
+  return (
+    <div className="flex mb-4" ref={ref} id={id}>
+      <div className="relative bg-gray-300 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md font-medium">
+        <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-gray-300 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+        {media.map((item, i) => (
+          <ChatMedia key={`media-${i}`} type={item.type} url={item.url} />
+        ))}
+        {message?.split("\n")?.map((line, i) => (
+          <MarkdownRenderer key={`client-${i}`} content={line} />
+        ))}
+        <p className="text-right text-xs mt-2">{formatChatTime(timestamp)}</p>
+      </div>
     </div>
-  </div>
-));
+  );
+});
 ClientChat.displayName = "ClientChat";
 
 const ChatWindow = ({
@@ -91,6 +102,10 @@ const ChatWindow = ({
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const firstUnreadMessage = useMemo(() => {
+    return chatHistory.find((ch) => ch.status === ChatStatusEnum.UNREAD);
+  }, [chatHistory]);
+
   const scrollToLastMessage = useCallback(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop =
@@ -100,10 +115,15 @@ const ChatWindow = ({
 
   // Scroll to the last message whenever chats or chatHistory state changes
   useEffect(() => {
-    if (chats?.length > 0 || chatHistory?.length > 0) {
+    if (!firstUnreadMessage && (chats?.length > 0 || chatHistory?.length > 0)) {
       scrollToLastMessage();
     }
-  }, [chats, chatHistory, scrollToLastMessage]);
+    if (firstUnreadMessage) {
+      const id = `${ChatIDPrefix}${firstUnreadMessage.id}`;
+      const lastChat = document.getElementById(id);
+      lastChat?.scrollIntoView();
+    }
+  }, [chats, chatHistory, scrollToLastMessage, firstUnreadMessage]);
 
   // Intersection observer setup to scroll when new message arrives
   useEffect(() => {
@@ -284,6 +304,7 @@ const ChatWindow = ({
             message={c.message}
             media={c.media}
             timestamp={c.created_at}
+            id={`${ChatIDPrefix}${c.id}`}
           />
         );
       }
@@ -310,7 +331,7 @@ const ChatWindow = ({
             key={`user-${ci}`}
             message={c.body}
             timestamp={c.conversation_envelope.timestamp}
-            ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+            ref={ci === chats.length - 1 ? lastMessageRef : null}
           />
         );
       }
@@ -321,7 +342,7 @@ const ChatWindow = ({
             message={c.body}
             media={c.media}
             timestamp={c.conversation_envelope.timestamp}
-            ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+            ref={ci === chats.length - 1 ? lastMessageRef : null}
           />
         );
       }

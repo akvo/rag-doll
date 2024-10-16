@@ -104,6 +104,7 @@ class Chat(SQLModel, table=True):
             "sender_role": self.sender_role.value,
             "created_at": self.created_at,
             "media": media,
+            "status": self.status.value,
         }
 
     def to_last_message(self) -> dict:

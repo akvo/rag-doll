@@ -1,3 +1,5 @@
+import pytest
+
 from sqlmodel import Session, select
 from core.socketio_config import (
     handle_incoming_message,
@@ -24,8 +26,9 @@ MESSAGE = {
 }
 
 
-def test_handle_incoming_message_new_conversation(session: Session):
-    handle_incoming_message(session=session, message=MESSAGE)
+@pytest.mark.asyncio
+async def test_handle_incoming_message_new_conversation(session: Session):
+    await handle_incoming_message(session=session, message=MESSAGE)
 
     new_client = session.exec(
         select(Client).where(Client.phone_number == "+6281222304050")
@@ -43,11 +46,12 @@ def test_handle_incoming_message_new_conversation(session: Session):
     assert new_chat.message == "Test message!"
 
 
-def test_handle_incoming_message_existing_conversation(session: Session):
+@pytest.mark.asyncio
+async def test_handle_incoming_message_existing_conversation(session: Session):
     MESSAGE["body"] = "Second message"
     MESSAGE["transformation_log"] = ["Second message"]
 
-    handle_incoming_message(session=session, message=MESSAGE)
+    await handle_incoming_message(session=session, message=MESSAGE)
 
     updated_chat_session = session.exec(
         select(Chat_Session)
@@ -60,10 +64,13 @@ def test_handle_incoming_message_existing_conversation(session: Session):
         select(Chat).where(Chat.chat_session_id == updated_chat_session[0].id)
     ).all()
     assert chats[0].message == "Test message!"
-    assert chats[1].message == "Second message"
+    assert chats[1].message.startswith(
+        "Hi 6281222304050, I'm 12345678900 the extension officer."
+    )
+    assert chats[2].message == "Second message"
 
 
-def test_handle_incoming_message_existing_conversation_with_image(
+async def test_handle_incoming_message_existing_conversation_with_image(
     session: Session,
 ):
     image_url = "https://akvo.org/wp-content/themes/Akvo-Theme"
@@ -78,7 +85,7 @@ def test_handle_incoming_message_existing_conversation_with_image(
         {"url": image_url, "type": "image/png", "caption": "Image caption"},
     ]
 
-    handle_incoming_message(session=session, message=MESSAGE)
+    await handle_incoming_message(session=session, message=MESSAGE)
 
     updated_chat_session = session.exec(
         select(Chat_Session)

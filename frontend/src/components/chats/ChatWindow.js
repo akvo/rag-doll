@@ -22,6 +22,7 @@ import ChatMedia from "./ChatMedia";
 import { deleteCookie } from "@/lib/cookies";
 import { useRouter } from "next/navigation";
 import Loading from "@/app/loading";
+import FarmerForm from "./FarmerForm";
 
 export const SenderRoleEnum = {
   USER: "user",
@@ -92,6 +93,7 @@ const ChatWindow = ({
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
 
   const scrollToLastMessage = useCallback(() => {
     if (messagesContainerRef.current) {
@@ -201,13 +203,13 @@ const ChatWindow = ({
   };
 
   const handleOnClickBack = () => {
-    chatDispatch({
-      type: "CLEAR",
-    });
-  };
-
-  const handleToggleDropdown = () => {
-    setDropdownOpen((prev) => !prev);
+    if (isEdit) {
+      setIsEdit(false);
+    } else {
+      chatDispatch({
+        type: "CLEAR",
+      });
+    }
   };
 
   // Close the dropdown if clicked outside
@@ -392,7 +394,10 @@ const ChatWindow = ({
           <p className="text-xs text-gray-500">Online</p>
         </div>
 
-        <button className="flex-end" onClick={handleToggleDropdown}>
+        <button
+          className="flex-end"
+          onClick={() => setDropdownOpen((prev) => !prev)}
+        >
           <ThreeDotIcon />
         </button>
         {/* Dropdown Menu */}
@@ -402,66 +407,84 @@ const ChatWindow = ({
             className="absolute right-0 mt-24 mr-4 w-48 bg-white border rounded shadow-lg z-20"
           >
             <ul className="py-1">
-              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                Edit Client Details
+              <li
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setIsEdit((prev) => !prev);
+                  setDropdownOpen(false);
+                }}
+              >
+                Edit Farmer Detail
               </li>
             </ul>
           </div>
         )}
       </div>
 
-      {/* Chat Messages */}
-      <div
-        className={`flex flex-col flex-grow pt-20 w-full h-full ${
-          isWhisperVisible ? "pb-40" : "pb-0"
-        }`}
-        style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
-      >
-        {loading ? (
-          <Loading />
-        ) : (
-          <>
-            {/* User Messages */}
-            <div
-              ref={messagesContainerRef}
-              className="flex-1 p-4 overflow-auto"
-            >
-              {renderChatHistory}
-              {renderChats}
-            </div>
-            {/* AI Messages */}
-            <Whisper
-              whisperChats={whisperChats}
-              setWhisperChats={setWhisperChats}
-              textareaRef={textareaRef}
-              handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
-              setMessage={setMessage}
-              setUseWhisperAsTemplate={setUseWhisperAsTemplate}
-              clients={clients}
-              lastChatHistory={lastChatHistory}
-            />
-          </>
-        )}
-      </div>
-
-      {/* TextArea */}
-      <div className="flex p-4 bg-white border-t items-center fixed bottom-0 w-full z-20">
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={handleChange}
-          onInput={handleTextAreaDynamicHeight}
-          placeholder="Type a message..."
-          className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
-          rows={1}
+      {isEdit ? (
+        <FarmerForm
+          isEdit={isEdit}
+          clientId={clientId}
+          clientName={clientName || clientPhoneNumber}
+          clientPhoneNumber={clientPhoneNumber}
+          chatDispatch={chatDispatch}
         />
-        <button
-          onClick={handleSend}
-          className="ml-4 bg-akvo-green hover:bg-green-700 text-white p-3 rounded-full focus:outline-none"
-        >
-          <SendIcon />
-        </button>
-      </div>
+      ) : (
+        <div>
+          {/* Chat Messages */}
+          <div
+            className={`flex flex-col flex-grow pt-20 w-full h-full ${
+              isWhisperVisible ? "pb-40" : "pb-0"
+            }`}
+            style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
+          >
+            {loading ? (
+              <Loading />
+            ) : (
+              <>
+                {/* User Messages */}
+                <div
+                  ref={messagesContainerRef}
+                  className="flex-1 p-4 overflow-auto"
+                >
+                  {renderChatHistory}
+                  {renderChats}
+                </div>
+                {/* AI Messages */}
+                <Whisper
+                  whisperChats={whisperChats}
+                  setWhisperChats={setWhisperChats}
+                  textareaRef={textareaRef}
+                  handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
+                  setMessage={setMessage}
+                  setUseWhisperAsTemplate={setUseWhisperAsTemplate}
+                  clients={clients}
+                  lastChatHistory={lastChatHistory}
+                />
+              </>
+            )}
+          </div>
+
+          {/* TextArea */}
+          <div className="flex p-4 bg-white border-t items-center fixed bottom-0 w-full z-20">
+            <textarea
+              ref={textareaRef}
+              value={message}
+              onChange={handleChange}
+              onInput={handleTextAreaDynamicHeight}
+              placeholder="Type a message..."
+              className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
+              rows={1}
+            />
+            <button
+              onClick={handleSend}
+              className="ml-4 bg-akvo-green hover:bg-green-700 text-white p-3 rounded-full focus:outline-none"
+            >
+              <SendIcon />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

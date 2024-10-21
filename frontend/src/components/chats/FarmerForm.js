@@ -8,9 +8,15 @@ import Notification from "../utils/Notification";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
 
-const FarmerForm = () => {
-  const [farmerName, setFarmerName] = useState(null);
-  const [phoneNumber, setPhoneNumber] = useState(null);
+const FarmerForm = ({
+  isEdit = false,
+  clientId = null,
+  clientName = null,
+  clientPhoneNumber = null,
+  chatDispatch = () => {},
+}) => {
+  const [farmerName, setFarmerName] = useState(clientName);
+  const [phoneNumber, setPhoneNumber] = useState(clientPhoneNumber);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationContent, setNotificationContent] = useState("");
   const [disabled, setDisabled] = useState(false);
@@ -99,10 +105,52 @@ const FarmerForm = () => {
     }
   };
 
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setDisabled(true);
+
+    if (!farmerName) {
+      setNotificationContent("Please fill farmer's name.");
+      handleShowNotification();
+      setDisabled(false);
+      return;
+    }
+
+    try {
+      const res = await api.put(`client/${clientId}?name=${farmerName}`);
+      if (res.status === 200) {
+        setNotificationContent("Farmer updated successfully.");
+        handleShowNotification();
+        chatDispatch({ type: "UPDATE", payload: { clientName: farmerName } });
+        setTimeout(() => {
+          setDisabled(false);
+        }, 1000);
+        return;
+      } else {
+        setNotificationContent("Error, please try again later.");
+        handleShowNotification();
+        setDisabled(false);
+      }
+    } catch (error) {
+      setNotificationContent("Error, please try again later.");
+      handleShowNotification();
+      setDisabled(false);
+    }
+  };
+
   return (
-    <div className="flex justify-center mt-28 min-h-screen bg-white">
-      <form onSubmit={handleSubmit} className="p-10 max-w-md w-full">
-        <h2 className="text-lg font-semibold mb-10">Add Farmer</h2>
+    <div
+      className={`flex justify-center min-h-screen bg-white ${
+        isEdit ? "mt-20" : "mt-28"
+      }`}
+    >
+      <form
+        onSubmit={(e) => (isEdit ? handleUpdate(e) : handleSubmit(e))}
+        className="p-10 max-w-md w-full"
+      >
+        <h2 className="text-lg font-semibold mb-10">
+          {isEdit ? "Update" : "Add"} Farmer
+        </h2>
         {/* Farmer Name Field */}
         <div className="mb-8">
           <label className="block text-sm mb-2">Farmer Name</label>
@@ -118,7 +166,11 @@ const FarmerForm = () => {
         {/* Phone Number Field */}
         <div className="mb-10">
           <label className="block text-sm mb-2">Phone Number</label>
-          <div className="mt-2 flex border-b border-gray-400 items-center">
+          <div
+            className={`mt-2 flex items-center ${
+              !isEdit ? "border-b border-gray-400" : ""
+            }`}
+          >
             <PhoneInput
               id="phone"
               name="phone"
@@ -129,6 +181,7 @@ const FarmerForm = () => {
               defaultCountry="KE"
               initialValueFormat="international"
               className="block w-full p-2 text-gray-600 font-medium"
+              disabled={isEdit}
             />
             <PhoneIcon />
           </div>
@@ -144,7 +197,7 @@ const FarmerForm = () => {
               : "bg-akvo-green hover:bg-green-700 focus:ring-green-700"
           }`}
         >
-          {disabled ? <ButtonLoadingIcon /> : "Add Farmer"}
+          {disabled ? <ButtonLoadingIcon /> : "Save"}
         </button>
       </form>
 

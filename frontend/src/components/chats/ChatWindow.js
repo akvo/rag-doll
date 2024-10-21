@@ -16,7 +16,7 @@ import { formatChatTime, generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
 import MarkdownRenderer from "./MarkdownRenderer";
-import { BackIcon, SendIcon } from "@/utils/icons";
+import { BackIcon, SendIcon, ThreeDotIcon } from "@/utils/icons";
 import Image from "next/image";
 import ChatMedia from "./ChatMedia";
 import { deleteCookie } from "@/lib/cookies";
@@ -86,10 +86,12 @@ const ChatWindow = ({
   const textareaRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const lastMessageRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDropdownOpen, setDropdownOpen] = useState(false);
 
   const scrollToLastMessage = useCallback(() => {
     if (messagesContainerRef.current) {
@@ -203,6 +205,26 @@ const ChatWindow = ({
       type: "CLEAR",
     });
   };
+
+  const handleToggleDropdown = () => {
+    setDropdownOpen((prev) => !prev);
+  };
+
+  // Close the dropdown if clicked outside
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setDropdownOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    // Add event listener to detect clicks outside
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Cleanup the event listener on component unmount
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLostMessage = async (chatPayload) => {
     const res = await dbLib.messages.add({
@@ -351,7 +373,7 @@ const ChatWindow = ({
     <div className="relative flex flex-col w-full bg-gray-100">
       {/* Chat Header */}
       <div className="flex items-center p-4 bg-white border-b h-18 fixed top-0 left-0 right-0 z-10">
-        <button className="mr-4" onClick={handleOnClickBack}>
+        <button className="mr-4 flex-start" onClick={handleOnClickBack}>
           <BackIcon />
         </button>
 
@@ -363,12 +385,29 @@ const ChatWindow = ({
           height={12}
         />
 
-        <div>
+        <div className="flex-1">
           <h3 className="text-md font-semibold">
             {clientName || clientPhoneNumber}
           </h3>
           <p className="text-xs text-gray-500">Online</p>
         </div>
+
+        <button className="flex-end" onClick={handleToggleDropdown}>
+          <ThreeDotIcon />
+        </button>
+        {/* Dropdown Menu */}
+        {isDropdownOpen && (
+          <div
+            ref={dropdownRef}
+            className="absolute right-0 mt-24 mr-4 w-48 bg-white border rounded shadow-lg z-20"
+          >
+            <ul className="py-1">
+              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                Edit Client Details
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Chat Messages */}

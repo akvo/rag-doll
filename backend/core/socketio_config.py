@@ -13,6 +13,7 @@ from models import (
     Sender_Role_Enum,
     Platform_Enum,
     Chat,
+    Chat_Status_Enum,
 )
 from core.database import engine
 from sqlmodel import Session, select, and_
@@ -124,6 +125,7 @@ def save_chat_history(
             chat_session_id=conversation_exist.id,
             message=message_body,
             sender_role=(Sender_Role_Enum[sender_role.upper()]),
+            status=Chat_Status_Enum.READ,  # user/officer message mark as READ
         )
         session.add(new_chat)
         session.commit()
@@ -294,7 +296,33 @@ async def handle_incoming_message(session: Session, message: dict):
     session.flush()
 
     user = user.serialize()
-    return user["id"], user["phone_number"], chat_session_id, new_chat.id
+    return (
+        user["id"],
+        user["phone_number"],
+        chat_session_id,
+        new_chat.id,
+        new_chat.status.value,
+    )
+
+
+def handle_read_message(session: Session, chat_session_id: int):
+    try:
+        unread_messages = session.exec(
+            select(Chat).where(
+                and_(
+                    Chat.chat_session_id == chat_session_id,
+                    Chat.status == Chat_Status_Enum.UNREAD,
+                )
+            )
+        ).all()
+        for um in unread_messages:
+            um.status = Chat_Status_Enum.READ
+        session.commit()
+        session.flush()
+        return unread_messages
+    except Exception as e:
+        logger.error(f"Error handle read message: {e}")
+        raise e
 
 
 async def resend_messages(session: Session, user_id=int, user_sid=str):
@@ -340,6 +368,7 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
             media=media,
             context=context,
             timestamp=chat.created_at.isoformat(),
+            status=chat.status.value,
         )
         if chat.sender_role == Sender_Role_Enum.CLIENT:
             await sio_server.emit(
@@ -500,6 +529,12 @@ async def chat_message(sid, msg):
         session.close()
 
 
+@sio_server.on("read_message")
+async def read_message(sid, chat_session_id):
+    session = Session(engine)
+    handle_read_message(session=session, chat_session_id=chat_session_id)
+
+
 async def emit_chats_callback(value):
     logger.info(f"Emit chats callback {value}")
 
@@ -515,8 +550,8 @@ async def client_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number, chat_session_id, chat_id = (
-            await handle_incoming_message(session=session, message=message)
+        user_id, user_phone_number, chat_session_id, chat_id, chat_status = (
+            handle_incoming_message(session=session, message=message)
         )
 
         user_sid = get_cache(user_id=user_id)
@@ -527,6 +562,7 @@ async def client_to_user(body: str):
         conversation_envelope.update({"user_phone_number": user_phone_number})
         conversation_envelope.update({"chat_session_id": chat_session_id})
         conversation_envelope.update({"message_id": chat_id})
+        conversation_envelope.update({"status": chat_status})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 
@@ -576,8 +612,8 @@ async def assistant_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number, chat_session_id, chat_id = (
-            await handle_incoming_message(session=session, message=message)
+        user_id, user_phone_number, chat_session_id, chat_id, chat_status = (
+            handle_incoming_message(session=session, message=message)
         )
         user_sid = get_cache(user_id=user_id)
 
@@ -587,6 +623,7 @@ async def assistant_to_user(body: str):
         conversation_envelope.update({"user_phone_number": user_phone_number})
         conversation_envelope.update({"chat_session_id": chat_session_id})
         conversation_envelope.update({"message_id": chat_id})
+        conversation_envelope.update({"status": chat_status})
         message.pop("conversation_envelope", None)
         message.update({"conversation_envelope": conversation_envelope})
 

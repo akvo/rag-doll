@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPBearer, HTTPBasicCredentials as credentials
-from models import Chat_Session, Chat, Sender_Role_Enum
-from sqlmodel import Session, select, func
+from models import Chat_Session, Chat, Sender_Role_Enum, Chat_Status_Enum
+from sqlmodel import Session, select, func, and_
 from middleware import verify_user
 from core.database import get_session
 
@@ -39,6 +39,31 @@ async def get_chats(
 
     last_chats = []
     for chat in chats:
+        # count of unread message
+        unread_messages = session.exec(
+            select(Chat.id).where(
+                and_(
+                    Chat.chat_session_id == chat.id,
+                    Chat.status == Chat_Status_Enum.UNREAD,
+                    Chat.sender_role == Sender_Role_Enum.CLIENT,
+                )
+            )
+        ).all()
+        unread_message_count = len(unread_messages)
+
+        # unread_assistant_message
+        unread_assistant_message = session.exec(
+            select(Chat.id)
+            .where(
+                and_(
+                    Chat.chat_session_id == chat.id,
+                    Chat.status == Chat_Status_Enum.UNREAD,
+                    Chat.sender_role == Sender_Role_Enum.ASSISTANT,
+                )
+            )
+            .order_by(Chat.created_at.desc(), Chat.id.desc())
+        ).first()
+
         last_message = session.exec(
             select(Chat)
             .where(Chat.chat_session_id == chat.id)
@@ -47,11 +72,16 @@ async def get_chats(
             )
             .order_by(Chat.created_at.desc(), Chat.id.desc())
         ).first()
+
         last_chats.append(
             {
                 "chat_session": chat.serialize(),
                 "last_message": (
                     last_message.to_last_message() if last_message else None
+                ),
+                "unread_message_count": unread_message_count,
+                "unread_assistant_message": (
+                    True if unread_assistant_message else False
                 ),
             }
         )

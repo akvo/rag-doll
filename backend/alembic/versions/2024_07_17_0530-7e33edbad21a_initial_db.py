@@ -123,4 +123,6 @@ def downgrade() -> None:
     op.drop_table("chat_session")
     op.drop_table("user")
     op.drop_table("client")
+
+    op.execute("DROP TYPE sender_role_enum")
     # ### end Alembic commands ###

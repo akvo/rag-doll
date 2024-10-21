@@ -20,7 +20,7 @@ def test_get_phone_number_in_international_format(session: Session) -> None:
     assert str(client) == "+6281234567890"
     assert client.serialize() == {
         "id": client.id,
-        "name": None,
+        "name": "John Doe Updated",
         "phone_number": "+6281234567890",
     }
 

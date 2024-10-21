@@ -104,6 +104,7 @@ def db() -> Generator[Session, None, None]:
     engine = create_engine(get_db_url())
 
     config = Config("alembic.ini")
+    command.downgrade(config, "base")
     command.upgrade(config, "head")
 
     with Session(engine) as session:

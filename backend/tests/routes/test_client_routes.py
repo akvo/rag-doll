@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
-from models import User, Client, Chat_Session, Chat
+from models import User, Client, Chat_Session, Chat, Chat_Status_Enum
 
 
 # Sample data for tests
@@ -58,6 +58,7 @@ def test_add_new_client(client: TestClient, session: Session):
     ).first()
     assert chat_message is not None
     assert chat_message.message.startswith(f"Hi {new_client_data["name"]}")
+    assert chat_message.status == Chat_Status_Enum.READ
 
 
 def test_add_new_client_with_registered_phone_number(

@@ -12,6 +12,7 @@ from models import (
     Chat,
     Sender_Role_Enum,
     Platform_Enum,
+    Chat_Status_Enum,
 )
 from core.database import get_session
 from clients.twilio_client import TwilioClient
@@ -79,6 +80,7 @@ async def add_client(
         chat_session_id=new_chat_session.id,
         message=initial_message,
         sender_role=Sender_Role_Enum.SYSTEM,
+        status=Chat_Status_Enum.READ,  # user/officer message mark as READ
     )
     session.add(new_chat)
     session.commit()

@@ -30,9 +30,6 @@ pulling models as needed.
 | `.env` | default | description |
 |---|---|---|
 | `ASSISTANT_LANGUAGES` | `en`, _CHANGEME_, _CHANGEME_ | A comma-separated list of ISO 639-1 language codes. Be sure to add a section to the system prompt that describes these languages.  |
-| `SYSTEM_PROMPT_{language}` | _CHANGEME_ | The system prompt to the LLM in language `{language}`. Describe the assistant's role here. |
-| `RAG_PROMPT_{language}`     | "{prompt}. In your answer, use the following information if it is related: {context}" | The RAG enabled prompt for the LLM. The `{prompt}` placeholder is for the client question and `{context}` is where the RAG context is added. |
-| `RAGLESS_PROMPT_{language}` | "{prompt}" | The prompt in case there is no usable RAG context. The `{prompt}` placeholder is where the client's question is added. |
 | `OPENAI_API_KEY` | _CHANGEME_ | The API key for authenticating with OpenAI services. |
 | `OPENAI_CHAT_MODEL` | `gpt-4o` | The LLM model that is used to handle chat messages. Read more about [OpenAI models](https://platform.openai.com/docs/models) |
 | `CHROMADB_DISTANCE_CUTOFF` | `1.5` | The minimum vector distance needed for a chunk for the chunk to be included in the prompt as RAG context. Chunks with a higher distance are discarded from the RAG query results. |

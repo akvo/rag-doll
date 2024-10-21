@@ -149,3 +149,12 @@ def test_update_client(client: TestClient, session: Session):
     assert response.status_code == 200
     content = response.json()
     assert content["name"] == "John Doe Updated"
+
+    # update same client
+    response = client.put(
+        f"/client/{curr_client.id}?name=John Doe",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    content = response.json()
+    assert content["name"] == "John Doe"

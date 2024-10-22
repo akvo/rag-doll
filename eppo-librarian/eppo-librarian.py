@@ -397,19 +397,19 @@ if __name__ == "__main__":
     logger.info("loading datasheets...")
     datasheets_df = download_datasheets(eppo_code_df)
 
-    logger.info("translating datasheets into plain language...")
-    openai = OpenAI()
-    datasheets_df = translate_to_plain_text(
-        datasheets_df,
-        openai,
-        OPENAI_CHAT_MODEL,
-        PLAIN_TEXT_SYSTEM_PROMPT,
-        PLAIN_TEXT_PROMPT,
-        COL_TEXT_EN,
-        COL_TEXT_PLAIN,
-    )
+    # logger.info("translating datasheets into plain language...")
+    # openai = OpenAI()
+    # datasheets_df = translate_to_plain_text(
+    #     datasheets_df,
+    #     openai,
+    #     OPENAI_CHAT_MODEL,
+    #     PLAIN_TEXT_SYSTEM_PROMPT,
+    #     PLAIN_TEXT_PROMPT,
+    #     COL_TEXT_EN,
+    #     COL_TEXT_PLAIN,
+    # )
 
-    datasheets_df = download_datasheets(eppo_code_df)
+    # datasheets_df = download_datasheets(eppo_code_df)
 
     logger.info("generating chunks...")
     chunks_df = make_chunks(

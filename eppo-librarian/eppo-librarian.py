@@ -430,6 +430,7 @@ if __name__ == "__main__":
                 chunks_df, datasheets_df, COL_CHUNK, chromadb_collection
             )
         else:
+            continue
             logger.info(f"translating chunks into {to_language}...")
             translated_column = f"translated chunk ({to_language})"
             chunks_df = translate_chunks(

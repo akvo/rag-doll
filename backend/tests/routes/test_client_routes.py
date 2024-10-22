@@ -57,7 +57,9 @@ def test_add_new_client(client: TestClient, session: Session):
         select(Chat).where(Chat.chat_session_id == chat_session.id)
     ).first()
     assert chat_message is not None
-    assert chat_message.message.startswith(f"Hi {new_client_data["name"]}")
+    message = f"Hi {new_client_data["name"]}, "
+    message += f"I'm {user.phone_number} the extension officer"
+    assert chat_message.message.startswith(message)
     assert chat_message.status == Chat_Status_Enum.READ
 
 

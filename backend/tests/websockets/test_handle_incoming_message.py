@@ -1,9 +1,12 @@
+import pytest
+
 from sqlmodel import Session, select
 from core.socketio_config import (
     handle_incoming_message,
     Chat,
     Chat_Session,
     Client,
+    Sender_Role_Enum,
 )
 from models import Chat_Media
 
@@ -24,8 +27,11 @@ MESSAGE = {
 }
 
 
-def test_handle_incoming_message_new_conversation(session: Session):
-    handle_incoming_message(session=session, message=MESSAGE)
+@pytest.mark.asyncio
+async def test_handle_incoming_message_new_conversation_n_send_initial_message(
+    session: Session,
+):
+    await handle_incoming_message(session=session, message=MESSAGE)
 
     new_client = session.exec(
         select(Client).where(Client.phone_number == "+6281222304050")
@@ -39,15 +45,21 @@ def test_handle_incoming_message_new_conversation(session: Session):
 
     new_chat = session.exec(
         select(Chat).where(Chat.chat_session_id == new_chat_session.id)
-    ).first()
-    assert new_chat.message == "Test message!"
+    ).all()
+    assert new_chat[0].message == "Test message!"
+    assert new_chat[0].sender_role == Sender_Role_Enum.CLIENT
+    assert new_chat[1].message.startswith(
+        "Hi 6281222304050, I'm 12345678900 the extension officer."
+    )
+    assert new_chat[1].sender_role == Sender_Role_Enum.SYSTEM
 
 
-def test_handle_incoming_message_existing_conversation(session: Session):
+@pytest.mark.asyncio
+async def test_handle_incoming_message_existing_conversation(session: Session):
     MESSAGE["body"] = "Second message"
     MESSAGE["transformation_log"] = ["Second message"]
 
-    handle_incoming_message(session=session, message=MESSAGE)
+    await handle_incoming_message(session=session, message=MESSAGE)
 
     updated_chat_session = session.exec(
         select(Chat_Session)
@@ -60,10 +72,13 @@ def test_handle_incoming_message_existing_conversation(session: Session):
         select(Chat).where(Chat.chat_session_id == updated_chat_session[0].id)
     ).all()
     assert chats[0].message == "Test message!"
-    assert chats[1].message == "Second message"
+    assert chats[1].message.startswith(
+        "Hi 6281222304050, I'm 12345678900 the extension officer."
+    )
+    assert chats[2].message == "Second message"
 
 
-def test_handle_incoming_message_existing_conversation_with_image(
+async def test_handle_incoming_message_existing_conversation_with_image(
     session: Session,
 ):
     image_url = "https://akvo.org/wp-content/themes/Akvo-Theme"
@@ -78,7 +93,7 @@ def test_handle_incoming_message_existing_conversation_with_image(
         {"url": image_url, "type": "image/png", "caption": "Image caption"},
     ]
 
-    handle_incoming_message(session=session, message=MESSAGE)
+    await handle_incoming_message(session=session, message=MESSAGE)
 
     updated_chat_session = session.exec(
         select(Chat_Session)

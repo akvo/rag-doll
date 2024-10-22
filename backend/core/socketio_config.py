@@ -39,6 +39,10 @@ LAST_MESSAGES_LIMIT = int(os.getenv("LAST_MESSAGES_LIMIT", 10))
 ASSISTANT_LAST_MESSAGES_LIMIT = int(
     os.getenv("ASSISTANT_LAST_MESSAGES_LIMIT", 10)
 )
+INITIAL_CHAT_TEMPLATE = os.getenv(
+    "INITIAL_CHAT_TEMPLATE",
+    "Hi {farmer_name}, I'm {officer_name} the extension officer.",
+)
 
 
 def get_rabbitmq_client():
@@ -197,7 +201,7 @@ def check_conversation_exist_and_generate_queue_message(
     return conversation_exist
 
 
-def handle_incoming_message(session: Session, message: dict):
+async def handle_incoming_message(session: Session, message: dict):
     conversation_envelope = get_value_or_raise_error(
         message, "conversation_envelope"
     )
@@ -218,7 +222,9 @@ def handle_incoming_message(session: Session, message: dict):
         .where(Client.phone_number == client_phone_number)
     ).first()
 
+    send_initial_message = False
     if not prev_conversation_exist:
+        send_initial_message = True
         user = session.exec(select(User).order_by(User.id)).first()
 
         curr_client = session.exec(
@@ -226,18 +232,18 @@ def handle_incoming_message(session: Session, message: dict):
         ).first()
 
         if curr_client:
-            new_client = curr_client
+            client = curr_client
         else:
-            new_client = Client(
+            client = Client(
                 phone_number=int(
                     "".join(filter(str.isdigit, client_phone_number))
                 )
             )
-            session.add(new_client)
+            session.add(client)
             session.commit()
 
         new_chat_session = Chat_Session(
-            user_id=user.id, client_id=new_client.id, platform=platform
+            user_id=user.id, client_id=client.id, platform=platform
         )
         session.add(new_chat_session)
         session.commit()
@@ -245,7 +251,9 @@ def handle_incoming_message(session: Session, message: dict):
         chat_session_id = new_chat_session.id
         session.flush()
     else:
+        send_initial_message = False
         user = prev_conversation_exist.user
+        client = prev_conversation_exist.client
         chat_session_id = prev_conversation_exist.id
 
     new_chat = Chat(
@@ -261,6 +269,30 @@ def handle_incoming_message(session: Session, message: dict):
         add_media(session=session, chat=new_chat, media=media)
     # eol handle media
 
+    # TODO :: send & save initial message into chat table
+    if send_initial_message:
+        user_name = (
+            user.properties.name if user.properties else user.phone_number
+        )
+        client_name = (
+            client.properties.name
+            if client.properties
+            else client.phone_number
+        )
+        initial_message = INITIAL_CHAT_TEMPLATE.format(
+            farmer_name=client_name, officer_name=user_name
+        )
+        new_chat = Chat(
+            chat_session_id=chat_session_id,
+            message=initial_message,
+            sender_role=Sender_Role_Enum.SYSTEM,
+        )
+        session.add(new_chat)
+        session.commit()
+        if not os.getenv("TESTING"):
+            await twilio_client.whatsapp_message_create(
+                to=client.phone_number, body=initial_message
+            )
     session.flush()
 
     user = user.serialize()

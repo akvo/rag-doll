@@ -78,6 +78,25 @@ const ClientChat = forwardRef(
 );
 ClientChat.displayName = "ClientChat";
 
+const SystemChat = forwardRef(({ message, timestamp }, ref) => (
+  <div className="flex mb-4 justify-center" ref={ref}>
+    <div className="relative bg-blue-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-blue-100 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
+      {message?.split("\n")?.map((line, i) => (
+        <MarkdownRenderer
+          key={`system-${i}`}
+          content={line}
+          className={`prose-headings:text-gray-800 prose-strong:text-gray-800 prose-p:text-gray-800 prose-a:text-gray-800 prose-li:text-gray-800 prose-ol:text-gray-800 prose-ul:text-gray-800 prose-code:text-gray-800 text-gray-800`}
+        />
+      ))}
+      <p className="text-right text-xs mt-2 text-gray-800">
+        Automatic system message - {formatChatTime(timestamp)}
+      </p>
+    </div>
+  </div>
+));
+SystemChat.displayName = "SystemChat";
+
 const ChatWindow = ({
   chats,
   setChats,
@@ -304,12 +323,18 @@ const ChatWindow = ({
 
   const renderChatHistory = useMemo(() => {
     return chatHistory?.map((c, ci) => {
-      if (
-        c.sender_role === SenderRoleEnum.USER ||
-        c.sender_role === SenderRoleEnum.SYSTEM
-      ) {
+      if (c.sender_role === SenderRoleEnum.USER) {
         return (
           <UserChat
+            key={`user-history-${ci}`}
+            message={c.message}
+            timestamp={c.created_at}
+          />
+        );
+      }
+      if (c.sender_role === SenderRoleEnum.SYSTEM) {
+        return (
+          <SystemChat
             key={`user-history-${ci}`}
             message={c.message}
             timestamp={c.created_at}
@@ -351,6 +376,16 @@ const ChatWindow = ({
             message={c.body}
             timestamp={c.conversation_envelope.timestamp}
             refTemp={ci === chats.length - 1 ? lastMessageRef : null}
+          />
+        );
+      }
+      if (c?.conversation_envelope?.sender_role === SenderRoleEnum.SYSTEM) {
+        return (
+          <SystemChat
+            key={`user-${ci}`}
+            message={c.body}
+            timestamp={c.conversation_envelope.timestamp}
+            ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
           />
         );
       }

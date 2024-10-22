@@ -17,15 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 EPPO_COUNTRY_ORGANISM_URL: str = os.getenv("EPPO_COUNTRY_ORGANISM_URL")
-assert not EPPO_COUNTRY_ORGANISM_URL is None
+assert EPPO_COUNTRY_ORGANISM_URL is not None
 assert isinstance(EPPO_COUNTRY_ORGANISM_URL, str)
 EPPO_DATASHEET_URL: str = os.getenv("EPPO_DATASHEET_URL")
-assert not EPPO_DATASHEET_URL is None
+assert EPPO_DATASHEET_URL is not None
 assert isinstance(EPPO_DATASHEET_URL, str)
 EPPO_COUNTRIES: list[str] = (
     os.getenv("EPPO_COUNTRIES").replace(" ", "").split(",")
 )
-assert not EPPO_COUNTRIES is None
+assert EPPO_COUNTRIES is not None
 assert len(EPPO_COUNTRIES) > 0
 
 # Here we define the granularity of the chunks, as well as overlap and metadata.
@@ -39,30 +39,30 @@ OVERLAP_SIZE: int = int(os.getenv("OVERLAP_SIZE"))
 assert OVERLAP_SIZE > 0
 
 CHROMADB_HOST: str = os.getenv("CHROMADB_HOST")
-assert not CHROMADB_HOST is None
+assert CHROMADB_HOST is not None
 assert isinstance(CHROMADB_HOST, str)
 CHROMADB_PORT: int = int(os.getenv("CHROMADB_PORT"))
-assert not CHROMADB_PORT is None
+assert CHROMADB_PORT is not None
 assert isinstance(CHROMADB_PORT, int)
 
 CHROMADB_COLLECTION_TEMPLATE: str = os.getenv("CHROMADB_COLLECTION_TEMPLATE")
-assert not CHROMADB_COLLECTION_TEMPLATE is None
+assert CHROMADB_COLLECTION_TEMPLATE is not None
 assert isinstance(CHROMADB_COLLECTION_TEMPLATE, str)
 ASSISTANT_LANGUAGES: list[str] = (
     os.getenv("ASSISTANT_LANGUAGES").replace(" ", "").split(",")
 )
-assert not ASSISTANT_LANGUAGES is None
+assert ASSISTANT_LANGUAGES is not None
 assert len(ASSISTANT_LANGUAGES) > 0
 
 OPENAI_CHAT_MODEL: str = os.getenv("OPENAI_CHAT_MODEL")
-assert not OPENAI_CHAT_MODEL is None
+assert OPENAI_CHAT_MODEL is not None
 assert isinstance(OPENAI_CHAT_MODEL, str)
 
 PLAIN_TEXT_SYSTEM_PROMPT: str = os.getenv("PLAIN_TEXT_SYSTEM_PROMPT")
-assert not PLAIN_TEXT_SYSTEM_PROMPT is None
+assert PLAIN_TEXT_SYSTEM_PROMPT is not None
 assert isinstance(PLAIN_TEXT_SYSTEM_PROMPT, str)
 PLAIN_TEXT_PROMPT: str = os.getenv("PLAIN_TEXT_PROMPT")
-assert not PLAIN_TEXT_PROMPT is None
+assert PLAIN_TEXT_PROMPT is not None
 assert isinstance(PLAIN_TEXT_PROMPT, str)
 
 
@@ -72,6 +72,9 @@ COL_URL: str = "EPPO datasheet url"
 COL_TEXT_EN: str = "datasheet (en)"
 COL_TEXT_PLAIN: str = "datasheet (plain en)"
 COL_CHUNK: str = "chunk (en)"
+
+MAX_RETRIES = 3
+DELAY_SECONDS = 5
 
 
 def download_eppo_code_registry(
@@ -211,13 +214,27 @@ def translate_to_plain_text(
         )
         return response.choices[0].message.content.strip()
 
-    df[col_to] = df.apply(
-        lambda row: to_plain(
-            llm_client, model, system_prompt, prompt_template, row[col_from]
-        ),
-        axis=1,
-    )
-    return df
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            df[col_to] = df.apply(
+                lambda row: to_plain(
+                    llm_client,
+                    model,
+                    system_prompt,
+                    prompt_template,
+                    row[col_from],
+                ),
+                axis=1,
+            )
+            return df
+        except Exception as e:
+            logger.error("Attempt %d failed with error: %s", attempt, str(e))
+            if attempt == MAX_RETRIES:
+                logger.error("Max retries reached. Failing...")
+                raise  # Re-raise the exception if all retries fail
+            else:
+                logger.info("Retrying in %d seconds...", DELAY_SECONDS)
+                time.sleep(DELAY_SECONDS)
 
 
 def make_chunks(
@@ -397,19 +414,17 @@ if __name__ == "__main__":
     logger.info("loading datasheets...")
     datasheets_df = download_datasheets(eppo_code_df)
 
-    # logger.info("translating datasheets into plain language...")
-    # openai = OpenAI()
-    # datasheets_df = translate_to_plain_text(
-    #     datasheets_df,
-    #     openai,
-    #     OPENAI_CHAT_MODEL,
-    #     PLAIN_TEXT_SYSTEM_PROMPT,
-    #     PLAIN_TEXT_PROMPT,
-    #     COL_TEXT_EN,
-    #     COL_TEXT_PLAIN,
-    # )
-
-    # datasheets_df = download_datasheets(eppo_code_df)
+    logger.info("translating datasheets into plain language...")
+    openai = OpenAI()
+    datasheets_df = translate_to_plain_text(
+        datasheets_df,
+        openai,
+        OPENAI_CHAT_MODEL,
+        PLAIN_TEXT_SYSTEM_PROMPT,
+        PLAIN_TEXT_PROMPT,
+        COL_TEXT_EN,
+        COL_TEXT_PLAIN,
+    )
 
     logger.info("generating chunks...")
     chunks_df = make_chunks(
@@ -430,7 +445,6 @@ if __name__ == "__main__":
                 chunks_df, datasheets_df, COL_CHUNK, chromadb_collection
             )
         else:
-            continue
             logger.info(f"translating chunks into {to_language}...")
             translated_column = f"translated chunk ({to_language})"
             chunks_df = translate_chunks(

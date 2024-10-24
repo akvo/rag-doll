@@ -16,12 +16,13 @@ import { formatChatTime, generateMessage } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
 import MarkdownRenderer from "./MarkdownRenderer";
-import { BackIcon, SendIcon } from "@/utils/icons";
+import { BackIcon, SendIcon, ThreeDotIcon } from "@/utils/icons";
 import Image from "next/image";
 import ChatMedia from "./ChatMedia";
 import { deleteCookie } from "@/lib/cookies";
 import { useRouter } from "next/navigation";
 import Loading from "@/app/loading";
+import FarmerForm from "./FarmerForm";
 
 export const SenderRoleEnum = {
   USER: "user",
@@ -118,10 +119,13 @@ const ChatWindow = ({
   const textareaRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const lastMessageRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
 
   const firstUnreadMessage = useMemo(() => {
     return chatHistory.find((ch) => ch.status === ChatStatusEnum.UNREAD);
@@ -257,10 +261,30 @@ const ChatWindow = ({
   };
 
   const handleOnClickBack = () => {
-    chatDispatch({
-      type: "CLEAR",
-    });
+    if (isEdit) {
+      setIsEdit(false);
+    } else {
+      chatDispatch({
+        type: "CLEAR",
+      });
+    }
   };
+
+  // Close the dropdown if clicked outside
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setDropdownOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    // Add event listener to detect clicks outside
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Cleanup the event listener on component unmount
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLostMessage = async (chatPayload) => {
     const res = await dbLib.messages.add({
@@ -426,7 +450,7 @@ const ChatWindow = ({
     <div className="relative flex flex-col w-full bg-gray-100">
       {/* Chat Header */}
       <div className="flex items-center p-4 bg-white border-b h-18 fixed top-0 left-0 right-0 z-10">
-        <button className="mr-4" onClick={handleOnClickBack}>
+        <button className="mr-4 flex-start" onClick={handleOnClickBack}>
           <BackIcon />
         </button>
 
@@ -438,66 +462,104 @@ const ChatWindow = ({
           height={12}
         />
 
-        <div>
+        <div className="flex-1">
           <h3 className="text-md font-semibold">
             {clientName || clientPhoneNumber}
           </h3>
           <p className="text-xs text-gray-500">Online</p>
         </div>
-      </div>
 
-      {/* Chat Messages */}
-      <div
-        className={`flex flex-col flex-grow pt-20 w-full h-full ${
-          isWhisperVisible ? "pb-40" : "pb-0"
-        }`}
-        style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
-      >
-        {loading ? (
-          <Loading />
-        ) : (
-          <>
-            {/* User Messages */}
-            <div
-              ref={messagesContainerRef}
-              className="flex-1 p-4 overflow-auto"
-            >
-              {renderChatHistory}
-              {renderChats}
-            </div>
-            {/* AI Messages */}
-            <Whisper
-              whisperChats={whisperChats}
-              setWhisperChats={setWhisperChats}
-              textareaRef={textareaRef}
-              handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
-              setMessage={setMessage}
-              setUseWhisperAsTemplate={setUseWhisperAsTemplate}
-              clients={clients}
-              lastChatHistory={lastChatHistory}
-            />
-          </>
+        <button
+          className="flex-end"
+          onClick={() => setDropdownOpen((prev) => !prev)}
+        >
+          <ThreeDotIcon />
+        </button>
+        {/* Dropdown Menu */}
+        {isDropdownOpen && (
+          <div
+            ref={dropdownRef}
+            className="absolute right-0 mt-24 mr-4 w-48 bg-white border rounded shadow-lg z-20"
+          >
+            <ul className="py-1">
+              <li
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setIsEdit((prev) => !prev);
+                  setDropdownOpen(false);
+                }}
+              >
+                Edit Farmer Detail
+              </li>
+            </ul>
+          </div>
         )}
       </div>
 
-      {/* TextArea */}
-      <div className="flex p-4 bg-white border-t items-center fixed bottom-0 w-full z-20">
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={handleChange}
-          onInput={handleTextAreaDynamicHeight}
-          placeholder="Type a message..."
-          className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
-          rows={1}
+      {isEdit ? (
+        <FarmerForm
+          isEdit={isEdit}
+          clientId={clientId}
+          clientName={clientName || clientPhoneNumber}
+          clientPhoneNumber={clientPhoneNumber}
+          chatDispatch={chatDispatch}
         />
-        <button
-          onClick={handleSend}
-          className="ml-4 bg-akvo-green hover:bg-green-700 text-white p-3 rounded-full focus:outline-none"
-        >
-          <SendIcon />
-        </button>
-      </div>
+      ) : (
+        <div>
+          {/* Chat Messages */}
+          <div
+            className={`flex flex-col flex-grow pt-20 w-full h-full ${
+              isWhisperVisible ? "pb-40" : "pb-0"
+            }`}
+            style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
+          >
+            {loading ? (
+              <Loading />
+            ) : (
+              <>
+                {/* User Messages */}
+                <div
+                  ref={messagesContainerRef}
+                  className="flex-1 p-4 overflow-auto"
+                >
+                  {renderChatHistory}
+                  {renderChats}
+                </div>
+                {/* AI Messages */}
+                <Whisper
+                  whisperChats={whisperChats}
+                  setWhisperChats={setWhisperChats}
+                  textareaRef={textareaRef}
+                  handleTextAreaDynamicHeight={handleTextAreaDynamicHeight}
+                  setMessage={setMessage}
+                  setUseWhisperAsTemplate={setUseWhisperAsTemplate}
+                  clients={clients}
+                  lastChatHistory={lastChatHistory}
+                />
+              </>
+            )}
+          </div>
+
+          {/* TextArea */}
+          <div className="flex p-4 bg-white border-t items-center fixed bottom-0 w-full z-20">
+            <textarea
+              ref={textareaRef}
+              value={message}
+              onChange={handleChange}
+              onInput={handleTextAreaDynamicHeight}
+              placeholder="Type a message..."
+              className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
+              rows={1}
+            />
+            <button
+              onClick={handleSend}
+              className="ml-4 bg-akvo-green hover:bg-green-700 text-white p-3 rounded-full focus:outline-none"
+            >
+              <SendIcon />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

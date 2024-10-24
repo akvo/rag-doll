@@ -304,6 +304,7 @@ const ChatWindow = ({
         chatBreakdown = {
           ...lastChat,
           ...lastChat.conversation_envelope,
+          message_id: uuidv4(),
         };
       } else {
         chatBreakdown = {

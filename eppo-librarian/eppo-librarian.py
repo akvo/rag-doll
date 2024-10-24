@@ -414,17 +414,19 @@ if __name__ == "__main__":
     logger.info("loading datasheets...")
     datasheets_df = download_datasheets(eppo_code_df)
 
-    logger.info("translating datasheets into plain language...")
-    openai = OpenAI()
-    datasheets_df = translate_to_plain_text(
-        datasheets_df,
-        openai,
-        OPENAI_CHAT_MODEL,
-        PLAIN_TEXT_SYSTEM_PROMPT,
-        PLAIN_TEXT_PROMPT,
-        COL_TEXT_EN,
-        COL_TEXT_PLAIN,
-    )
+    # TODO :: enable below code later
+    # logger.info("translating datasheets into plain language...")
+    # openai = OpenAI()
+    # datasheets_df = translate_to_plain_text(
+    #     datasheets_df,
+    #     openai,
+    #     OPENAI_CHAT_MODEL,
+    #     PLAIN_TEXT_SYSTEM_PROMPT,
+    #     PLAIN_TEXT_PROMPT,
+    #     COL_TEXT_EN,
+    #     COL_TEXT_PLAIN,
+    # )
+    # END of TODO
 
     logger.info("generating chunks...")
     chunks_df = make_chunks(
@@ -445,6 +447,7 @@ if __name__ == "__main__":
                 chunks_df, datasheets_df, COL_CHUNK, chromadb_collection
             )
         else:
+            continue  # TODO :: remove later
             logger.info(f"translating chunks into {to_language}...")
             translated_column = f"translated chunk ({to_language})"
             chunks_df = translate_chunks(

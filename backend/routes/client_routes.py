@@ -101,3 +101,36 @@ async def add_client(
         body=initial_message,
     )
     return new_client.serialize()
+
+
+@router.put("/client/{client_id}")
+async def update_client(
+    client_id: int,
+    name: str,
+    session: Session = Depends(get_session),
+    auth: credentials = Depends(security),
+):
+    verify_user(session, auth)
+    curr_client = session.exec(
+        select(Client).where(Client.id == client_id)
+    ).first()
+    if not curr_client:
+        raise HTTPException(
+            status_code=404, detail=f"Client {client_id} not found"
+        )
+    # create or update the details
+    curr_client_properties = session.exec(
+        select(Client_Properties).where(
+            Client_Properties.client_id == curr_client.id
+        )
+    ).first()
+    if not curr_client_properties:
+        new_client_properties = Client_Properties(
+            client_id=curr_client.id, name=name
+        )
+        session.add(new_client_properties)
+    else:
+        curr_client_properties.name = name
+    session.commit()
+    session.flush()
+    return curr_client.serialize()

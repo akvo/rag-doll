@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { useUserContext } from "@/context/UserContextProvider";
-import { ChatWindow, ChatList, ChatNotification } from "@/components";
+import {
+  ChatWindow,
+  ChatList,
+  ChatNotification,
+  PushNotifications,
+} from "@/components";
 import { socket, dbLib } from "@/lib";
 import { PhotoIcon } from "@/utils/icons";
 
@@ -214,6 +219,8 @@ const Chats = () => {
 
   return (
     <div className="w-full h-full">
+      {/* Enable push notification */}
+      <PushNotifications />
       <div className="absolute right-4 top-4 flex flex-col gap-2">
         {newMessage
           .filter((nm) => {

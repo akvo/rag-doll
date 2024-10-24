@@ -165,7 +165,7 @@ const ChatWindow = ({
       const lastChat = document.getElementById(id);
       lastChat?.scrollIntoView();
     }
-  }, [chats, chatHistory, scrollToLastMessage, firstUnreadMessage]);
+  }, [chats, chatHistory, scrollToLastMessage, firstUnreadMessage, isEdit]);
 
   // Intersection observer setup to scroll when new message arrives
   useEffect(() => {
@@ -304,6 +304,7 @@ const ChatWindow = ({
         chatBreakdown = {
           ...lastChat,
           ...lastChat.conversation_envelope,
+          message_id: uuidv4(),
         };
       } else {
         chatBreakdown = {

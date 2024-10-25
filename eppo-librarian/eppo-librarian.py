@@ -76,6 +76,8 @@ COL_CHUNK: str = "chunk (en)"
 MAX_RETRIES = 3
 DELAY_SECONDS = 5
 
+CACHE_DIR = "/data/cache"
+
 
 def download_eppo_code_registry(
     url: str, countries: list[str]
@@ -166,15 +168,35 @@ def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
     Download all datasheets specified, clean their text and provide the URL
     for the datasheet, for reference.
     """
+    os.makedirs(CACHE_DIR, exist_ok=True)
 
     def download_and_extract_text(row):
         eppo_code = row[COL_EPPO_CODE]
-        datasheet_url, datasheet_html = download_datasheet_as_html(eppo_code)
-        cleaned_html = clean_datasheet(datasheet_html)
-        datasheet_text = " ".join(cleaned_html.xpath("//body//text()"))
-        datasheet_text = " ".join(
-            datasheet_text.split()
-        )  # weed out superfluous whitespace
+        cache_path = os.path.join(CACHE_DIR, f"{eppo_code}.txt")
+
+        # Check if cached file exists
+        if os.path.exists(cache_path):
+            logger.info(f"Using cached datasheet for {eppo_code}")
+            with open(cache_path, "r", encoding="utf-8") as file:
+                # Reads only the first line as URL
+                datasheet_url = file.readline().strip()
+                # Reads the rest as the datasheet text
+                datasheet_text = file.read().strip()
+        else:
+            # Download and process if not cached
+            datasheet_url, datasheet_html = download_datasheet_as_html(
+                eppo_code
+            )
+            cleaned_html = clean_datasheet(datasheet_html)
+            datasheet_text = " ".join(cleaned_html.xpath("//body//text()"))
+            datasheet_text = " ".join(
+                datasheet_text.split()
+            )  # weed out superfluous whitespace
+
+            # Cache the URL and text
+            with open(cache_path, "w", encoding="utf-8") as file:
+                file.write(f"{datasheet_url}\n{datasheet_text}")
+
         return pd.Series(
             {
                 COL_EPPO_CODE: eppo_code,

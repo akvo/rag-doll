@@ -3,7 +3,8 @@ self.addEventListener("push", function (event) {
   const title = data.title;
   const options = {
     body: data.body,
-    icon: "/images/whisper-logo.png", // Path to your icon
+    // TODO :: change the icon
+    // icon: "/images/whisper-logo.png",
   };
 
   event.waitUntil(self.registration.showNotification(title, options));

@@ -219,8 +219,9 @@ const Chats = () => {
 
   return (
     <div className="w-full h-full">
-      {/* Enable push notification */}
+      {/* Subsrice to push notification */}
       <PushNotifications />
+      {/* EOL subsrice to push notification */}
       <div className="absolute right-4 top-4 flex flex-col gap-2">
         {newMessage
           .filter((nm) => {

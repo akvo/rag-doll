@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from core.database import get_session
 from sqlmodel import Session, text
 
@@ -72,6 +72,14 @@ app.include_router(client_routes.router, tags=["client"])
 app.include_router(chat_routes.router, tags=["chat"])
 app.include_router(slack_routes.router, tags=["slack"])
 app.include_router(twilio_routes.router, tags=["twilio"])
+
+
+@app.post("/subscribe")
+async def subscribe(request: Request):
+    subscription = await request.json()
+    print(subscription, "=======")
+    # subscriptions.append(subscription)
+    return {"message": "Subscription received"}
 
 
 @app.get("/health-check", tags=["dev"])

@@ -1,59 +1,65 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
+import { api } from "@/lib";
+
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
 
 const PushNotifications = () => {
-  // Function to handle subscription
-  const subscribeUser = useCallback(async () => {
-    // Ensure the service worker is ready
-    const registration = await navigator.serviceWorker.ready;
+  useEffect(() => {
+    const subscribeUser = async (registration) => {
+      try {
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (!vapidPublicKey) {
+          throw new Error("VAPID public key is missing.");
+        }
 
-    // Subscribe the user to push notifications
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(
-        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-      ), // Use your VAPID public key here
-    });
+        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true, // Essential for requiring explicit permission
+          applicationServerKey: applicationServerKey, // Uint8Array VAPID key
+        });
 
-    // Send subscription to your backend
-    const response = await fetch("/api/subscribe", {
-      method: "POST",
-      body: JSON.stringify(subscription),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+        // Send subscription details to the backend
+        const response = await api.post(
+          "subscribe",
+          JSON.stringify(subscription)
+        );
 
-    if (response.ok) {
-      console.log("User subscribed successfully");
-    } else {
-      console.error("Failed to subscribe the user");
+        if (response.ok) {
+          console.info("User subscribed successfully!");
+        } else {
+          console.error(
+            "Failed to subscribe the user. Full response:",
+            response
+          );
+        }
+      } catch (error) {
+        console.error("Error during subscription:", error);
+      }
+    };
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          console.info("Service Worker registered successfully.");
+          subscribeUser(registration); // Subscribe the user after service worker registration
+        })
+        .catch((error) => {
+          console.error("Service Worker registration failed:", error);
+        });
     }
   }, []);
-
-  // Utility to convert base64 VAPID key to Uint8Array
-  const urlBase64ToUint8Array = (base64String) => {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding)
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
-
-  // Call the subscribeUser function when the component mounts (or when the user takes action)
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      subscribeUser(); // Call to subscribe the user to push notifications
-    }
-  }, [subscribeUser]);
 
   return null;
 };

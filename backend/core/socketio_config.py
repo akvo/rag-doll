@@ -666,9 +666,14 @@ async def assistant_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number, chat_session_id, chat_id, chat_status = (
-            await handle_incoming_message(session=session, message=message)
-        )
+        (
+            user_id,
+            user_phone_number,
+            chat_session_id,
+            chat_id,
+            chat_status,
+            client_name,
+        ) = await handle_incoming_message(session=session, message=message)
         user_sid = get_cache(user_id=user_id)
 
         conversation_envelope = get_value_or_raise_error(

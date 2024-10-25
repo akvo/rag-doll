@@ -67,7 +67,12 @@ const PushNotifications = () => {
       }
     };
 
-    if ("Notification" in window && "serviceWorker" in navigator) {
+    // Check for service worker and push manager support
+    if (
+      "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      "Notification" in window
+    ) {
       handleNotificationPermission();
     } else {
       console.warn("Push notifications are not supported in this browser.");

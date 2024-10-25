@@ -28,6 +28,7 @@ const PushNotifications = () => {
           userVisibleOnly: true, // Essential for requiring explicit permission
           applicationServerKey: applicationServerKey, // Uint8Array VAPID key
         });
+        console.log(subscription, "abcs");
 
         // Send subscription details to the backend
         const response = await api.post(

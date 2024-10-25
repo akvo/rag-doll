@@ -25,10 +25,9 @@ const PushNotifications = () => {
 
         const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
         const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true, // Essential for requiring explicit permission
-          applicationServerKey: applicationServerKey, // Uint8Array VAPID key
+          userVisibleOnly: true,
+          applicationServerKey: applicationServerKey,
         });
-        console.log(subscription, "abcs");
 
         // Send subscription details to the backend
         const response = await api.post(
@@ -49,16 +48,29 @@ const PushNotifications = () => {
       }
     };
 
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          console.info("Service Worker registered successfully.");
-          subscribeUser(registration); // Subscribe the user after service worker registration
-        })
-        .catch((error) => {
-          console.error("Service Worker registration failed:", error);
-        });
+    const handleNotificationPermission = async () => {
+      if (Notification.permission === "granted") {
+        const registration = await navigator.serviceWorker.ready;
+        subscribeUser(registration);
+      } else if (Notification.permission === "default") {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          const registration = await navigator.serviceWorker.ready;
+          subscribeUser(registration);
+        } else {
+          console.warn("Notification permission was denied.");
+        }
+      } else {
+        console.warn(
+          "Notifications are blocked. Enable them in your browser settings if you want to receive notifications."
+        );
+      }
+    };
+
+    if ("Notification" in window && "serviceWorker" in navigator) {
+      handleNotificationPermission();
+    } else {
+      console.warn("Push notifications are not supported in this browser.");
     }
   }, []);
 

@@ -11,10 +11,10 @@ export default function RootLayoutClient({ children }) {
       navigator.serviceWorker
         .register("/sw.js")
         .then(function (reg) {
-          console.log("Service Worker registered with scope:", reg.scope);
+          console.info("Service Worker registered with scope:", reg.scope);
         })
         .catch(function (err) {
-          console.log("Service Worker registration failed:", err);
+          console.info("Service Worker registration failed:", err);
         });
     }
   }, []);

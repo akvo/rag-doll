@@ -12,6 +12,8 @@ import {
 import { socket, dbLib } from "@/lib";
 import { PhotoIcon } from "@/utils/icons";
 
+const SHOW_IN_APP_NOTIFICATION = false;
+
 export const renderTextForMediaMessage = ({ type = "" }) => {
   const mediaType = type?.split("/")?.[0];
   switch (mediaType) {
@@ -222,70 +224,75 @@ const Chats = () => {
       {/* Subsrice to push notification */}
       <PushNotifications />
       {/* EOL subsrice to push notification */}
-      <div className="absolute right-4 top-4 flex flex-col gap-2">
-        {newMessage
-          .filter((nm) => {
-            // handle deduplication
-            const findClient = clients.find(
-              (c) =>
-                c.phone_number ===
-                nm?.conversation_envelope?.client_phone_number
-            );
-
-            // if populated chat is not empty, check message_id is in populated chat
-            let isNewMessage = true;
-            if (findClient?.message_ids?.length) {
-              const isMessageInMessageIds = findClient.message_ids.find(
-                (id) => id === nm.conversation_envelope.message_id
+      {SHOW_IN_APP_NOTIFICATION ? (
+        <div className="absolute right-4 top-4 flex flex-col gap-2">
+          {newMessage
+            .filter((nm) => {
+              // handle deduplication
+              const findClient = clients.find(
+                (c) =>
+                  c.phone_number ===
+                  nm?.conversation_envelope?.client_phone_number
               );
-              isNewMessage = isMessageInMessageIds ? false : true;
-            } else {
-              // check by date/timestamp
-              isNewMessage =
-                findClient && nm?.conversation_envelope?.timestamp
-                  ? new Date(nm?.conversation_envelope?.timestamp) >
-                    new Date(findClient?.last_message_created_at)
-                  : true;
-            }
-            // eol handle deduplication
 
-            return (
-              nm?.conversation_envelope?.user_phone_number ===
-                userPhoneNumber && isNewMessage
-            );
-          })
-          .reduce((acc, nm) => {
-            const existingNotification = acc.find(
-              (n) => n.sender === nm.conversation_envelope.client_phone_number
-            );
-            if (existingNotification) {
-              existingNotification.messages.push(nm);
-            } else {
-              acc.push({
-                sender: nm.conversation_envelope.client_phone_number,
-                messages: [nm],
-              });
-            }
-            return acc;
-          }, [])
-          .map((notification, index) => (
-            <ChatNotification
-              key={`chat-notification-${index}`}
-              visible={notification.sender !== clientPhoneNumber}
-              setVisible={() =>
-                setNewMessage((prev) =>
-                  prev.filter(
-                    (p) =>
-                      p.conversation_envelope.message_id !==
-                      notification.messages[0].conversation_envelope.message_id
-                  )
-                )
+              // if populated chat is not empty, check message_id is in populated chat
+              let isNewMessage = true;
+              if (findClient?.message_ids?.length) {
+                const isMessageInMessageIds = findClient.message_ids.find(
+                  (id) => id === nm.conversation_envelope.message_id
+                );
+                isNewMessage = isMessageInMessageIds ? false : true;
+              } else {
+                // check by date/timestamp
+                isNewMessage =
+                  findClient && nm?.conversation_envelope?.timestamp
+                    ? new Date(nm?.conversation_envelope?.timestamp) >
+                      new Date(findClient?.last_message_created_at)
+                    : true;
               }
-              notification={notification}
-              onClick={handleOnClickNotification}
-            />
-          ))}
-      </div>
+              // eol handle deduplication
+
+              return (
+                nm?.conversation_envelope?.user_phone_number ===
+                  userPhoneNumber && isNewMessage
+              );
+            })
+            .reduce((acc, nm) => {
+              const existingNotification = acc.find(
+                (n) => n.sender === nm.conversation_envelope.client_phone_number
+              );
+              if (existingNotification) {
+                existingNotification.messages.push(nm);
+              } else {
+                acc.push({
+                  sender: nm.conversation_envelope.client_phone_number,
+                  messages: [nm],
+                });
+              }
+              return acc;
+            }, [])
+            .map((notification, index) => (
+              <ChatNotification
+                key={`chat-notification-${index}`}
+                visible={notification.sender !== clientPhoneNumber}
+                setVisible={() =>
+                  setNewMessage((prev) =>
+                    prev.filter(
+                      (p) =>
+                        p.conversation_envelope.message_id !==
+                        notification.messages[0].conversation_envelope
+                          .message_id
+                    )
+                  )
+                }
+                notification={notification}
+                onClick={handleOnClickNotification}
+              />
+            ))}
+        </div>
+      ) : (
+        ""
+      )}
       {clientPhoneNumber ? (
         <ChatWindow
           chats={chats}

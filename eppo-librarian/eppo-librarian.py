@@ -6,6 +6,8 @@ import logging
 import requests
 import chromadb
 import pandas as pd
+import hashlib
+
 from lxml import html
 from time import sleep
 from openai import OpenAI
@@ -77,6 +79,7 @@ MAX_RETRIES = 3
 DELAY_SECONDS = 5
 
 CACHE_DIR = "/data/cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 def download_eppo_code_registry(
@@ -168,7 +171,6 @@ def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
     Download all datasheets specified, clean their text and provide the URL
     for the datasheet, for reference.
     """
-    os.makedirs(CACHE_DIR, exist_ok=True)
 
     def download_and_extract_text(row):
         eppo_code = row[COL_EPPO_CODE]
@@ -218,8 +220,6 @@ def translate_to_plain_text(
     col_from: str,
     col_to: str,
 ) -> pd.DataFrame:
-
-    os.makedirs(CACHE_DIR, exist_ok=True)
 
     def to_plain(
         llm_client: OpenAI,
@@ -364,36 +364,58 @@ def translate_chunks(
     to_language: str,
 ) -> pd.DataFrame:
     """
-    Translates the text in the source column of the dataframe from one language
-    to another and stores the result into `col_translated`.
+    Translates text in the specified DataFrame column from
+    one language to another, stores results in the `col_translated` column,
+    and caches each translation.
 
     Parameters:
     df (pd.DataFrame): The DataFrame containing the text to translate.
-    col_chunk (str): The column name with the text to translate.
-    from_language (str): The source language code.
-    col_translated (str): The column name where the translated text will be stored.
-    to_language (str): The target language code.
+    col_chunk (str): Column name with text to translate.
+    from_language (str): Source language code.
+    col_translated (str): Column for translated text.
+    to_language (str): Target language code.
 
     Returns:
-    pd.DataFrame: The DataFrame with the translated text in the new column.
+    pd.DataFrame: DataFrame with translated text in `col_translated`.
     """
 
-    TRANSLATOR_CHAR_LIMIT: int = 4999
+    TRANSLATOR_CHAR_LIMIT = 4999
     translator = GoogleTranslator(source=from_language, target=to_language)
 
+    def get_cache_path(text: str) -> str:
+        # Generate a unique filename using a hash of the text
+        text_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
+        return os.path.join(
+            CACHE_DIR, f"{text_hash}_{from_language}_{to_language}.txt"
+        )
+
     def translate_with_retry(text: str) -> str:
+        # Check cache first
+        cache_path = get_cache_path(text)
+        if os.path.exists(cache_path):
+            logger.info(f"Using cached translation for text hash {cache_path}")
+            with open(cache_path, "r", encoding="utf-8") as file:
+                return file.read().strip()
+
+        # If not cached, proceed with translation
         result = ""
         for i in range(0, len(text), TRANSLATOR_CHAR_LIMIT):
             chunk = text[i : i + TRANSLATOR_CHAR_LIMIT]
             while True:
                 try:
-                    result += translator.translate(chunk)
+                    translated_chunk = translator.translate(chunk)
+                    result += translated_chunk
                     break
                 except Exception as e:
                     logger.warning(
                         f"Translation {type(e).__name__}: {str(e)}, retrying in 10 seconds..."
                     )
                     time.sleep(10)
+
+        # Cache the result
+        with open(cache_path, "w", encoding="utf-8") as file:
+            file.write(result)
+
         return result
 
     df[col_translated] = df[col_chunk].apply(translate_with_retry)
@@ -489,7 +511,6 @@ if __name__ == "__main__":
                 chunks_df, datasheets_df, COL_CHUNK, chromadb_collection
             )
         else:
-            continue  # TODO :: remove later
             logger.info(f"translating chunks into {to_language}...")
             translated_column = f"translated chunk ({to_language})"
             chunks_df = translate_chunks(

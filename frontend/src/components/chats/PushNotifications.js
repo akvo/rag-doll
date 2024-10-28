@@ -29,7 +29,6 @@ const PushNotifications = () => {
           applicationServerKey: applicationServerKey,
         });
 
-        // Send subscription details to the backend
         const response = await api.post(
           "subscribe",
           JSON.stringify(subscription)
@@ -49,30 +48,32 @@ const PushNotifications = () => {
     };
 
     const handleNotificationPermission = async () => {
-      if (Notification.permission === "granted") {
-        const registration = await navigator.serviceWorker.ready;
-        subscribeUser(registration);
-      } else if (Notification.permission === "default") {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
+      switch (Notification.permission) {
+        case "granted":
           const registration = await navigator.serviceWorker.ready;
-          subscribeUser(registration);
-        } else {
-          console.warn("Notification permission was denied.");
-        }
-      } else {
-        console.warn(
-          "Notifications are blocked. Enable them in your browser settings if you want to receive notifications."
-        );
+          await subscribeUser(registration);
+          break;
+
+        case "default":
+          const permission = await Notification.requestPermission();
+          if (permission === "granted") {
+            const registration = await navigator.serviceWorker.ready;
+            await subscribeUser(registration);
+          } else {
+            console.warn("Notification permission was denied by the user.");
+          }
+          break;
+
+        case "denied":
+          console.warn(
+            "Notifications are blocked. Enable them in browser settings to receive notifications."
+          );
+          break;
       }
     };
 
-    // Check for service worker and push manager support
-    if (
-      "serviceWorker" in navigator &&
-      "PushManager" in window &&
-      "Notification" in window
-    ) {
+    // Check if Push API and Notifications are supported
+    if ("PushManager" in window && "Notification" in window) {
       handleNotificationPermission();
     } else {
       console.warn("Push notifications are not supported in this browser.");

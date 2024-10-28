@@ -18,8 +18,7 @@ const PushNotifications = () => {
   useEffect(() => {
     const subscribeUser = async (registration) => {
       try {
-        const vapidPublicKey =
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "secret";
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!vapidPublicKey) {
           throw new Error("VAPID public key is missing.");
         }

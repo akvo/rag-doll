@@ -219,13 +219,26 @@ def translate_to_plain_text(
     col_to: str,
 ) -> pd.DataFrame:
 
+    os.makedirs(CACHE_DIR, exist_ok=True)
+
     def to_plain(
         llm_client: OpenAI,
         model: str,
         system_prompt: str,
         prompt_template: str,
         text: str,
+        eppo_code: str,
     ) -> str:
+        # Define the cache file path for each translation
+        cache_path = os.path.join(CACHE_DIR, f"{eppo_code}_translated.txt")
+
+        # Check if the translation is already cached
+        if os.path.exists(cache_path):
+            logger.info(f"Using cached translation for {eppo_code}")
+            with open(cache_path, "r", encoding="utf-8") as file:
+                return file.read().strip()
+
+        # If not cached, proceed with translation
         llm_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt_template.format(text=text)},
@@ -234,7 +247,13 @@ def translate_to_plain_text(
             model=model,
             messages=llm_messages,
         )
-        return response.choices[0].message.content.strip()
+        translated_text = response.choices[0].message.content.strip()
+
+        # Cache the translated text
+        with open(cache_path, "w", encoding="utf-8") as file:
+            file.write(translated_text)
+
+        return translated_text
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -245,6 +264,7 @@ def translate_to_plain_text(
                     system_prompt,
                     prompt_template,
                     row[col_from],
+                    row[COL_EPPO_CODE],
                 ),
                 axis=1,
             )
@@ -436,18 +456,18 @@ if __name__ == "__main__":
     logger.info("loading datasheets...")
     datasheets_df = download_datasheets(eppo_code_df)
 
-    # TODO :: enable below code later
-    # logger.info("translating datasheets into plain language...")
-    # openai = OpenAI()
-    # datasheets_df = translate_to_plain_text(
-    #     datasheets_df,
-    #     openai,
-    #     OPENAI_CHAT_MODEL,
-    #     PLAIN_TEXT_SYSTEM_PROMPT,
-    #     PLAIN_TEXT_PROMPT,
-    #     COL_TEXT_EN,
-    #     COL_TEXT_PLAIN,
-    # )
+    # Translate datasheets into plain text
+    logger.info("translating datasheets into plain language...")
+    openai = OpenAI()
+    datasheets_df = translate_to_plain_text(
+        datasheets_df,
+        openai,
+        OPENAI_CHAT_MODEL,
+        PLAIN_TEXT_SYSTEM_PROMPT,
+        PLAIN_TEXT_PROMPT,
+        COL_TEXT_EN,
+        COL_TEXT_PLAIN,
+    )
     # END of TODO
 
     logger.info("generating chunks...")

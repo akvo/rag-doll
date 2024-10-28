@@ -292,6 +292,11 @@ def make_chunks(
     will return more useful data.
     """
 
+    # Automatically adjust overlap_size if it is invalid
+    # Set to half of chunk_size or 1
+    if overlap_size >= chunk_size:
+        overlap_size = max(1, chunk_size // 2)
+
     def create_chunks(text: str) -> list[str]:
         sentences = sent_tokenize(text)
         chunks = []

@@ -10,11 +10,11 @@ ARG BACKEND_PORT
 ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
 ARG NEXT_PUBLIC_VAPID_PRIVATE_KEY
 
-# Write the environment variables to .env file
-RUN echo "FRONTEND_PORT=$FRONTEND_PORT" > .env && \
-    echo "BACKEND_PORT=$BACKEND_PORT" >> .env && \
-    echo "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY" >> .env && \
-    echo "NEXT_PUBLIC_VAPID_PRIVATE_KEY=$NEXT_PUBLIC_VAPID_PRIVATE_KEY" >> .env
+# Write each variable into the .env file inside the container
+RUN echo "FRONTEND_PORT=${FRONTEND_PORT}" > .env && \
+    echo "BACKEND_PORT=${BACKEND_PORT}" >> .env && \
+    echo "NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY}" >> .env && \
+    echo "NEXT_PUBLIC_VAPID_PRIVATE_KEY=${NEXT_PUBLIC_VAPID_PRIVATE_KEY}" >> .env
 
 EXPOSE 3000
 

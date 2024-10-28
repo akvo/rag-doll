@@ -1,9 +1,24 @@
 "use client";
 
+import { useEffect } from "react";
 import { AuthContextProvider } from "@/context";
 import { roboto_condensed } from "./fonts";
 
 export default function RootLayoutClient({ children }) {
+  // register service worker
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then(function (reg) {
+          console.info("Service Worker registered with scope:", reg.scope);
+        })
+        .catch(function (err) {
+          console.info("Service Worker registration failed:", err);
+        });
+    }
+  }, []);
+
   return (
     <AuthContextProvider>
       <style jsx global>{`

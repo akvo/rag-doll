@@ -14,6 +14,7 @@ from models import (
     Platform_Enum,
     Chat,
     Chat_Status_Enum,
+    Subscription,
 )
 from core.database import engine
 from sqlmodel import Session, select, and_
@@ -25,6 +26,7 @@ from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
 from db import add_media
 from typing import Optional, List
+from pywebpush import webpush, WebPushException
 
 
 logging.basicConfig(level=logging.INFO)
@@ -43,6 +45,9 @@ INITIAL_CHAT_TEMPLATE = os.getenv(
     "INITIAL_CHAT_TEMPLATE",
     "Hi {farmer_name}, I'm {officer_name} the extension officer.",
 )
+VAPID_PRIVATE_KEY = os.getenv("NEXT_PUBLIC_VAPID_PRIVATE_KEY")
+VAPID_PUBLIC_KEY = os.getenv("NEXT_PUBLIC_VAPID_PUBLIC_KEY")
+VAPID_CLAIMS = {"sub": "mailto:example@mail.com"}
 
 
 def get_rabbitmq_client():
@@ -269,15 +274,13 @@ async def handle_incoming_message(session: Session, message: dict):
         add_media(session=session, chat=new_chat, media=media)
     # eol handle media
 
-    # TODO :: send & save initial message into chat table
+    # send & save initial message into chat table
+    client_name = (
+        client.properties.name if client.properties else client.phone_number
+    )
     if send_initial_message:
         user_name = (
             user.properties.name if user.properties else user.phone_number
-        )
-        client_name = (
-            client.properties.name
-            if client.properties
-            else client.phone_number
         )
         initial_message = INITIAL_CHAT_TEMPLATE.format(
             farmer_name=client_name, officer_name=user_name
@@ -302,6 +305,7 @@ async def handle_incoming_message(session: Session, message: dict):
         chat_session_id,
         new_chat.id,
         new_chat.status.value,
+        client_name,
     )
 
 
@@ -326,6 +330,9 @@ def handle_read_message(session: Session, chat_session_id: int):
 
 
 async def resend_messages(session: Session, user_id=int, user_sid=str):
+    """
+    This function is to resend N last message to platform
+    """
     chat_session = session.exec(
         select(Chat_Session).where(Chat_Session.user_id == user_id)
     ).all()
@@ -550,9 +557,14 @@ async def client_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number, chat_session_id, chat_id, chat_status = (
-            await handle_incoming_message(session=session, message=message)
-        )
+        (
+            user_id,
+            user_phone_number,
+            chat_session_id,
+            chat_id,
+            chat_status,
+            client_name,
+        ) = await handle_incoming_message(session=session, message=message)
 
         user_sid = get_cache(user_id=user_id)
 
@@ -580,6 +592,48 @@ async def client_to_user(body: str):
         await sio_server.emit(
             "chats", message, to=user_sid, callback=emit_chats_callback
         )
+
+        # Send push notification
+        subscriptions = session.exec(
+            select(Subscription).where(Subscription.user_id == user_id)
+        ).all()
+        body_text = message.get("body")
+        max_length = 150
+        # Truncate and add ellipsis if needed
+        truncated_body = (
+            (body_text[:max_length] + "...")
+            if len(body_text) > max_length
+            else body_text
+        )
+        for subscription in subscriptions:
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": subscription.endpoint,
+                        "keys": json.loads(subscription.keys),
+                    },
+                    data=json.dumps(
+                        {
+                            "title": client_name,
+                            "body": truncated_body,
+                        }
+                    ),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims=VAPID_CLAIMS,
+                )
+            except WebPushException as e:
+                # Detect if the subscription is invalid or expired
+                if e.response and e.response.status_code in {404, 410}:
+                    logger.warning(
+                        "Removing invalid subscription:", subscription.endpoint
+                    )
+                    # Remove the invalid subscription from the database
+                    session.delete(subscription)
+                    session.commit()
+                else:
+                    logger.error("Failed to send notification:", e)
+        # EOL send push notification
+
         logger.info(
             f"Send client->user to {USER_CACHE_KEY}{user_id} "
             f"{user_sid}: {message}"
@@ -612,9 +666,14 @@ async def assistant_to_user(body: str):
         session = Session(engine)
         message = json.loads(body)
 
-        user_id, user_phone_number, chat_session_id, chat_id, chat_status = (
-            await handle_incoming_message(session=session, message=message)
-        )
+        (
+            user_id,
+            user_phone_number,
+            chat_session_id,
+            chat_id,
+            chat_status,
+            client_name,
+        ) = await handle_incoming_message(session=session, message=message)
         user_sid = get_cache(user_id=user_id)
 
         conversation_envelope = get_value_or_raise_error(

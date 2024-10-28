@@ -37,6 +37,8 @@ jobs:
       - name: Prepare Frontend Build
         run: |
           mv src/frontend/next.config.prod.mjs src/frontend/next.config.mjs
+          echo 'NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}' >> src/frontend/.env
+          echo 'NEXT_PUBLIC_VAPID_PRIVATE_KEY=${{ secrets.NEXT_PUBLIC_VAPID_PRIVATE_KEY }}' >> src/frontend/.env
         shell: bash
 
 

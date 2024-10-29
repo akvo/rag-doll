@@ -6,6 +6,8 @@ import logging
 import requests
 import chromadb
 import pandas as pd
+import hashlib
+
 from lxml import html
 from time import sleep
 from openai import OpenAI
@@ -75,6 +77,9 @@ COL_CHUNK: str = "chunk (en)"
 
 MAX_RETRIES = 3
 DELAY_SECONDS = 5
+
+CACHE_DIR = "/data/cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 def download_eppo_code_registry(
@@ -169,12 +174,31 @@ def download_datasheets(df: pd.DataFrame) -> pd.DataFrame:
 
     def download_and_extract_text(row):
         eppo_code = row[COL_EPPO_CODE]
-        datasheet_url, datasheet_html = download_datasheet_as_html(eppo_code)
-        cleaned_html = clean_datasheet(datasheet_html)
-        datasheet_text = " ".join(cleaned_html.xpath("//body//text()"))
-        datasheet_text = " ".join(
-            datasheet_text.split()
-        )  # weed out superfluous whitespace
+        cache_path = os.path.join(CACHE_DIR, f"{eppo_code}.txt")
+
+        # Check if cached file exists
+        if os.path.exists(cache_path):
+            logger.info(f"Using cached datasheet for {eppo_code}")
+            with open(cache_path, "r", encoding="utf-8") as file:
+                # Reads only the first line as URL
+                datasheet_url = file.readline().strip()
+                # Reads the rest as the datasheet text
+                datasheet_text = file.read().strip()
+        else:
+            # Download and process if not cached
+            datasheet_url, datasheet_html = download_datasheet_as_html(
+                eppo_code
+            )
+            cleaned_html = clean_datasheet(datasheet_html)
+            datasheet_text = " ".join(cleaned_html.xpath("//body//text()"))
+            datasheet_text = " ".join(
+                datasheet_text.split()
+            )  # weed out superfluous whitespace
+
+            # Cache the URL and text
+            with open(cache_path, "w", encoding="utf-8") as file:
+                file.write(f"{datasheet_url}\n{datasheet_text}")
+
         return pd.Series(
             {
                 COL_EPPO_CODE: eppo_code,
@@ -203,7 +227,18 @@ def translate_to_plain_text(
         system_prompt: str,
         prompt_template: str,
         text: str,
+        eppo_code: str,
     ) -> str:
+        # Define the cache file path for each translation
+        cache_path = os.path.join(CACHE_DIR, f"{eppo_code}_translated.txt")
+
+        # Check if the translation is already cached
+        if os.path.exists(cache_path):
+            logger.info(f"Using cached translation for {eppo_code}")
+            with open(cache_path, "r", encoding="utf-8") as file:
+                return file.read().strip()
+
+        # If not cached, proceed with translation
         llm_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt_template.format(text=text)},
@@ -212,7 +247,13 @@ def translate_to_plain_text(
             model=model,
             messages=llm_messages,
         )
-        return response.choices[0].message.content.strip()
+        translated_text = response.choices[0].message.content.strip()
+
+        # Cache the translated text
+        with open(cache_path, "w", encoding="utf-8") as file:
+            file.write(translated_text)
+
+        return translated_text
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -223,6 +264,7 @@ def translate_to_plain_text(
                     system_prompt,
                     prompt_template,
                     row[col_from],
+                    row[COL_EPPO_CODE],
                 ),
                 axis=1,
             )
@@ -249,6 +291,11 @@ def make_chunks(
     splitting the datasheets into chunks we expect that the RAG queries
     will return more useful data.
     """
+
+    # Automatically adjust overlap_size if it is invalid
+    # Set to half of chunk_size or 1
+    if overlap_size >= chunk_size:
+        overlap_size = max(1, chunk_size // 2)
 
     def create_chunks(text: str) -> list[str]:
         sentences = sent_tokenize(text)
@@ -322,36 +369,58 @@ def translate_chunks(
     to_language: str,
 ) -> pd.DataFrame:
     """
-    Translates the text in the source column of the dataframe from one language
-    to another and stores the result into `col_translated`.
+    Translates text in the specified DataFrame column from
+    one language to another, stores results in the `col_translated` column,
+    and caches each translation.
 
     Parameters:
     df (pd.DataFrame): The DataFrame containing the text to translate.
-    col_chunk (str): The column name with the text to translate.
-    from_language (str): The source language code.
-    col_translated (str): The column name where the translated text will be stored.
-    to_language (str): The target language code.
+    col_chunk (str): Column name with text to translate.
+    from_language (str): Source language code.
+    col_translated (str): Column for translated text.
+    to_language (str): Target language code.
 
     Returns:
-    pd.DataFrame: The DataFrame with the translated text in the new column.
+    pd.DataFrame: DataFrame with translated text in `col_translated`.
     """
 
-    TRANSLATOR_CHAR_LIMIT: int = 4999
+    TRANSLATOR_CHAR_LIMIT = 4999
     translator = GoogleTranslator(source=from_language, target=to_language)
 
+    def get_cache_path(text: str) -> str:
+        # Generate a unique filename using a hash of the text
+        text_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
+        return os.path.join(
+            CACHE_DIR, f"{text_hash}_{from_language}_{to_language}.txt"
+        )
+
     def translate_with_retry(text: str) -> str:
+        # Check cache first
+        cache_path = get_cache_path(text)
+        if os.path.exists(cache_path):
+            logger.info(f"Using cached translation for text hash {cache_path}")
+            with open(cache_path, "r", encoding="utf-8") as file:
+                return file.read().strip()
+
+        # If not cached, proceed with translation
         result = ""
         for i in range(0, len(text), TRANSLATOR_CHAR_LIMIT):
             chunk = text[i : i + TRANSLATOR_CHAR_LIMIT]
             while True:
                 try:
-                    result += translator.translate(chunk)
+                    translated_chunk = translator.translate(chunk)
+                    result += translated_chunk
                     break
                 except Exception as e:
                     logger.warning(
                         f"Translation {type(e).__name__}: {str(e)}, retrying in 10 seconds..."
                     )
                     time.sleep(10)
+
+        # Cache the result
+        with open(cache_path, "w", encoding="utf-8") as file:
+            file.write(result)
+
         return result
 
     df[col_translated] = df[col_chunk].apply(translate_with_retry)
@@ -414,18 +483,18 @@ if __name__ == "__main__":
     logger.info("loading datasheets...")
     datasheets_df = download_datasheets(eppo_code_df)
 
-    # TODO :: enable below code later
-    # logger.info("translating datasheets into plain language...")
-    # openai = OpenAI()
-    # datasheets_df = translate_to_plain_text(
-    #     datasheets_df,
-    #     openai,
-    #     OPENAI_CHAT_MODEL,
-    #     PLAIN_TEXT_SYSTEM_PROMPT,
-    #     PLAIN_TEXT_PROMPT,
-    #     COL_TEXT_EN,
-    #     COL_TEXT_PLAIN,
-    # )
+    # Translate datasheets into plain text
+    logger.info("translating datasheets into plain language...")
+    openai = OpenAI()
+    datasheets_df = translate_to_plain_text(
+        datasheets_df,
+        openai,
+        OPENAI_CHAT_MODEL,
+        PLAIN_TEXT_SYSTEM_PROMPT,
+        PLAIN_TEXT_PROMPT,
+        COL_TEXT_EN,
+        COL_TEXT_PLAIN,
+    )
     # END of TODO
 
     logger.info("generating chunks...")
@@ -447,7 +516,6 @@ if __name__ == "__main__":
                 chunks_df, datasheets_df, COL_CHUNK, chromadb_collection
             )
         else:
-            continue  # TODO :: remove later
             logger.info(f"translating chunks into {to_language}...")
             translated_column = f"translated chunk ({to_language})"
             chunks_df = translate_chunks(

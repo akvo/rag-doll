@@ -53,6 +53,7 @@ services:
     command: ["./run.sh"]
     volumes:
       - ./eppo-librarian:/app:delegated
+      - eppo-cache:/data/cache:delegated
     restart: no
 
   chromadb:
@@ -165,3 +166,4 @@ volumes:
   pg-admin-data:
   rabbitmq-data:
   chromadb-data:
+  eppo-cache:

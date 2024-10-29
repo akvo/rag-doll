@@ -29,6 +29,7 @@ export const SenderRoleEnum = {
   CLIENT: "client",
   ASSISTANT: "assistant",
   SYSTEM: "system",
+  USER_BROADCAST: "user_broadcast",
 };
 
 export const ChatStatusEnum = {

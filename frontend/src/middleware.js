@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
-const protectedRoutes = ["/account", "/chats", "/add-farmer"];
+const protectedRoutes = [
+  "/account",
+  "/chats",
+  "/add-farmer",
+  "/broadcast-message",
+];
 const authRoutes = ["/login"];
 
 export const middleware = (request) => {

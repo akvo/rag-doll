@@ -3,9 +3,8 @@
 import { useRouter } from "next/navigation";
 import { BackIcon } from "@/utils/icons";
 import { ChatHeader } from "@/components";
-import FarmerForm from "@/components/chats/FarmerForm";
 
-const AddFarmer = () => {
+const BroadcastMessage = () => {
   const router = useRouter();
 
   const handleOnClickBack = () => {
@@ -21,9 +20,9 @@ const AddFarmer = () => {
           </button>
         }
       />
-      <FarmerForm />
+      <h1>Broadcast</h1>
     </div>
   );
 };
 
-export default AddFarmer;
+export default BroadcastMessage;

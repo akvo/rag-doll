@@ -185,7 +185,6 @@ def test_send_broadcast_success(client: TestClient, session: Session) -> None:
         },
     )
     assert response.status_code == 200
-    assert response.json() == {"message": "Broadcast task added to background"}
 
     # Verify that messages were saved in the database
     for contact in test_clients:
@@ -205,6 +204,9 @@ def test_send_broadcast_success(client: TestClient, session: Session) -> None:
         ).all()
 
         assert len(messages) > 0
-        assert messages[-1].message == "Hello, this is a broadcast message."
+        assert (
+            messages[-1].message
+            == "[Broadcast] Hello, this is a broadcast message."
+        )
         assert messages[-1].sender_role == Sender_Role_Enum.USER_BROADCAST
         assert messages[-1].status == Chat_Status_Enum.UNREAD

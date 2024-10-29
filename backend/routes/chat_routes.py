@@ -156,6 +156,7 @@ async def send_broadcast(
     auth: credentials = Depends(security),
 ):
     user = verify_user(session, auth)
+    message = f"[Broadcast] {request.message}"
     contacts = []
     for phone_number in request.contacts:
         phone_number = phonenumbers.parse(phone_number)
@@ -195,7 +196,7 @@ async def send_broadcast(
         # Add chat history
         new_chat = Chat(
             chat_session_id=chat_session.id,
-            message=request.message,
+            message=message,
             sender_role=Sender_Role_Enum.USER_BROADCAST,
             status=Chat_Status_Enum.UNREAD,
         )
@@ -206,7 +207,7 @@ async def send_broadcast(
             background_tasks.add_task(
                 twilio_client.whatsapp_message_create,
                 to=client.get("phone_number"),
-                body=request.message,
+                body=message,
             )
 
     # Bulk insert new chat messages
@@ -214,4 +215,4 @@ async def send_broadcast(
         session.add_all(new_chats)
     session.commit()
     session.flush()
-    return {"message": "Broadcast task added to background"}
+    return {"message": "Broadcast message sent to WhatsApp"}

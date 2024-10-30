@@ -37,7 +37,7 @@ const BroadcastMessage = () => {
     const isChecked = event.target.checked;
     setSelectAll(isChecked);
     if (isChecked) {
-      setSelectedClients(clients.map((client) => client.id));
+      setSelectedClients(clients.map((client) => String(client.id)));
     } else {
       setSelectedClients([]);
     }
@@ -83,7 +83,7 @@ const BroadcastMessage = () => {
       message: message,
       contacts: clients
         .map((c) => {
-          if (selectedClients.includes(c.id)) {
+          if (selectedClients.includes(String(c.id))) {
             return c.phone_number;
           }
           return false;

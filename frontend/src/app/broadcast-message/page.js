@@ -5,7 +5,7 @@ import { BackIcon } from "@/utils/icons";
 import { ChatHeader, Notification } from "@/components";
 import { useUserContext } from "@/context/UserContextProvider";
 import { ButtonLoadingIcon } from "@/utils/icons";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { api } from "@/lib";
 
 const MAX_CHARACTERS = 1600;
@@ -19,28 +19,46 @@ const BroadcastMessage = () => {
   const [disabled, setDisabled] = useState(false);
   const [notificationContent, setNotificationContent] = useState("");
   const [showNotification, setShowNotification] = useState(false);
+  const [searchClient, setSearchClient] = useState("");
+
+  useEffect(() => {
+    setSelectAll(selectedClients.length === clients.length);
+  }, [clients, selectedClients]);
 
   const handleOnClickBack = () => {
     router.replace("/chats");
   };
 
-  const handleClientChange = (event) => {
-    const value = Array.from(event.target.options)
-      .filter((option) => option.selected)
-      .map((option) => option.value);
-    setSelectedClients(value);
-    // Update selectAll state
-    setSelectAll(value.length === clients.length);
+  const handleClientChange = (clientId) => {
+    setSelectedClients((prevSelectedClients) => {
+      if (prevSelectedClients.includes(clientId)) {
+        // If client is already selected, remove it
+        return prevSelectedClients.filter((id) => id !== clientId);
+      } else {
+        // Otherwise, add the client to selectedClients
+        return [...prevSelectedClients, clientId];
+      }
+    });
+    setSearchClient("");
   };
+
+  const handleSearchClient = (event) => {
+    setSearchClient(event.target.value);
+  };
+
+  const filteredClients = useMemo(() => {
+    if (!searchClient) return clients;
+    return clients.filter(
+      (client) =>
+        client.name.toLowerCase().includes(searchClient.toLowerCase()) ||
+        client.phone_number.includes(searchClient)
+    );
+  }, [searchClient, clients]);
 
   const handleSelectAllChange = (event) => {
     const isChecked = event.target.checked;
     setSelectAll(isChecked);
-    if (isChecked) {
-      setSelectedClients(clients.map((client) => String(client.id)));
-    } else {
-      setSelectedClients([]);
-    }
+    setSelectedClients(isChecked ? clients.map((client) => client.id) : []);
   };
 
   const handleMessageChange = (e) => {
@@ -80,15 +98,10 @@ const BroadcastMessage = () => {
     }
 
     const requestData = {
-      message: message,
+      message,
       contacts: clients
-        .map((c) => {
-          if (selectedClients.includes(String(c.id))) {
-            return c.phone_number;
-          }
-          return false;
-        })
-        .filter((x) => x),
+        .filter((c) => selectedClients.includes(c.id))
+        .map((c) => c.phone_number),
     };
 
     try {
@@ -102,7 +115,7 @@ const BroadcastMessage = () => {
         setTimeout(() => {
           setDisabled(false);
           handleClearForm();
-        });
+        }, 1000);
       } else {
         setNotificationContent("Error, please try again later.");
         handleShowNotification();
@@ -128,10 +141,11 @@ const BroadcastMessage = () => {
         }
       />
       <div className="flex justify-center min-h-screen bg-white mt-20">
-        <form onSubmit={(e) => handleSubmit(e)} className="p-10 w-full">
+        <form onSubmit={handleSubmit} className="p-10 w-full">
           <h2 className="text-lg font-semibold mb-10">
             Send Broadcast Message
           </h2>
+
           {/* Client List */}
           <div className="mb-8">
             <label className="block text-sm mb-2">Select Farmer</label>
@@ -145,20 +159,32 @@ const BroadcastMessage = () => {
               />
               <label htmlFor="select-all-clients">Select All</label>
             </div>
+            <input
+              type="text"
+              placeholder="Search farmer"
+              className="w-full px-4 py-2 border rounded-lg text-md mb-2"
+              onChange={handleSearchClient}
+              value={searchClient}
+            />
             <select
               multiple
               value={selectedClients}
-              onChange={handleClientChange}
               className="w-full border rounded-lg p-2"
-              required
+              style={{ maxHeight: "150px" }}
             >
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
+              {filteredClients.map((client) => (
+                <option
+                  key={client.id}
+                  value={client.id}
+                  selected={selectedClients.includes(client.id)}
+                  onClick={() => handleClientChange(client.id)}
+                >
                   {client.name}
                 </option>
               ))}
             </select>
           </div>
+
           <div className="mb-8">
             <label className="block text-sm mb-2">
               Message <span className="text-xs">(1600 characters max)</span>
@@ -169,7 +195,7 @@ const BroadcastMessage = () => {
               value={message}
               onChange={handleMessageChange}
               required
-              className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
+              className="w-full px-4 py-2 border rounded-lg text-md resize-none overflow-auto"
             />
             <div className="text-right text-xs mt-1">
               {MAX_CHARACTERS - message.length} characters left

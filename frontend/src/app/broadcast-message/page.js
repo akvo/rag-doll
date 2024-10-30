@@ -7,11 +7,14 @@ import { useUserContext } from "@/context/UserContextProvider";
 import { ButtonLoadingIcon } from "@/utils/icons";
 import { useState } from "react";
 
+const MAX_CHARACTERS = 1600;
+
 const BroadcastMessage = () => {
   const router = useRouter();
   const { clients } = useUserContext();
   const [selectedClients, setSelectedClients] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [message, setMessage] = useState("");
   const disabled = false;
 
   const handleOnClickBack = () => {
@@ -23,7 +26,7 @@ const BroadcastMessage = () => {
       .filter((option) => option.selected)
       .map((option) => option.value);
     setSelectedClients(value);
-    // Update selectAll state based on the selection
+    // Update selectAll state
     setSelectAll(value.length === clients.length);
   };
 
@@ -31,10 +34,19 @@ const BroadcastMessage = () => {
     const isChecked = event.target.checked;
     setSelectAll(isChecked);
     if (isChecked) {
-      setSelectedClients(clients.map((client) => client.id)); // Select all clients
+      setSelectedClients(clients.map((client) => client.id));
     } else {
-      setSelectedClients([]); // Deselect all clients
+      setSelectedClients([]);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // TODO :: Add your submission logic here
+  };
+
+  const handleMessageChange = (e) => {
+    setMessage(e.target.value);
   };
 
   return (
@@ -47,10 +59,7 @@ const BroadcastMessage = () => {
         }
       />
       <div className="flex justify-center min-h-screen bg-white mt-20">
-        <form
-          // onSubmit={(e) => (isEdit ? handleUpdate(e) : handleSubmit(e))}
-          className="p-10 w-full"
-        >
+        <form onSubmit={(e) => handleSubmit(e)} className="p-10 w-full">
           <h2 className="text-lg font-semibold mb-10">
             Send Broadcast Message
           </h2>
@@ -59,18 +68,20 @@ const BroadcastMessage = () => {
             <label className="block text-sm mb-2">Select Farmer</label>
             <div className="flex items-center mb-2">
               <input
+                id="select-all-clients"
                 type="checkbox"
                 checked={selectAll}
                 onChange={handleSelectAllChange}
                 className="mr-2"
               />
-              <label>Select All</label>
+              <label htmlFor="select-all-clients">Select All</label>
             </div>
             <select
               multiple
               value={selectedClients}
               onChange={handleClientChange}
               className="w-full border rounded-lg p-2"
+              required
             >
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
@@ -85,10 +96,15 @@ const BroadcastMessage = () => {
             </label>
             <textarea
               rows={7}
-              maxLength={1600}
+              maxLength={MAX_CHARACTERS}
+              value={message}
+              onChange={handleMessageChange}
               required
               className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
             />
+            <div className="text-right text-xs mt-1">
+              {MAX_CHARACTERS - message.length} characters left
+            </div>
           </div>
 
           {/* Submit Button */}

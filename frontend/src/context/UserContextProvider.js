@@ -11,6 +11,7 @@ const initalUserState = {
   id: null,
   name: "",
   phone_number: "",
+  clients: [],
 };
 
 const userReducer = (state, action) => {
@@ -21,6 +22,7 @@ const userReducer = (state, action) => {
         id: action.payload.id,
         name: action.payload.name,
         phone_number: action.payload.phone_number,
+        clients: action.payload.clients,
       };
     case "DELETE":
       return initalUserState;

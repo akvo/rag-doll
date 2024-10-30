@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { BackIcon } from "@/utils/icons";
-import { ChatHeader } from "@/components";
+import { ChatHeader, Notification } from "@/components";
 import { useUserContext } from "@/context/UserContextProvider";
 import { ButtonLoadingIcon } from "@/utils/icons";
 import { useState } from "react";
+import { api } from "@/lib";
 
 const MAX_CHARACTERS = 1600;
 
@@ -15,7 +16,9 @@ const BroadcastMessage = () => {
   const [selectedClients, setSelectedClients] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [message, setMessage] = useState("");
-  const disabled = false;
+  const [disabled, setDisabled] = useState(false);
+  const [notificationContent, setNotificationContent] = useState("");
+  const [showNotification, setShowNotification] = useState(false);
 
   const handleOnClickBack = () => {
     router.replace("/chats");
@@ -40,13 +43,79 @@ const BroadcastMessage = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // TODO :: Add your submission logic here
-  };
-
   const handleMessageChange = (e) => {
     setMessage(e.target.value);
+  };
+
+  const handleShowNotification = () => {
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
+      setNotificationContent("");
+    }, 3000);
+  };
+
+  const handleClearForm = () => {
+    setMessage("");
+    setSelectedClients([]);
+    setSelectAll(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setDisabled(true);
+
+    if (selectedClients.length === 0) {
+      setNotificationContent("Please select at least one client.");
+      handleShowNotification();
+      setDisabled(false);
+      return;
+    }
+
+    if (message.trim() === "") {
+      setNotificationContent("Please enter a message.");
+      handleShowNotification();
+      setDisabled(false);
+      return;
+    }
+
+    const requestData = {
+      message: message,
+      contacts: clients
+        .map((c) => {
+          if (selectedClients.includes(c.id)) {
+            return c.phone_number;
+          }
+          return false;
+        })
+        .filter((x) => x),
+    };
+
+    try {
+      const response = await api.post(
+        "send-broadcast",
+        JSON.stringify(requestData)
+      );
+      if (response.status === 200) {
+        setNotificationContent("Message sent successfully.");
+        handleShowNotification();
+        setTimeout(() => {
+          setDisabled(false);
+          handleClearForm();
+        });
+      } else {
+        setNotificationContent("Error, please try again later.");
+        handleShowNotification();
+        setDisabled(false);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setNotificationContent(
+        "There was an error sending the broadcast message. Please try again."
+      );
+      handleShowNotification();
+      setDisabled(false);
+    }
   };
 
   return (
@@ -95,7 +164,7 @@ const BroadcastMessage = () => {
               Message <span className="text-xs">(1600 characters max)</span>
             </label>
             <textarea
-              rows={7}
+              rows={5}
               maxLength={MAX_CHARACTERS}
               value={message}
               onChange={handleMessageChange}
@@ -121,6 +190,8 @@ const BroadcastMessage = () => {
           </button>
         </form>
       </div>
+
+      <Notification message={notificationContent} show={showNotification} />
     </div>
   );
 };

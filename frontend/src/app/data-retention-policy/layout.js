@@ -1,5 +1,5 @@
 const DataRetentionPolicyLayout = ({ children }) => {
-  return <div className="flex h-screen bg-gray-100">{children}</div>;
+  return <div className="flex h-screen bg-white">{children}</div>;
 };
 
 export default DataRetentionPolicyLayout;

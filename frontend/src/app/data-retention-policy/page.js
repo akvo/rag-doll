@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib";
+import { ChatHeader } from "@/components";
 
 const DataRetentionPolicy = () => {
   const [content, setContent] = useState([]);
@@ -16,9 +17,10 @@ const DataRetentionPolicy = () => {
   }, []);
 
   return (
-    <div className="w-full mx-auto h-screen overflow-y-auto py-12 px-10">
-      <h1 className="text-xl font-bold text-center text-akvo-green mb-6">
-        Agriconnect Data Retention Policy
+    <div className="w-full mx-auto h-screen overflow-y-auto px-6">
+      <ChatHeader rightMenu={false} />
+      <h1 className="text-xl font-bold text-akvo-green mt-24 mb-6">
+        Data Retention Policy
       </h1>
       {content.map((section, index) => (
         <div

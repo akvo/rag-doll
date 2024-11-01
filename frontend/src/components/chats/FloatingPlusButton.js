@@ -54,7 +54,7 @@ const FloatingPlusButton = () => {
         >
           <ul>
             <li
-              className="text-black hover:bg-gray-100 cursor-pointer px-4 py-3"
+              className="text-black hover:bg-gray-100 cursor-pointer px-4 py-3 border-b"
               onClick={() => {
                 router.push("/add-farmer");
                 setIsOpen(false);
@@ -63,6 +63,18 @@ const FloatingPlusButton = () => {
               Add Farmer
               <div className="text-xs text-gray-500">
                 Onboarding farmer to the platform
+              </div>
+            </li>
+            <li
+              className="text-black hover:bg-gray-100 cursor-pointer px-4 py-3"
+              onClick={() => {
+                router.push("/broadcast-message");
+                setIsOpen(false);
+              }}
+            >
+              Broadcast Message
+              <div className="text-xs text-gray-500">
+                Send broadcast message to farmers
               </div>
             </li>
           </ul>

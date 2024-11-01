@@ -83,6 +83,9 @@ const FarmerForm = ({
         );
         handleShowNotification();
         if (response?.detail?.id) {
+          // TODO :: when add existing farmer we should check if that farmer chat_session is same with logged in user
+          // if yes, forward to conversation
+          // if no, popup a notification that say farmer is handled by another officer
           const { detail: selectedClient } = response;
           localStorage.setItem(
             "selectedClient",
@@ -146,7 +149,7 @@ const FarmerForm = ({
     >
       <form
         onSubmit={(e) => (isEdit ? handleUpdate(e) : handleSubmit(e))}
-        className="p-10 max-w-md w-full"
+        className="p-10 w-full"
       >
         <h2 className="text-lg font-semibold mb-10">
           {isEdit ? "Update" : "Add"} Farmer

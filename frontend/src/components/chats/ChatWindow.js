@@ -29,6 +29,7 @@ export const SenderRoleEnum = {
   CLIENT: "client",
   ASSISTANT: "assistant",
   SYSTEM: "system",
+  USER_BROADCAST: "user_broadcast",
 };
 
 export const ChatStatusEnum = {
@@ -82,7 +83,6 @@ ClientChat.displayName = "ClientChat";
 const SystemChat = forwardRef(({ message, timestamp }, ref) => (
   <div className="flex mb-4 justify-center" ref={ref}>
     <div className="relative bg-blue-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-blue-100 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer
           key={`system-${i}`}
@@ -97,6 +97,24 @@ const SystemChat = forwardRef(({ message, timestamp }, ref) => (
   </div>
 ));
 SystemChat.displayName = "SystemChat";
+
+const BroadcastChat = forwardRef(({ message, timestamp }, ref) => (
+  <div className="flex mb-4 justify-center" ref={ref}>
+    <div className="relative bg-orange-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      {message?.split("\n")?.map((line, i) => (
+        <MarkdownRenderer
+          key={`system-${i}`}
+          content={line}
+          className={`prose-headings:text-gray-800 prose-strong:text-gray-800 prose-p:text-gray-800 prose-a:text-gray-800 prose-li:text-gray-800 prose-ol:text-gray-800 prose-ul:text-gray-800 prose-code:text-gray-800 text-gray-800`}
+        />
+      ))}
+      <p className="text-right text-xs mt-2 text-gray-800">
+        {formatChatTime(timestamp)}
+      </p>
+    </div>
+  </div>
+));
+BroadcastChat.displayName = "BroadcastChat";
 
 const ChatWindow = ({
   chats,
@@ -360,7 +378,7 @@ const ChatWindow = ({
       if (c.sender_role === SenderRoleEnum.SYSTEM) {
         return (
           <SystemChat
-            key={`user-history-${ci}`}
+            key={`system-history-${ci}`}
             message={c.message}
             timestamp={c.created_at}
           />
@@ -374,6 +392,15 @@ const ChatWindow = ({
             media={c.media}
             timestamp={c.created_at}
             id={`${ChatIDPrefix}${c.id}`}
+          />
+        );
+      }
+      if (c.sender_role === SenderRoleEnum.USER_BROADCAST) {
+        return (
+          <BroadcastChat
+            key={`user-broadcast-history-${ci}`}
+            message={c.message}
+            timestamp={c.created_at}
           />
         );
       }

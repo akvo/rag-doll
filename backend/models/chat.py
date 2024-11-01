@@ -14,6 +14,7 @@ class Sender_Role_Enum(enum.Enum):
     CLIENT = "client"
     ASSISTANT = "assistant"
     SYSTEM = "system"
+    USER_BROADCAST = "user_broadcast"
 
 
 class Platform_Enum(enum.Enum):

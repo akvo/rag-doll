@@ -144,15 +144,16 @@ const ChatWindow = ({
   const [loading, setLoading] = useState(true);
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
+  const [maxHeight, setMaxHeight] = useState(0);
 
   const firstUnreadMessage = useMemo(() => {
     return chatHistory.find((ch) => ch.status === ChatStatusEnum.UNREAD);
   }, [chatHistory]);
 
-  const scrollToLastMessage = useCallback(() => {
+  const scrollToLastMessage = useCallback((currentHeight = 0) => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
+        messagesContainerRef.current.scrollHeight + currentHeight;
     }
   }, []);
 
@@ -539,7 +540,9 @@ const ChatWindow = ({
             className={`flex flex-col flex-grow pt-20 w-full h-full ${
               isWhisperVisible ? "pb-40" : "pb-0"
             }`}
-            style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
+            style={{
+              maxHeight: `calc(100vh - ${maxHeight ? maxHeight / 2 : 80}px)`,
+            }} // Adjust for header and textarea
           >
             {loading ? (
               <Loading />
@@ -563,6 +566,9 @@ const ChatWindow = ({
                   setUseWhisperAsTemplate={setUseWhisperAsTemplate}
                   clients={clients}
                   lastChatHistory={lastChatHistory}
+                  maxHeight={maxHeight}
+                  setMaxHeight={setMaxHeight}
+                  scrollToLastMessage={scrollToLastMessage}
                 />
               </>
             )}

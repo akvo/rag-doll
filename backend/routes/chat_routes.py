@@ -1,12 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+import os
+import phonenumbers
+
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPBasicCredentials as credentials
-from models import Chat_Session, Chat, Sender_Role_Enum, Chat_Status_Enum
+from models import (
+    Chat_Session,
+    Chat,
+    Sender_Role_Enum,
+    Chat_Status_Enum,
+    Client,
+    Platform_Enum,
+)
 from sqlmodel import Session, select, func, and_
 from middleware import verify_user
 from core.database import get_session
+from pydantic import BaseModel
+from pydantic_extra_types.phone_numbers import PhoneNumber
+from typing import List
+from clients.twilio_client import TwilioClient
 
 router = APIRouter()
 security = HTTPBearer()
+
+twilio_client = TwilioClient()
+
+
+class BroadcastRequest(BaseModel):
+    contacts: List[PhoneNumber]
+    message: str
 
 
 @router.get("/chat-list")
@@ -125,3 +146,73 @@ async def get_chat_details_by_client_id(
         "chat_session": chat_session.serialize(),
         "messages": [m.serialize() for m in messages],
     }
+
+
+@router.post("/send-broadcast")
+async def send_broadcast(
+    request: BroadcastRequest,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+    auth: credentials = Depends(security),
+):
+    user = verify_user(session, auth)
+    message = f"[Broadcast] {request.message}"
+    contacts = []
+    for phone_number in request.contacts:
+        phone_number = phonenumbers.parse(phone_number)
+        phone_number = (
+            f"+{phone_number.country_code}{phone_number.national_number}"
+        )
+        contacts.append(phone_number)
+    # Retrieve clients from the database
+    clients = session.exec(
+        select(Client).where(Client.phone_number.in_(contacts))
+    ).all()
+    new_chats = []
+
+    for client in clients:
+        client = client.serialize()
+        # Check if chat session exists
+        chat_session = session.exec(
+            select(Chat_Session).where(
+                and_(
+                    Chat_Session.user_id == user.id,
+                    Chat_Session.client_id == client.get("id"),
+                )
+            )
+        ).first()
+
+        # Create a new chat session if it does not exist
+        if not chat_session:
+            chat_session = Chat_Session(
+                user_id=user.id,
+                client_id=client.get("id"),
+                platform=Platform_Enum.WHATSAPP,
+            )
+            session.add(chat_session)
+            session.commit()
+            session.refresh(chat_session)
+
+        # Add chat history
+        new_chat = Chat(
+            chat_session_id=chat_session.id,
+            message=message,
+            sender_role=Sender_Role_Enum.USER_BROADCAST,
+            status=Chat_Status_Enum.UNREAD,
+        )
+        new_chats.append(new_chat)
+
+        if not os.getenv("TESTING"):
+            # Broadcast a message
+            background_tasks.add_task(
+                twilio_client.whatsapp_message_create,
+                to=client.get("phone_number"),
+                body=message,
+            )
+
+    # Bulk insert new chat messages
+    if new_chats:
+        session.add_all(new_chats)
+    session.commit()
+    session.flush()
+    return {"message": "Broadcast message sent to WhatsApp"}

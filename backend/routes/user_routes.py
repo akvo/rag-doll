@@ -7,7 +7,7 @@ from uuid import uuid4
 from datetime import timedelta
 
 from pydantic_extra_types.phone_numbers import PhoneNumber
-from models import User
+from models import User, Chat_Session, Client
 from core.database import get_session
 from utils.jwt_handler import create_jwt_token
 from clients.twilio_client import TwilioClient
@@ -90,4 +90,18 @@ async def user_me(
     auth: credentials = Depends(security),
 ):
     user = verify_user(session, auth)
-    return user.serialize()
+
+    # get the clients of user
+    chat_sesssion = session.exec(
+        select(Chat_Session).where(Chat_Session.user_id == user.id)
+    ).all()
+    client_ids = [cs.client_id for cs in chat_sesssion]
+    clients = session.exec(
+        select(Client).where(Client.id.in_(client_ids))
+    ).all()
+    clients = [c.serialize() for c in clients]
+    # eol get clients
+
+    user = user.serialize()
+    user.update({"clients": clients})
+    return user

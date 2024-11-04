@@ -156,4 +156,11 @@ def test_get_user_me(client: TestClient, session: Session) -> None:
     response = client.get("/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     content = response.json()
-    assert content == user.serialize()
+    clients = content["clients"]
+    assert len(clients) > 0
+    assert "id" in clients[0]
+    assert "name" in clients[0]
+    assert "phone_number" in clients[0]
+    user = user.serialize()
+    user.update({"clients": clients})
+    assert content == user

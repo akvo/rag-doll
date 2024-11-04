@@ -22,6 +22,9 @@ const Whisper = ({
   setUseWhisperAsTemplate,
   clients,
   lastChatHistory,
+  maxHeight,
+  setMaxHeight,
+  scrollToLastMessage,
 }) => {
   const whisperMessageRef = useRef(null);
   const chatContext = useChatContext();
@@ -30,7 +33,12 @@ const Whisper = ({
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [whisperHeight, setWhisperHeight] = useState(0);
-  const [maxHeight, setMaxHeight] = useState("0px");
+
+  useEffect(() => {
+    if (expanded) {
+      scrollToLastMessage(maxHeight / 2);
+    }
+  }, [expanded, scrollToLastMessage, maxHeight]);
 
   // handle whisper deduplication here
   const whispers = useMemo(() => {
@@ -86,9 +94,13 @@ const Whisper = ({
   }, []);
 
   useEffect(() => {
+    if (!expanded) {
+      setMaxHeight(0);
+      return;
+    }
     const calculateMaxHeight = () => {
       // Calculate 2/3 of the viewport height
-      const calculatedMaxHeight = (window.innerHeight * 2) / 3 + "px";
+      const calculatedMaxHeight = (window.innerHeight * 2) / 3;
       setMaxHeight(calculatedMaxHeight);
     };
 
@@ -106,7 +118,7 @@ const Whisper = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [expanded, setMaxHeight]);
 
   useEffect(() => {
     if (whisperMessageRef.current) {
@@ -122,15 +134,13 @@ const Whisper = ({
     <div
       className={`fixed bottom-16 w-full flex mt-12 px-4 pt-4 pb-6 overflow-auto bg-gray-100`}
       style={{
-        height: expanded
-          ? Math.min(whisperHeight, parseFloat(maxHeight))
-          : "11.625rem",
+        height: expanded ? Math.min(whisperHeight, maxHeight) : "11.625rem",
       }}
     >
       <div
         className={`w-full relative bg-white border-white border-2 border-solid rounded-lg shadow-inner overflow-auto`}
         style={{
-          maxHeight: expanded ? maxHeight : "11.625rem",
+          maxHeight: expanded ? `${maxHeight}px` : "11.625rem",
         }}
       >
         <div className="flex justify-between sticky top-0 pt-4 pb-2 bg-white z-10 px-4">

@@ -5,7 +5,7 @@ import { BackIcon } from "@/utils/icons";
 import { ChatHeader } from "@/components";
 import FarmerForm from "@/components/chats/FarmerForm";
 
-const Account = () => {
+const AddFarmer = () => {
   const router = useRouter();
 
   const handleOnClickBack = () => {
@@ -26,4 +26,4 @@ const Account = () => {
   );
 };
 
-export default Account;
+export default AddFarmer;

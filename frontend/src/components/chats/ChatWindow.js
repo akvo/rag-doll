@@ -30,6 +30,7 @@ export const SenderRoleEnum = {
   CLIENT: "client",
   ASSISTANT: "assistant",
   SYSTEM: "system",
+  USER_BROADCAST: "user_broadcast",
 };
 
 export const ChatStatusEnum = {
@@ -80,10 +81,9 @@ const ClientChat = forwardRef(
 );
 ClientChat.displayName = "ClientChat";
 
-const SystemChat = forwardRef(({ message, timestamp }, ref) => (
-  <div className="flex mb-4 justify-center" ref={ref}>
+const SystemChat = forwardRef(({ message, timestamp, refTemp }, ref) => (
+  <div className="flex mb-4 justify-center" ref={refTemp}>
     <div className="relative bg-blue-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
-      <div className="absolute bottom-0 left-0 w-0 h-0 border-t-8 border-t-blue-100 border-l-8 border-l-transparent border-b-0 border-r-8 border-r-transparent transform translate-x-1/2 translate-y-1/2"></div>
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer
           key={`system-${i}`}
@@ -98,6 +98,24 @@ const SystemChat = forwardRef(({ message, timestamp }, ref) => (
   </div>
 ));
 SystemChat.displayName = "SystemChat";
+
+const BroadcastChat = forwardRef(({ message, timestamp, refTemp }, ref) => (
+  <div className="flex mb-4 justify-center" ref={refTemp}>
+    <div className="relative bg-orange-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
+      {message?.split("\n")?.map((line, i) => (
+        <MarkdownRenderer
+          key={`system-${i}`}
+          content={line}
+          className={`prose-headings:text-gray-800 prose-strong:text-gray-800 prose-p:text-gray-800 prose-a:text-gray-800 prose-li:text-gray-800 prose-ol:text-gray-800 prose-ul:text-gray-800 prose-code:text-gray-800 text-gray-800`}
+        />
+      ))}
+      <p className="text-right text-xs mt-2 text-gray-800">
+        {formatChatTime(timestamp)}
+      </p>
+    </div>
+  </div>
+));
+BroadcastChat.displayName = "BroadcastChat";
 
 const ChatWindow = ({
   chats,
@@ -127,6 +145,7 @@ const ChatWindow = ({
   const [loading, setLoading] = useState(true);
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
+  const [maxHeight, setMaxHeight] = useState(0);
 
   const [showNotification, setShowNotification] = useState(false);
   const [notificationContent, setNotificationContent] = useState("");
@@ -156,10 +175,10 @@ const ChatWindow = ({
     return chatHistory.find((ch) => ch.status === ChatStatusEnum.UNREAD);
   }, [chatHistory]);
 
-  const scrollToLastMessage = useCallback(() => {
+  const scrollToLastMessage = useCallback((currentHeight = 0) => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
+        messagesContainerRef.current.scrollHeight + currentHeight;
     }
   }, []);
 
@@ -182,14 +201,22 @@ const ChatWindow = ({
 
   // Scroll to the last message whenever chats or chatHistory state changes
   useEffect(() => {
-    if (!firstUnreadMessage && (chats?.length > 0 || chatHistory?.length > 0)) {
-      scrollToLastMessage();
-    }
-    if (firstUnreadMessage) {
-      const id = `${ChatIDPrefix}${firstUnreadMessage.id}`;
-      const lastChat = document.getElementById(id);
-      lastChat?.scrollIntoView();
-    }
+    const scrollToLastMessageWithDelay = () => {
+      setTimeout(() => {
+        if (
+          !firstUnreadMessage &&
+          (chats?.length > 0 || chatHistory?.length > 0)
+        ) {
+          scrollToLastMessage();
+        }
+        if (firstUnreadMessage) {
+          const id = `${ChatIDPrefix}${firstUnreadMessage.id}`;
+          const lastChat = document.getElementById(id);
+          lastChat?.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 500);
+    };
+    scrollToLastMessageWithDelay();
   }, [chats, chatHistory, scrollToLastMessage, firstUnreadMessage, isEdit]);
 
   // Intersection observer setup to scroll when new message arrives
@@ -359,6 +386,7 @@ const ChatWindow = ({
             setWhisperChats((prev) =>
               prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
             );
+            setMaxHeight(0);
           }
         } else {
           handleLostMessage(chatPayload);
@@ -385,7 +413,7 @@ const ChatWindow = ({
       if (c.sender_role === SenderRoleEnum.SYSTEM) {
         return (
           <SystemChat
-            key={`user-history-${ci}`}
+            key={`system-history-${ci}`}
             message={c.message}
             timestamp={c.created_at}
           />
@@ -399,6 +427,15 @@ const ChatWindow = ({
             media={c.media}
             timestamp={c.created_at}
             id={`${ChatIDPrefix}${c.id}`}
+          />
+        );
+      }
+      if (c.sender_role === SenderRoleEnum.USER_BROADCAST) {
+        return (
+          <BroadcastChat
+            key={`user-broadcast-history-${ci}`}
+            message={c.message}
+            timestamp={c.created_at}
           />
         );
       }
@@ -435,7 +472,7 @@ const ChatWindow = ({
             key={`user-${ci}`}
             message={c.body}
             timestamp={c.conversation_envelope.timestamp}
-            ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+            refTemp={ci === chats.length - 1 ? lastMessageRef : null}
           />
         );
       }
@@ -546,7 +583,9 @@ const ChatWindow = ({
             className={`flex flex-col flex-grow pt-20 w-full h-full ${
               isWhisperVisible ? "pb-40" : "pb-0"
             }`}
-            style={{ maxHeight: "calc(100vh - 80px)" }} // Adjust for header and textarea
+            style={{
+              maxHeight: `calc(100vh - ${maxHeight ? maxHeight / 2 : 80}px)`,
+            }} // Adjust for header and textarea
           >
             {loading ? (
               <Loading />
@@ -570,6 +609,9 @@ const ChatWindow = ({
                   setUseWhisperAsTemplate={setUseWhisperAsTemplate}
                   clients={clients}
                   lastChatHistory={lastChatHistory}
+                  maxHeight={maxHeight}
+                  setMaxHeight={setMaxHeight}
+                  scrollToLastMessage={scrollToLastMessage}
                 />
               </>
             )}

@@ -1,6 +1,13 @@
 from fastapi.testclient import TestClient
-from models import Sender_Role_Enum, Chat_Session, User
-from sqlmodel import Session, select
+from models import (
+    Sender_Role_Enum,
+    Chat_Session,
+    User,
+    Client,
+    Chat,
+    Chat_Status_Enum,
+)
+from sqlmodel import Session, select, and_
 
 
 def test_get_chats(client: TestClient) -> None:
@@ -122,3 +129,84 @@ def test_get_chat_details_by_client_id(
     assert first_message.get("message") is not None
     assert "sender_role" in first_message
     assert "media" in first_message
+
+
+def test_send_broadcast_unauthorized(client: TestClient) -> None:
+    response = client.post(
+        "/send-broadcast",
+        json={
+            "contacts": ["+12345678901", "+12345678902"],
+            "message": "Hello, this is a broadcast message.",
+        },
+    )
+    assert response.status_code == 403
+    content = response.json()
+    assert content["detail"] == "Not authenticated"
+
+
+def test_send_broadcast_success(client: TestClient, session: Session) -> None:
+    # log in to get the token
+    response = client.post("/login?phone_number=%2B12345678900")
+    assert response.status_code == 200
+
+    user = session.exec(
+        select(User).where(User.phone_number == "+12345678900")
+    ).first()
+
+    verification_uuid = user.login_code
+    response = client.get(f"/verify/{verification_uuid}")
+    assert response.status_code == 200
+    content = response.json()
+    assert "token" in content
+    token = content["token"]
+
+    # Prepare test clients
+    contacts = ["+12345678901", "+12345678902"]
+    test_clients = [
+        Client(phone_number=contacts[0]),
+        Client(phone_number=contacts[1]),
+    ]
+    session.add_all(test_clients)
+    session.commit()
+
+    test_clients = session.exec(
+        select(Client).where(Client.phone_number.in_(contacts))
+    ).all()
+    for contact in test_clients:
+        assert contact.phone_number is not None
+
+    # Send the broadcast message
+    response = client.post(
+        "/send-broadcast",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "contacts": contacts,
+            "message": "Hello, this is a broadcast message.",
+        },
+    )
+    assert response.status_code == 200
+
+    # Verify that messages were saved in the database
+    for contact in test_clients:
+        chat_session = session.exec(
+            select(Chat_Session).where(
+                and_(
+                    Chat_Session.client_id == contact.id,
+                    Chat_Session.user_id == user.id,
+                )
+            )
+        ).first()
+        assert chat_session is not None
+
+        # Check that the broadcast message was stored
+        messages = session.exec(
+            select(Chat).where(Chat.chat_session_id == chat_session.id)
+        ).all()
+
+        assert len(messages) > 0
+        assert (
+            messages[-1].message
+            == "[Broadcast] Hello, this is a broadcast message."
+        )
+        assert messages[-1].sender_role == Sender_Role_Enum.USER_BROADCAST
+        assert messages[-1].status == Chat_Status_Enum.UNREAD

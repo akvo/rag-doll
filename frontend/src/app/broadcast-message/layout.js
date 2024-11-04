@@ -1,7 +1,7 @@
 import { ChatContextProvider, UserContextProvider } from "@/context";
 import { ChatTabs } from "@/components";
 
-const AddFarmerLayout = ({ children }) => {
+const BroadcastMessageLayout = ({ children }) => {
   return (
     <UserContextProvider>
       <ChatContextProvider>
@@ -12,4 +12,4 @@ const AddFarmerLayout = ({ children }) => {
   );
 };
 
-export default AddFarmerLayout;
+export default BroadcastMessageLayout;

@@ -80,8 +80,8 @@ const ClientChat = forwardRef(
 );
 ClientChat.displayName = "ClientChat";
 
-const SystemChat = forwardRef(({ message, timestamp }, ref) => (
-  <div className="flex mb-4 justify-center" ref={ref}>
+const SystemChat = forwardRef(({ message, timestamp, refTemp }, ref) => (
+  <div className="flex mb-4 justify-center" ref={refTemp}>
     <div className="relative bg-blue-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer
@@ -98,8 +98,8 @@ const SystemChat = forwardRef(({ message, timestamp }, ref) => (
 ));
 SystemChat.displayName = "SystemChat";
 
-const BroadcastChat = forwardRef(({ message, timestamp }, ref) => (
-  <div className="flex mb-4 justify-center" ref={ref}>
+const BroadcastChat = forwardRef(({ message, timestamp, refTemp }, ref) => (
+  <div className="flex mb-4 justify-center" ref={refTemp}>
     <div className="relative bg-orange-100 p-4 rounded-lg shadow-lg max-w-xs md:max-w-md">
       {message?.split("\n")?.map((line, i) => (
         <MarkdownRenderer
@@ -437,7 +437,7 @@ const ChatWindow = ({
             key={`user-${ci}`}
             message={c.body}
             timestamp={c.conversation_envelope.timestamp}
-            ref={ci === chats.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+            refTemp={ci === chats.length - 1 ? lastMessageRef : null}
           />
         );
       }

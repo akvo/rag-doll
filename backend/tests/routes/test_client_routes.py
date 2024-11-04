@@ -76,6 +76,7 @@ def test_add_new_client(client: TestClient, session: Session):
 def test_add_new_client_with_registered_phone_number(
     client: TestClient, session: Session
 ):
+    # client found in same chat session with user
     response = client.post("/login?phone_number=%2B12345678900")
     assert response.status_code == 200
 
@@ -95,8 +96,33 @@ def test_add_new_client_with_registered_phone_number(
         data=new_client_data,
         headers={"Authorization": f"Bearer {token}"},
     )
-
     assert response.status_code == 409
+
+    # client found in different chat session with user
+    user = User(phone_number="+12345678999")
+    session.add(user)
+    session.commit()
+
+    response = client.post("/login?phone_number=%2B12345678999")
+    assert response.status_code == 200
+
+    user = session.exec(
+        select(User).where(User.phone_number == "+12345678999")
+    ).first()
+
+    verification_uuid = user.login_code
+    response = client.get(f"/verify/{verification_uuid}")
+    assert response.status_code == 200
+    content = response.json()
+    assert "token" in content
+    token = content["token"]
+
+    response = client.post(
+        "/client",
+        data=new_client_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
 
 
 def test_update_client_return_not_authorized(

@@ -83,9 +83,6 @@ const FarmerForm = ({
         );
         handleShowNotification();
         if (response?.detail?.id) {
-          // TODO :: when add existing farmer we should check if that farmer chat_session is same with logged in user
-          // if yes, forward to conversation
-          // if no, popup a notification that say farmer is handled by another officer
           const { detail: selectedClient } = response;
           localStorage.setItem(
             "selectedClient",
@@ -96,6 +93,12 @@ const FarmerForm = ({
             router.back();
           }, 1000);
         }
+      } else if (res.status === 403) {
+        setNotificationContent(
+          "Client is already registered and assigned to a different extension officer."
+        );
+        handleShowNotification();
+        setDisabled(false);
       } else {
         setNotificationContent("Error, please try again later.");
         handleShowNotification();

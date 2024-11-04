@@ -2,7 +2,7 @@ import phonenumbers
 from os import environ
 from fastapi import APIRouter, HTTPException, Depends, Form, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPBasicCredentials as credentials
-from sqlmodel import Session, select
+from sqlmodel import Session, select, and_
 
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from models import (
@@ -53,10 +53,27 @@ async def add_client(
     client = session.exec(
         select(Client).where(Client.phone_number == phone_number)
     ).first()
+
     if client:
+        current_chat_session = session.exec(
+            select(Chat_Session).where(
+                and_(
+                    Chat_Session.user_id == user.id,
+                    Chat_Session.client_id == client.id,
+                )
+            )
+        ).first()
+        if current_chat_session:
+            raise HTTPException(
+                status_code=409,
+                detail=client.serialize(),
+            )
+        # client found in different chat session
+        content = "Client is already registered and "
+        content += "assigned to a different extension officer."
         raise HTTPException(
-            status_code=409,
-            detail=client.serialize(),
+            status_code=403,
+            detail=content,
         )
 
     # save client

@@ -118,7 +118,7 @@ const Whisper = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [expanded]);
+  }, [expanded, setMaxHeight]);
 
   useEffect(() => {
     if (whisperMessageRef.current) {

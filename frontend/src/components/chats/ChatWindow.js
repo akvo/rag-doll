@@ -176,14 +176,22 @@ const ChatWindow = ({
 
   // Scroll to the last message whenever chats or chatHistory state changes
   useEffect(() => {
-    if (!firstUnreadMessage && (chats?.length > 0 || chatHistory?.length > 0)) {
-      scrollToLastMessage();
-    }
-    if (firstUnreadMessage) {
-      const id = `${ChatIDPrefix}${firstUnreadMessage.id}`;
-      const lastChat = document.getElementById(id);
-      lastChat?.scrollIntoView();
-    }
+    const scrollToLastMessageWithDelay = () => {
+      setTimeout(() => {
+        if (
+          !firstUnreadMessage &&
+          (chats?.length > 0 || chatHistory?.length > 0)
+        ) {
+          scrollToLastMessage();
+        }
+        if (firstUnreadMessage) {
+          const id = `${ChatIDPrefix}${firstUnreadMessage.id}`;
+          const lastChat = document.getElementById(id);
+          lastChat?.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 500);
+    };
+    scrollToLastMessageWithDelay();
   }, [chats, chatHistory, scrollToLastMessage, firstUnreadMessage, isEdit]);
 
   // Intersection observer setup to scroll when new message arrives
@@ -353,6 +361,7 @@ const ChatWindow = ({
             setWhisperChats((prev) =>
               prev.filter((p) => p.clientPhoneNumber !== clientPhoneNumber)
             );
+            setMaxHeight(0);
           }
         } else {
           handleLostMessage(chatPayload);

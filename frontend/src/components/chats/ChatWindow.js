@@ -371,7 +371,9 @@ const ChatWindow = ({
         body: message,
         transformation_log: null,
         chat_session_id: lastChatHistory?.chat_session_id || null,
+        timestamp: null,
       });
+      console.log(chatPayload, "chatPayload");
       setChats((previous) => [...previous, chatPayload]);
       setMessage(""); // Clear the textarea after sending
       textareaRef.current.style.height = "auto"; // Reset the height after sending

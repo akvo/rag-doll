@@ -2,6 +2,7 @@ import os
 import socketio
 import logging
 import json
+import pytz
 
 from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
 from http.cookies import SimpleCookie
@@ -109,6 +110,22 @@ def save_chat_history(
         client_phone_number = get_value_or_raise_error(
             conversation_envelope, "client_phone_number"
         )
+        timestamp = get_value_or_raise_error(
+            conversation_envelope, "timestamp"
+        )
+
+        # If timestamp is provided, parse it
+        if timestamp:
+            created_at = datetime.fromisoformat(timestamp)
+            # Ensure the datetime is in UTC
+            if created_at.tzinfo is not None:
+                created_at = created_at.astimezone(pytz.utc)
+            else:
+                created_at = created_at.replace(tzinfo=pytz.utc)
+        else:
+            # If timestamp is not provided,
+            # it will default to current UTC time in the model
+            created_at = None  # Let the model handle the default
 
         conversation_exist = session.exec(
             select(Chat_Session)
@@ -131,6 +148,7 @@ def save_chat_history(
             message=message_body,
             sender_role=(Sender_Role_Enum[sender_role.upper()]),
             status=Chat_Status_Enum.READ,  # user/officer message mark as READ
+            created_at=created_at,
         )
         session.add(new_chat)
         session.commit()
@@ -171,11 +189,14 @@ def check_conversation_exist_and_generate_queue_message(
     ).first()
 
     if conversation_exist:
-        iso_timestamp = datetime.now(timezone.utc).isoformat()
         sender_role = get_value_or_raise_error(
             conversation_envelope, "sender_role"
         )
         platform = get_value_or_raise_error(conversation_envelope, "platform")
+
+        timestamp = conversation_envelope.get("timestamp", None)
+        if not timestamp:
+            timestamp = datetime.now(timezone.utc).isoformat()
 
         queue_message = queue_message_util.create_queue_message(
             chat_session_id=conversation_exist.id,
@@ -200,7 +221,7 @@ def check_conversation_exist_and_generate_queue_message(
             transformation_log=get_value_or_raise_error(
                 msg, "transformation_log"
             ),
-            timestamp=iso_timestamp,
+            timestamp=timestamp,
         )
         return queue_message
     return conversation_exist

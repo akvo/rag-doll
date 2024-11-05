@@ -27,6 +27,7 @@ def test_save_chat_history_when_send_a_message_into_platform(session: Session):
         "sender_role": Sender_Role_Enum.USER.value,
         "platform": Platform_Enum.WHATSAPP.value,
         "message_id": "123456",
+        "timestamp": "2024-11-05T03:03:00.308848+00:00",
     }
 
     result = save_chat_history(
@@ -60,6 +61,7 @@ def test_save_chat_history_with_image(session: Session):
         "sender_role": Sender_Role_Enum.USER.value,
         "platform": Platform_Enum.WHATSAPP.value,
         "message_id": "123457",
+        "timestamp": "2024-11-05T03:03:00.308848+00:00",
     }
 
     media = [

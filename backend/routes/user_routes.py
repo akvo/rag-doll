@@ -71,7 +71,7 @@ async def verify_login_code(
             "uid": user.id,
             "uphone_number": user.phone_number,
         },
-        expires_delta=timedelta(hours=2),
+        expires_delta=timedelta(days=1),
     )
     user.login_code = None
     session.commit()

@@ -35,7 +35,7 @@ const AuthContextProvider = ({ children }) => {
 
   useEffect(() => {
     const updateToken = async () => {
-      const token = await getCookie("AUTH_TOKEN");
+      const token = getCookie("AUTH_TOKEN");
       if (token) {
         api.setToken(token);
         dispatch({

@@ -81,7 +81,6 @@ class Chat(SQLModel, table=True):
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(),
-            server_default=func.now(),
             nullable=False,
         ),
         default_factory=lambda: datetime.now(tz),
@@ -91,7 +90,7 @@ class Chat(SQLModel, table=True):
 
     def __init__(self, **data):
         # Remove created_at if it's in the input data
-        data.pop("created_at", None)
+        # data.pop("created_at", None)
         super().__init__(**data)
 
     def serialize(self) -> dict:

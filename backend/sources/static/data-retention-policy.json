@@ -1,0 +1,49 @@
+[
+  {
+    "title": "Data Retention",
+    "sections": [
+      {
+        "subtitle": "Retention Duration",
+        "content": "Farmer and officer data is retained for a maximum of 5 years or until account deletion."
+      },
+      {
+        "subtitle": "Deletion Policy",
+        "content": "Users can request deletion of their data, which will be processed within 30 days."
+      }
+    ]
+  },
+  {
+    "title": "Data Protection",
+    "sections": [
+      {
+        "subtitle": "Access Control",
+        "content": "Access to user data is limited to authorized personnel with secure authentication."
+      },
+      {
+        "subtitle": "Encryption",
+        "content": "All data is encrypted in transit (TLS) and at rest (AES-256)."
+      },
+      {
+        "subtitle": "User Privacy",
+        "content": "User information is strictly confidential and will not be shared without consent."
+      }
+    ]
+  },
+  {
+    "title": "Data Sharing",
+    "sections": [
+      {
+        "subtitle": "Purpose",
+        "content": "Information is shared to help farmers and officers support each other effectively."
+      },
+      {
+        "subtitle": "Third-Party Sharing",
+        "content": "Aggregated, anonymized data may be shared with research institutions and government bodies."
+      },
+      {
+        "subtitle": "Extension Officer Usage",
+        "content": "Extension officers may share insights based on regional needs and preferences."
+      }
+    ]
+  }
+]

@@ -14,6 +14,7 @@ from routes import (
     slack_routes,
     client_routes,
     subscription_routes,
+    static_routes,
 )
 from Akvo_rabbitmq_client import rabbitmq_client
 from core.socketio_config import (
@@ -74,6 +75,7 @@ app.include_router(chat_routes.router, tags=["chat"])
 app.include_router(slack_routes.router, tags=["slack"])
 app.include_router(twilio_routes.router, tags=["twilio"])
 app.include_router(subscription_routes.router, tags=["push notification"])
+app.include_router(static_routes.router, tags=["static file"])
 
 
 @app.get("/health-check", tags=["dev"])

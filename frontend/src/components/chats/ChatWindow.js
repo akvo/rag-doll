@@ -23,6 +23,7 @@ import { deleteCookie } from "@/lib/cookies";
 import { useRouter } from "next/navigation";
 import Loading from "@/app/loading";
 import FarmerForm from "./FarmerForm";
+import Notification from "../utils/Notification";
 
 export const SenderRoleEnum = {
   USER: "user",
@@ -145,6 +146,30 @@ const ChatWindow = ({
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [maxHeight, setMaxHeight] = useState(0);
+
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationContent, setNotificationContent] = useState("");
+
+  const handleShowNotification = () => {
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
+      setNotificationContent("");
+    }, 3000);
+  };
+
+  const copyToClipboard = (url) => {
+    url = `${location.origin}${url}`;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setNotificationContent("Data Retention Policy URL copied.");
+        handleShowNotification();
+      })
+      .catch((error) => {
+        console.error("Failed to copy: ", error);
+      });
+  };
 
   const firstUnreadMessage = useMemo(() => {
     return chatHistory.find((ch) => ch.status === ChatStatusEnum.UNREAD);
@@ -529,6 +554,15 @@ const ChatWindow = ({
               >
                 Edit Farmer Detail
               </li>
+              <li
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setDropdownOpen(false);
+                  copyToClipboard("/data-retention-policy");
+                }}
+              >
+                Data Retention Policy
+              </li>
             </ul>
           </div>
         )}
@@ -603,6 +637,8 @@ const ChatWindow = ({
           </div>
         </div>
       )}
+
+      <Notification message={notificationContent} show={showNotification} />
     </div>
   );
 };

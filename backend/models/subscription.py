@@ -7,7 +7,7 @@ from models import User
 
 VAPID_PRIVATE_KEY = os.getenv("NEXT_PUBLIC_VAPID_PRIVATE_KEY")
 VAPID_PUBLIC_KEY = os.getenv("NEXT_PUBLIC_VAPID_PUBLIC_KEY")
-VAPID_CLAIMS = {"sub": "mailto:example@mail.com"}
+VAPID_CLAIMS = {"sub": "mailto:example@mail.com", "aud": ""}
 
 
 class Subscription(SQLModel, table=True):

@@ -61,6 +61,14 @@ async def send_notification(session: Session = Depends(get_session)):
     subscriptions = session.exec(select(Subscription)).all()
     for subscription in subscriptions:
         try:
+            if "updates.push.services.mozilla.com" in subscription.endpoint:
+                VAPID_CLAIMS.update(
+                    {"aud": "https://updates.push.services.mozilla.com"}
+                )
+            elif "fcm.googleapis.com" in subscription.endpoint:
+                VAPID_CLAIMS.update({"aud": "https://fcm.googleapis.com"})
+            else:
+                VAPID_CLAIMS.update({"aud": ""})
             webpush(
                 subscription_info={
                     "endpoint": subscription.endpoint,

@@ -627,6 +627,17 @@ async def client_to_user(body: str):
         )
         for subscription in subscriptions:
             try:
+                if (
+                    "updates.push.services.mozilla.com"
+                    in subscription.endpoint
+                ):
+                    VAPID_CLAIMS.update(
+                        {"aud": "https://updates.push.services.mozilla.com"}
+                    )
+                elif "fcm.googleapis.com" in subscription.endpoint:
+                    VAPID_CLAIMS.update({"aud": "https://fcm.googleapis.com"})
+                else:
+                    VAPID_CLAIMS.update({"aud": ""})
                 webpush(
                     subscription_info={
                         "endpoint": subscription.endpoint,
@@ -651,7 +662,10 @@ async def client_to_user(body: str):
                     session.delete(subscription)
                     session.commit()
                 else:
-                    logger.error("Failed to send notification:", e)
+                    logger.error(
+                        f"Failed to send notification {subscription.endpoint}:",
+                        e,
+                    )
         # EOL send push notification
 
         logger.info(

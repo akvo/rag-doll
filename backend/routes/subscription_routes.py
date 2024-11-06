@@ -1,4 +1,3 @@
-import os
 import json
 import logging
 
@@ -8,20 +7,17 @@ from fastapi.security import HTTPBearer, HTTPBasicCredentials as credentials
 from pywebpush import webpush, WebPushException
 from core.database import get_session
 from middleware import verify_user
-from models import Subscription
+from models import (
+    Subscription,
+    VAPID_PRIVATE_KEY,
+    VAPID_CLAIMS,
+)
 
 router = APIRouter()
 security = HTTPBearer()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-VAPID_PRIVATE_KEY = os.getenv("NEXT_PUBLIC_VAPID_PRIVATE_KEY")
-VAPID_PUBLIC_KEY = os.getenv("NEXT_PUBLIC_VAPID_PUBLIC_KEY")
-VAPID_CLAIMS = {"sub": "mailto:example@mail.com"}
-
-subscriptions = []
 
 
 @router.post("/subscribe")

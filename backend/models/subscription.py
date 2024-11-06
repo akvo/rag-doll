@@ -1,6 +1,13 @@
+import os
+
 from sqlalchemy import Column, String
 from sqlmodel import Field, SQLModel, Relationship
 from models import User
+
+
+VAPID_PRIVATE_KEY = os.getenv("NEXT_PUBLIC_VAPID_PRIVATE_KEY")
+VAPID_PUBLIC_KEY = os.getenv("NEXT_PUBLIC_VAPID_PUBLIC_KEY")
+VAPID_CLAIMS = {"sub": "mailto:example@mail.com"}
 
 
 class Subscription(SQLModel, table=True):

@@ -16,6 +16,8 @@ from models import (
     Chat,
     Chat_Status_Enum,
     Subscription,
+    VAPID_PRIVATE_KEY,
+    VAPID_CLAIMS,
 )
 from core.database import engine
 from sqlmodel import Session, select, and_
@@ -46,9 +48,6 @@ INITIAL_CHAT_TEMPLATE = os.getenv(
     "INITIAL_CHAT_TEMPLATE",
     "Hi {farmer_name}, I'm {officer_name} the extension officer.",
 )
-VAPID_PRIVATE_KEY = os.getenv("NEXT_PUBLIC_VAPID_PRIVATE_KEY")
-VAPID_PUBLIC_KEY = os.getenv("NEXT_PUBLIC_VAPID_PUBLIC_KEY")
-VAPID_CLAIMS = {"sub": "mailto:example@mail.com"}
 
 
 def get_rabbitmq_client():
@@ -644,7 +643,7 @@ async def client_to_user(body: str):
                 )
             except WebPushException as e:
                 # Detect if the subscription is invalid or expired
-                if e.response and e.response.status_code in {404, 410}:
+                if e.response.status_code in {404, 410}:
                     logger.warning(
                         "Removing invalid subscription:", subscription.endpoint
                     )

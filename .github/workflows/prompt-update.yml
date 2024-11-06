@@ -1,0 +1,34 @@
+name: Prompt Update
+
+on:
+  push:
+    branch:
+      master
+    paths:
+      - assistant/sources/prompt.csv
+
+jobs:
+  k8s-deployment-restart:
+    name: K8S deployment restart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Checkout Akvo composite actions
+        uses: actions/checkout@v4
+        with:
+          repository: akvo/composite-actions
+          token: ${{ secrets.GH_PAT }}
+          path: composite-actions
+          ref: 0.0.8
+
+      - name: Restart Assistant
+        uses: ./composite-actions/.github/actions/k8s-restart
+        with:
+          deployment-name: "assistant-deployment"
+          cluster-name: "test"
+          namespace-name: "agriconnect-namespace"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}

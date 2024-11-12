@@ -87,10 +87,6 @@ const Chats = () => {
       console.info("FE Disconnected", details);
     };
 
-    if (!socket.connected) {
-      socket.connect();
-    }
-
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("connect_error", (err) => {

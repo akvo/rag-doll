@@ -25,7 +25,7 @@ export const deleteCookie = (name) => {
         for (let registration of registrations) {
           registration.unregister().then((success) => {
             if (success) {
-              console.log("Service Worker unregistered");
+              console.info("Service Worker unregistered");
             }
           });
         }

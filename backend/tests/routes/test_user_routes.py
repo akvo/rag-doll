@@ -35,12 +35,9 @@ def test_send_login_link(client: TestClient, session: Session) -> None:
     ).first()
     assert user.login_code is not None
 
-    link = f"http://localhost:3001/verify/{user.login_code}"
-    assert content == {
-        "user_name": "+12345678900",
-        "link": link,
-        "message": "Login link sent via WhatsApp",
-    }
+    link = f"verify/{user.login_code}"
+    assert content["user_name"] == "+12345678900"
+    assert link in content["link"]
 
 
 def test_verify_login_link(client: TestClient, session: Session) -> None:

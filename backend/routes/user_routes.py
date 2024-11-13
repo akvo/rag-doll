@@ -42,16 +42,30 @@ async def send_login_link(
     user.login_code = str(login_code_uuid)
     session.commit()
 
-    if environ.get("TESTING"):
-        return {"message": "Login link sent via WhatsApp"}
-
-    # format login link and message for the user
+    user_name = user.properties.name if user.properties else phone_number
     link = f"{webdomain}/verify/{user.login_code}"
-    background_tasks.add_task(
-        twilio_client.whatsapp_message_create,
-        to=phone_number,
-        body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
-    )
+    if environ.get("TESTING"):
+        return {
+            "user_name": user_name,
+            "link": link,
+            "message": "Login link sent via WhatsApp",
+        }
+
+    content_sid = environ.get("VERIFICATION_TEMPLATE_ID")
+    # format login link and message for the user
+    if content_sid:
+        background_tasks.add_task(
+            twilio_client.whatsapp_message_template_create,
+            to=phone_number,
+            content_variables={"1": user_name, "2": link},
+            content_sid=content_sid,
+        )
+    else:
+        background_tasks.add_task(
+            twilio_client.whatsapp_message_create,
+            to=phone_number,
+            body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
+        )
     return {"message": "Login link sent via WhatsApp"}
 
 

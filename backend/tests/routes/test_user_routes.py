@@ -28,11 +28,19 @@ def test_get_phone_number_in_international_format(session: Session) -> None:
 def test_send_login_link(client: TestClient, session: Session) -> None:
     response = client.post("/login?phone_number=%2B12345678900")
     assert response.status_code == 200
+    content = response.json()
 
     user = session.exec(
         select(User).where(User.phone_number == "+12345678900")
     ).first()
     assert user.login_code is not None
+
+    link = f"http://localhost:3001/verify/{user.login_code}"
+    assert content == {
+        "user_name": "+12345678900",
+        "link": link,
+        "message": "Login link sent via WhatsApp",
+    }
 
 
 def test_verify_login_link(client: TestClient, session: Session) -> None:

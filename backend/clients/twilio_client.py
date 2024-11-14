@@ -110,6 +110,7 @@ class TwilioClient:
             logger.error(f"Error sending template message to Twilio: {e}")
 
     async def send_whatsapp_message(self, body: str) -> None:
+        # TODO :: handle send message template here
         try:
             queue_message = json.loads(body)
             text = queue_message.get("body")

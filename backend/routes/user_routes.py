@@ -30,6 +30,11 @@ async def send_login_link(
     session: Session = Depends(get_session),
 ):
     phone_number = phonenumbers.parse(phone_number)
+    # get the region code
+    phone_number_region = phonenumbers.region_code_for_number(phone_number)
+    phone_number_region = phone_number_region.lower()
+    print("=========", phone_number_region)
+    # TODO :: select template by language?
     phone_number = (
         f"+{phone_number.country_code}{phone_number.national_number}"
     )

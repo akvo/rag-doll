@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import { api } from "@/lib";
 import { Notification } from "@/components";
 import "react-phone-number-input/style.css";
-import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import PhoneInput, {
+  isValidPhoneNumber,
+  parsePhoneNumber,
+} from "react-phone-number-input";
 import { ButtonLoadingIcon, PhoneIcon } from "@/utils/icons";
 
 const Login = () => {
@@ -48,6 +51,15 @@ const Login = () => {
       return;
     }
 
+    // Store phone number and preference in local storage if "Remember me" is checked
+    if (rememberMe) {
+      localStorage.setItem("phoneNumber", phoneNumber);
+      localStorage.setItem("rememberMe", "true");
+    } else {
+      localStorage.removeItem("phoneNumber");
+      localStorage.removeItem("rememberMe");
+    }
+
     try {
       const res = await api.post(
         `login?phone_number=${encodeURIComponent(phoneNumber)}`
@@ -57,15 +69,6 @@ const Login = () => {
           "Verification link sent to your WhatsApp. Please use it to verify your login."
         );
         handleShowNotification();
-
-        // Store phone number and preference in local storage if "Remember me" is checked
-        if (rememberMe) {
-          localStorage.setItem("phoneNumber", phoneNumber);
-          localStorage.setItem("rememberMe", "true");
-        } else {
-          localStorage.removeItem("phoneNumber");
-          localStorage.removeItem("rememberMe");
-        }
       } else if (res.status === 404) {
         setNotificationContent("Phone number not found.");
         handleShowNotification();

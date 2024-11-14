@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import List
 from clients.twilio_client import TwilioClient
+from db import get_last_message, check_24h_window
 
 router = APIRouter()
 security = HTTPBearer()
@@ -85,15 +86,7 @@ async def get_chats(
             .order_by(Chat.created_at.desc(), Chat.id.desc())
         ).first()
 
-        last_message = session.exec(
-            select(Chat)
-            .where(Chat.chat_session_id == chat.id)
-            .where(
-                Chat.sender_role != Sender_Role_Enum.ASSISTANT,
-            )
-            .order_by(Chat.created_at.desc(), Chat.id.desc())
-        ).first()
-
+        last_message = get_last_message(session=session, chat=chat)
         last_chats.append(
             {
                 "chat_session": chat.serialize(),
@@ -202,6 +195,7 @@ async def send_broadcast(
         )
         new_chats.append(new_chat)
 
+        # TODO :: handle broadcast with message template
         if not os.getenv("TESTING"):
             # Broadcast a message
             background_tasks.add_task(
@@ -216,3 +210,12 @@ async def send_broadcast(
     session.commit()
     session.flush()
     return {"message": "Broadcast message sent to WhatsApp"}
+
+
+# TODO :: delete this route
+@router.get("/test-check-24h-window")
+async def test_check_24h_window(
+    session: Session = Depends(get_session),
+):
+    check_24h_window(session=session)
+    return {"message": "Check 24hours window"}

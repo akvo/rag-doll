@@ -30,11 +30,14 @@ async def send_login_link(
     session: Session = Depends(get_session),
 ):
     phone_number = phonenumbers.parse(phone_number)
+
     # get the region code
     phone_number_region = phonenumbers.region_code_for_number(phone_number)
     phone_number_region = phone_number_region.lower()
-    print("=========", phone_number_region)
-    # TODO :: select template by language?
+    message_template_lang = "en"
+    if phone_number_region == "ke":
+        message_template_lang = "sw"
+
     phone_number = (
         f"+{phone_number.country_code}{phone_number.national_number}"
     )
@@ -53,10 +56,12 @@ async def send_login_link(
         return {
             "user_name": user_name,
             "link": link,
-            "message": "Login link sent via WhatsApp",
+            "message_template_lang": message_template_lang,
         }
 
-    content_sid = environ.get("VERIFICATION_TEMPLATE_ID")
+    content_sid = environ.get(
+        f"VERIFICATION_TEMPLATE_ID_{message_template_lang}"
+    )
     # format login link and message for the user
     if content_sid:
         background_tasks.add_task(

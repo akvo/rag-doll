@@ -38,6 +38,25 @@ def test_send_login_link(client: TestClient, session: Session) -> None:
     link = f"verify/{user.login_code}"
     assert content["user_name"] == "+12345678900"
     assert link in content["link"]
+    assert content["message_template_lang"] == "en"
+
+
+def test_send_login_link_with_KE_number(
+    client: TestClient, session: Session
+) -> None:
+    response = client.post("/login?phone_number=%2B254201234567")
+    assert response.status_code == 200
+    content = response.json()
+
+    user = session.exec(
+        select(User).where(User.phone_number == "+254201234567")
+    ).first()
+    assert user.login_code is not None
+
+    link = f"verify/{user.login_code}"
+    assert content["user_name"] == "+254201234567"
+    assert link in content["link"]
+    assert content["message_template_lang"] == "sw"
 
 
 def test_verify_login_link(client: TestClient, session: Session) -> None:

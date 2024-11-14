@@ -195,7 +195,8 @@ the system, notably the assistant. Incoming messages are forwarded to the
 | `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
 | `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
 | `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
-| `VERIFICATION_TEMPLATE_ID_en` | NULL | The twilio message template ID for verification mesage template. **Leave blank in local dev.** |
+| `VERIFICATION_TEMPLATE_ID_en` | NULL | The Twilio message template ID for the verification message in English. **Leave blank for local development.** |
+| `VERIFICATION_TEMPLATE_ID_sw` | NULL | The Twilio message template ID for the verification message in Swahili. **Leave blank for local development.** |
 
 ### Slack Channel
 

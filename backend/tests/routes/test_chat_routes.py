@@ -206,7 +206,7 @@ def test_send_broadcast_success(client: TestClient, session: Session) -> None:
         assert len(messages) > 0
         assert (
             messages[-1].message
-            == "[Broadcast] Hello, this is a broadcast message."
+            == "[Broadcast]\n\nHello, this is a broadcast message."
         )
         assert messages[-1].sender_role == Sender_Role_Enum.USER_BROADCAST
         assert messages[-1].status == Chat_Status_Enum.UNREAD

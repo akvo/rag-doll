@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'assistant/sources/prompt.csv'
+
 
 jobs:
   build-push:

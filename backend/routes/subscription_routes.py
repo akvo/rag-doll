@@ -85,7 +85,7 @@ async def send_notification(session: Session = Depends(get_session)):
             )
         except WebPushException as e:
             # Detect if the subscription is invalid or expired
-            if e.response and e.response.status_code in {404, 410}:
+            if e.response.status_code in {404, 410}:
                 logger.info(
                     "Removing invalid subscription:", subscription.endpoint
                 )

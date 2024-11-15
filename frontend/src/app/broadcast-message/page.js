@@ -1,5 +1,6 @@
 "use client";
 
+import "./style.css";
 import { useRouter } from "next/navigation";
 import { BackIcon } from "@/utils/icons";
 import { ChatHeader, Notification } from "@/components";
@@ -32,10 +33,8 @@ const BroadcastMessage = () => {
   const handleClientChange = (clientId) => {
     setSelectedClients((prevSelectedClients) => {
       if (prevSelectedClients.includes(clientId)) {
-        // If client is already selected, remove it
         return prevSelectedClients.filter((id) => id !== clientId);
       } else {
-        // Otherwise, add the client to selectedClients
         return [...prevSelectedClients, clientId];
       }
     });
@@ -166,23 +165,27 @@ const BroadcastMessage = () => {
               onChange={handleSearchClient}
               value={searchClient}
             />
-            <select
-              multiple
-              value={selectedClients}
+            <div
               className="w-full border rounded-lg p-2"
-              style={{ maxHeight: "150px" }}
+              style={{
+                maxHeight: "110px",
+                overflowY: "auto",
+                backgroundColor: "white",
+              }}
             >
               {filteredClients.map((client) => (
-                <option
-                  key={client.id}
-                  value={client.id}
-                  selected={selectedClients.includes(client.id)}
-                  onClick={() => handleClientChange(client.id)}
-                >
-                  {client.name}
-                </option>
+                <div key={client.id} className="flex items-center mb-1">
+                  <input
+                    type="checkbox"
+                    id={`client-${client.id}`}
+                    checked={selectedClients.includes(client.id)}
+                    onChange={() => handleClientChange(client.id)}
+                    className="mr-2"
+                  />
+                  <label htmlFor={`client-${client.id}`}>{client.name}</label>
+                </div>
               ))}
-            </select>
+            </div>
           </div>
 
           <div className="mb-8">

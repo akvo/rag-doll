@@ -156,7 +156,7 @@ async def send_broadcast(
     auth: credentials = Depends(security),
 ):
     user = verify_user(session, auth)
-    message = f"[Broadcast] {request.message}"
+    message = f"[Broadcast]\n\n{request.message}"
     contacts = []
     for phone_number in request.contacts:
         phone_number = phonenumbers.parse(phone_number)

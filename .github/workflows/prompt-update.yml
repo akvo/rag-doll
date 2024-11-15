@@ -7,9 +7,10 @@ on:
     paths:
       - assistant/sources/prompt.csv
 
+
 jobs:
-  k8s-deployment-restart:
-    name: K8S deployment restart
+  build-push:
+    name: Build and Push to Registry
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,10 +26,52 @@ jobs:
           path: composite-actions
           ref: 0.0.8
 
-      - name: Restart Assistant
-        uses: ./composite-actions/.github/actions/k8s-restart
+      - name: Copy Akvo_rabbitmq_client python package
+        run: |
+          cp src/packages/Akvo_rabbitmq_client src/backend/ -R
+          cp src/packages/Akvo_rabbitmq_client src/assistant/ -R
+        shell: bash
+
+      - name: Docker Build Assistant
+        uses: ./composite-actions/.github/actions/docker-build
         with:
+          app-name: "agriconnect"
+          service-name: "assistant"
+          dockerfile-location: "assistant"
+          cluster-name: "test"
+
+      - name: Docker Push Assistant
+        uses: ./composite-actions/.github/actions/docker-push
+        with:
+          app-name: "agriconnect"
+          service-name: "assistant"
+          gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_REGISTRY }}
+          cluster-name: "test"
+
+  rollout:
+    name: Rollout to the server
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Checkout Akvo composite actions
+        uses: actions/checkout@v4
+        with:
+          repository: akvo/composite-actions
+          token: ${{ secrets.GH_PAT }}
+          path: composite-actions
+          ref: 0.0.8
+
+      - name: Rollout Assistant
+        uses: ./composite-actions/.github/actions/k8s-rollout
+        with:
+          app-name: "agriconnect"
           deployment-name: "assistant-deployment"
+          container-name: "assistant"
           cluster-name: "test"
           namespace-name: "agriconnect-namespace"
           gcloud-sa:  ${{ secrets.GCLOUD_SERVICE_ACCOUNT_K8S }}

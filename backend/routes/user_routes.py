@@ -62,7 +62,6 @@ async def send_login_link(
     content_sid = environ.get(
         f"VERIFICATION_TEMPLATE_ID_{message_template_lang}"
     )
-    # format login link and message for the user
     if content_sid:
         background_tasks.add_task(
             twilio_client.whatsapp_message_template_create,
@@ -71,6 +70,7 @@ async def send_login_link(
             content_sid=content_sid,
         )
     else:
+        # format login link and message for the user
         background_tasks.add_task(
             twilio_client.whatsapp_message_create,
             to=phone_number,

@@ -149,7 +149,6 @@ async def send_broadcast(
     auth: credentials = Depends(security),
 ):
     user = verify_user(session, auth)
-    message = f"[Broadcast]\n\n{request.message}"
     contacts = []
     for phone_number in request.contacts:
         phone_number = phonenumbers.parse(phone_number)
@@ -163,8 +162,15 @@ async def send_broadcast(
     ).all()
     new_chats = []
 
+    content_sid = os.getenv("BROADCAST_TEMPLATE_ID")
     for client in clients:
         client = client.serialize()
+        client_name = client.get("name") or client.get("phone_number")
+        message = (
+            f"[Broadcast]\n\nHi {client_name},\n\n{request.message}"
+            if os.getenv("TESTING") or not content_sid
+            else request.message
+        )
         # Check if chat session exists
         chat_session = session.exec(
             select(Chat_Session).where(
@@ -195,14 +201,23 @@ async def send_broadcast(
         )
         new_chats.append(new_chat)
 
-        # TODO :: handle broadcast with message template
         if not os.getenv("TESTING"):
-            # Broadcast a message
-            background_tasks.add_task(
-                twilio_client.whatsapp_message_create,
-                to=client.get("phone_number"),
-                body=message,
-            )
+            # Broadcast a message with/without template
+            if content_sid:
+                # Template
+                background_tasks.add_task(
+                    twilio_client.whatsapp_message_template_create,
+                    to=client.get("phone_number"),
+                    content_variables={"1": client_name, "2": message},
+                    content_sid=content_sid,
+                )
+            else:
+                # Without template
+                background_tasks.add_task(
+                    twilio_client.whatsapp_message_create,
+                    to=client.get("phone_number"),
+                    body=message,
+                )
 
     # Bulk insert new chat messages
     if new_chats:

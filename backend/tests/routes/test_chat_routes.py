@@ -204,9 +204,10 @@ def test_send_broadcast_success(client: TestClient, session: Session) -> None:
         ).all()
 
         assert len(messages) > 0
-        assert (
-            messages[-1].message
-            == "[Broadcast]\n\nHello, this is a broadcast message."
-        )
+        client = contact.serialize()
+        client_name = client.get("name") or client.get("phone_number")
+        content = f"[Broadcast]\n\nHi {client_name},\n\n"
+        content += "Hello, this is a broadcast message."
+        assert messages[-1].message == content
         assert messages[-1].sender_role == Sender_Role_Enum.USER_BROADCAST
         assert messages[-1].status == Chat_Status_Enum.UNREAD

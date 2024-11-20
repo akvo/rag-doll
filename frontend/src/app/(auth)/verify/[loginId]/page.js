@@ -6,7 +6,7 @@ import { useAuthContext, useAuthDispatch } from "@/context/AuthContextProvider";
 import { useUserContext, useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib";
-import { setCookie } from "@/lib/cookies";
+import { setCookie, deleteCookie } from "@/lib/cookies";
 import { BackIcon } from "@/utils/icons";
 
 const VerifyLogin = ({ params }) => {
@@ -42,7 +42,7 @@ const VerifyLogin = ({ params }) => {
         });
         setTimeout(() => {
           route.replace("/chats");
-        }, 1000);
+        }, 500);
       } else {
         setError(true);
       }
@@ -56,12 +56,33 @@ const VerifyLogin = ({ params }) => {
     userDispatch,
   ]);
 
+  const fetchUserMe = useCallback(async () => {
+    const res = await api.get("me");
+    if (res.status === 200) {
+      const resData = await res.json();
+      userDispatch({ type: "UPDATE", payload: { ...resData } });
+      setTimeout(() => {
+        route.replace("/chats");
+      }, 500);
+    } else {
+      verifyUser();
+    }
+  }, [verifyUser, route, userDispatch]);
+
   useEffect(() => {
-    verifyUser();
-  }, [verifyUser]);
+    // check if there's auth token
+    // if yes redirect to chats page
+    // else verify the user
+    fetchUserMe();
+  }, [fetchUserMe]);
 
   const handleBack = () => {
-    route.replace("/login");
+    authDispatch({ type: "DELETE" });
+    userDispatch({ type: "DELETE" });
+    deleteCookie("AUTH_TOKEN");
+    setTimeout(() => {
+      route.replace("/login");
+    }, 100);
   };
 
   return (

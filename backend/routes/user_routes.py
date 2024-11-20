@@ -59,6 +59,7 @@ async def send_login_link(
             "message_template_lang": message_template_lang,
         }
 
+    # get message template ID
     content_sid = environ.get(
         f"VERIFICATION_TEMPLATE_ID_{message_template_lang}"
     )

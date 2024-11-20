@@ -47,6 +47,17 @@ async def add_client(
     )
 
     phone_number = phonenumbers.parse(phone_number)
+
+    # get the region code
+    phone_number_region = phonenumbers.region_code_for_number(phone_number)
+    phone_number_region = phone_number_region.lower()
+    message_template_lang = "en"
+    if phone_number_region == "ke":
+        message_template_lang = "sw"
+
+    # get message template ID
+    content_sid = environ.get(f"INTRO_TEMPLATE_ID_{message_template_lang}")
+
     phone_number = (
         f"+{phone_number.country_code}{phone_number.national_number}"
     )
@@ -112,11 +123,21 @@ async def add_client(
         return new_client.serialize()
 
     # send initial chat to client
-    background_tasks.add_task(
-        twilio_client.whatsapp_message_create,
-        to=phone_number,
-        body=initial_message,
-    )
+    if content_sid:
+        # send message with template
+        background_tasks.add_task(
+            twilio_client.whatsapp_message_template_create,
+            to=phone_number,
+            content_variables={"1": name},
+            content_sid=content_sid,
+        )
+    else:
+        # send message without template
+        background_tasks.add_task(
+            twilio_client.whatsapp_message_create,
+            to=phone_number,
+            body=initial_message,
+        )
     return new_client.serialize()
 
 

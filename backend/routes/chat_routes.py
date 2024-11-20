@@ -162,15 +162,15 @@ async def send_broadcast(
     ).all()
     new_chats = []
 
+    # get message template ID
     content_sid = os.getenv("BROADCAST_TEMPLATE_ID")
     for client in clients:
         client = client.serialize()
         client_name = client.get("name") or client.get("phone_number")
-        message = (
-            f"[Broadcast]\n\nHi {client_name},\n\n{request.message}"
-            if os.getenv("TESTING") or not content_sid
-            else request.message
-        )
+
+        # generate message to save in database
+        message = f"[Broadcast]\n\nHi {client_name},\n{request.message}"
+
         # Check if chat session exists
         chat_session = session.exec(
             select(Chat_Session).where(
@@ -203,12 +203,16 @@ async def send_broadcast(
 
         if not os.getenv("TESTING"):
             # Broadcast a message with/without template
+            clean_line_break_message = request.message.replace("\n", " ")
             if content_sid:
                 # Template
                 background_tasks.add_task(
                     twilio_client.whatsapp_message_template_create,
                     to=client.get("phone_number"),
-                    content_variables={"1": client_name, "2": message},
+                    content_variables={
+                        "1": client_name,
+                        "2": clean_line_break_message,
+                    },
                     content_sid=content_sid,
                 )
             else:

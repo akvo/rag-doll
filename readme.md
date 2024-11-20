@@ -197,7 +197,11 @@ the system, notably the assistant. Incoming messages are forwarded to the
 | `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
 | `VERIFICATION_TEMPLATE_ID_en` | NULL | The Twilio message template ID for the verification message in English. **Leave blank for local development.** |
 | `VERIFICATION_TEMPLATE_ID_sw` | NULL | The Twilio message template ID for the verification message in Swahili. **Leave blank for local development.** |
+| `VERIFICATION_TEMPLATE_ID_fr` | NULL | The Twilio message template ID for the verification message in French. **Leave blank for local development.** |
 | `BROADCAST_TEMPLATE_ID` | NULL | The Twilio message template ID for the broadcast message. **Leave blank for local development.** |
+| `INTRO_TEMPLATE_ID_en` | NULL | The Twilio message template ID for the introduction message in English. **Leave blank for local development.** |
+| `INTRO_TEMPLATE_ID_sw` | NULL | The Twilio message template ID for the introduction message in Swahili. **Leave blank for local development.** |
+| `INTRO_TEMPLATE_ID_fr` | NULL | The Twilio message template ID for the introduction message in French. **Leave blank for local development.** |
 
 ### Slack Channel
 

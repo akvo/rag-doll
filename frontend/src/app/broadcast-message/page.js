@@ -139,87 +139,88 @@ const BroadcastMessage = () => {
           </button>
         }
       />
-      <div className="flex justify-center min-h-screen bg-white mt-20">
-        <form onSubmit={handleSubmit} className="p-10 w-full">
-          <h2 className="text-lg font-semibold mb-10">
-            Send Broadcast Message
-          </h2>
+      <div className="flex justify-center min-h-screen bg-white mt-16">
+        <div className="overflow-auto max-h-[calc(100vh-140px)] w-full">
+          <form onSubmit={handleSubmit} className="p-10 w-full">
+            <h2 className="text-lg font-semibold mb-6">
+              Send Broadcast Message
+            </h2>
 
-          {/* Client List */}
-          <div className="mb-8">
-            <label className="block text-sm mb-2">Select Farmer</label>
-            <div className="flex items-center mb-2">
+            {/* Client List */}
+            <div className="mb-8">
+              <label className="block text-sm mb-2">Select Farmer</label>
+              <div className="flex items-center mb-2">
+                <input
+                  id="select-all-clients"
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={handleSelectAllChange}
+                  className="mr-2"
+                />
+                <label htmlFor="select-all-clients">Select All</label>
+              </div>
               <input
-                id="select-all-clients"
-                type="checkbox"
-                checked={selectAll}
-                onChange={handleSelectAllChange}
-                className="mr-2"
+                type="text"
+                placeholder="Search farmer"
+                className="w-full px-4 py-2 border rounded-lg text-md mb-2"
+                onChange={handleSearchClient}
+                value={searchClient}
               />
-              <label htmlFor="select-all-clients">Select All</label>
+              <div
+                className="w-full border rounded-lg p-2"
+                style={{
+                  maxHeight: "110px",
+                  overflowY: "auto",
+                  backgroundColor: "white",
+                }}
+              >
+                {filteredClients.map((client) => (
+                  <div key={client.id} className="flex items-center mb-1">
+                    <input
+                      type="checkbox"
+                      id={`client-${client.id}`}
+                      checked={selectedClients.includes(client.id)}
+                      onChange={() => handleClientChange(client.id)}
+                      className="mr-2"
+                    />
+                    <label htmlFor={`client-${client.id}`}>{client.name}</label>
+                  </div>
+                ))}
+              </div>
             </div>
-            <input
-              type="text"
-              placeholder="Search farmer"
-              className="w-full px-4 py-2 border rounded-lg text-md mb-2"
-              onChange={handleSearchClient}
-              value={searchClient}
-            />
-            <div
-              className="w-full border rounded-lg p-2"
-              style={{
-                maxHeight: "110px",
-                overflowY: "auto",
-                backgroundColor: "white",
-              }}
+
+            <div className="mb-8">
+              <label className="block text-sm mb-2">
+                Message <span className="text-xs">(1600 characters max)</span>
+              </label>
+              <textarea
+                rows={5}
+                maxLength={MAX_CHARACTERS}
+                value={message}
+                onChange={handleMessageChange}
+                required
+                className="w-full px-4 py-2 border rounded-lg text-md resize-none overflow-auto"
+              />
+              <div className="text-right text-xs mt-1">
+                {MAX_CHARACTERS - message.length} characters left
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              disabled={disabled}
+              type="submit"
+              className={`w-full text-white rounded-md py-3 shadow-sm flex justify-center ${
+                disabled
+                  ? "bg-akvo-green cursor-not-allowed"
+                  : "bg-akvo-green hover:bg-green-700 focus:ring-green-700"
+              }`}
             >
-              {filteredClients.map((client) => (
-                <div key={client.id} className="flex items-center mb-1">
-                  <input
-                    type="checkbox"
-                    id={`client-${client.id}`}
-                    checked={selectedClients.includes(client.id)}
-                    onChange={() => handleClientChange(client.id)}
-                    className="mr-2"
-                  />
-                  <label htmlFor={`client-${client.id}`}>{client.name}</label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <label className="block text-sm mb-2">
-              Message <span className="text-xs">(1600 characters max)</span>
-            </label>
-            <textarea
-              rows={5}
-              maxLength={MAX_CHARACTERS}
-              value={message}
-              onChange={handleMessageChange}
-              required
-              className="w-full px-4 py-2 border rounded-lg text-md resize-none overflow-auto"
-            />
-            <div className="text-right text-xs mt-1">
-              {MAX_CHARACTERS - message.length} characters left
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            disabled={disabled}
-            type="submit"
-            className={`w-full text-white rounded-md py-3 shadow-sm flex justify-center ${
-              disabled
-                ? "bg-akvo-green cursor-not-allowed"
-                : "bg-akvo-green hover:bg-green-700 focus:ring-green-700"
-            }`}
-          >
-            {disabled ? <ButtonLoadingIcon /> : "Send"}
-          </button>
-        </form>
+              {disabled ? <ButtonLoadingIcon /> : "Send"}
+            </button>
+          </form>
+        </div>
       </div>
-
       <Notification message={notificationContent} show={showNotification} />
     </div>
   );

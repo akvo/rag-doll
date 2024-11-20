@@ -31,6 +31,7 @@ const ChatList = ({
   const [offset, setOffset] = useState(0);
   const limit = 10;
   const [loading, setLoading] = useState(true);
+  const [hasMoreData, setHasMoreData] = useState(true); // Track if there's more data to fetch
 
   const chatListRef = useRef(null);
 
@@ -45,12 +46,16 @@ const ChatList = ({
     });
   };
 
-  const loadMoreChats = () => {
-    setOffset((prevOffset) => prevOffset + limit);
-  };
+  const loadMoreChats = useCallback(() => {
+    if (hasMoreData) {
+      setOffset((prevOffset) => prevOffset + limit);
+    }
+  }, [hasMoreData]);
 
   const fetchData = useCallback(async () => {
+    if (!hasMoreData) return; // Prevent fetch if no more data
     setLoading(true);
+
     const res = await api.get(`chat-list?limit=${limit}&offset=${offset}`);
     if (res.status === 200) {
       let resData = await res.json();
@@ -60,6 +65,12 @@ const ChatList = ({
             chats: resData.chats.filter((c) => c.last_message),
           }
         : resData;
+
+      if (resData.chats.length < limit) {
+        // No more data if fewer items than limit are returned
+        setHasMoreData(false);
+      }
+
       setClients((prev) =>
         resData.chats.map((c) => ({
           ...c.chat_session,
@@ -69,6 +80,7 @@ const ChatList = ({
               ?.message_ids || [],
         }))
       );
+
       setChatItems((prev) => {
         const updatedChats = [...prev.chats, ...resData.chats].reduce(
           (acc, incomingChat) => {
@@ -77,7 +89,6 @@ const ChatList = ({
             );
 
             if (existingChatIndex > -1) {
-              // Update the existing chat if the incoming chat's last_read is more recent
               if (
                 new Date(acc[existingChatIndex].chat_session.last_read) <=
                 new Date(incomingChat.chat_session.last_read)
@@ -85,7 +96,6 @@ const ChatList = ({
                 acc[existingChatIndex] = incomingChat;
               }
             } else {
-              // Add the new chat if the chat session ID is unique
               acc.push(incomingChat);
             }
 
@@ -94,7 +104,6 @@ const ChatList = ({
           [...prev.chats]
         );
 
-        // Sort the chats by the last_message's created_at date in descending order
         const sortedChats = updatedChats.sort(
           (a, b) =>
             new Date(b.last_message.created_at) -
@@ -109,11 +118,11 @@ const ChatList = ({
         };
       });
       setLoading(false);
-    }
-    if (res.status === 401 || res.status === 403) {
-      userDispatch({
-        type: "DELETE",
-      });
+    } else if (res.status === 404) {
+      setHasMoreData(false); // Set flag to false on 404
+      setLoading(false);
+    } else if (res.status === 401 || res.status === 403) {
+      userDispatch({ type: "DELETE" });
       authDispatch({ type: "DELETE" });
       deleteCookie("AUTH_TOKEN");
       setLoading(false);
@@ -121,11 +130,11 @@ const ChatList = ({
     } else {
       setLoading(false);
     }
-  }, [offset, authDispatch, router, setClients, userDispatch]);
+  }, [offset, hasMoreData, authDispatch, router, setClients, userDispatch]);
 
   useEffect(() => {
     fetchData();
-  }, [offset, fetchData]);
+  }, [fetchData]);
 
   useEffect(() => {
     if (reloadChatList) {
@@ -134,11 +143,10 @@ const ChatList = ({
     }
   }, [reloadChatList, fetchData, setReloadChatList]);
 
-  // Handle infinite scroll
   useEffect(() => {
     const chatListRefTemp = chatListRef.current;
     const handleScroll = () => {
-      if (chatListRefTemp) {
+      if (chatListRefTemp && hasMoreData) {
         const { scrollTop, scrollHeight, clientHeight } = chatListRefTemp;
         if (scrollTop + clientHeight >= scrollHeight - 5) {
           loadMoreChats();
@@ -150,15 +158,14 @@ const ChatList = ({
     return () => {
       chatListRefTemp?.removeEventListener("scroll", handleScroll);
     };
-  }, []);
+  }, [hasMoreData, loadMoreChats]);
 
   // Update last message for incoming message
   useEffect(() => {
     if (newMessage.length) {
       setChatItems((prev) => {
-        const updatedChatItems = prev.chats.map((chat) => {
+        const updatedChats = prev.chats.map((chat) => {
           const findNewMessage = newMessage.find((nm) => {
-            // message deduplication
             const isNewMessage =
               new Date(nm.conversation_envelope.timestamp) >
               new Date(chat.last_message.created_at);
@@ -167,8 +174,8 @@ const ChatList = ({
                 chat.chat_session.phone_number && isNewMessage
             );
           });
+
           if (findNewMessage) {
-            // handle message count
             const isUnread =
               findNewMessage.conversation_envelope.status ===
               ChatStatusEnum.UNREAD;
@@ -176,6 +183,7 @@ const ChatList = ({
               findNewMessage.conversation_envelope.sender_role ===
               SenderRoleEnum.ASSISTANT;
             const prevCount = chat?.unread_message_count || 0;
+
             return {
               ...chat,
               last_message: {
@@ -191,9 +199,16 @@ const ChatList = ({
           return chat;
         });
 
+        // Reorder the chats so the newest updated chat is at the top
+        const reorderedChats = updatedChats.sort(
+          (a, b) =>
+            new Date(b.last_message.created_at) -
+            new Date(a.last_message.created_at)
+        );
+
         return {
           ...prev,
-          chats: updatedChatItems,
+          chats: reorderedChats,
         };
       });
     }

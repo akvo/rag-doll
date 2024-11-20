@@ -120,7 +120,7 @@ async def add_client(
     session.flush()
 
     if environ.get("TESTING"):
-        return new_client.serialize()
+        return new_chat.serialize()
 
     # send initial chat to client
     if content_sid:

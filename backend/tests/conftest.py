@@ -22,6 +22,9 @@ from models import (
     Platform_Enum,
     Chat_Status_Enum,
 )
+from datetime import datetime, timezone
+
+tz = timezone.utc
 
 
 def truncate(session: Session, table: str):
@@ -80,6 +83,7 @@ def init_db(session: Session) -> None:
             message=message["message"],
             sender_role=message["sender"],
             status=message["status"],
+            created_at=datetime.now(tz),
         )
         session.add(chat)
         session.commit()

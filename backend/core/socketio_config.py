@@ -70,6 +70,7 @@ sio_app = socketio.ASGIApp(
 )
 
 cookie = SimpleCookie()
+tz = timezone.utc
 
 
 USER_CACHE_DICT = {}
@@ -124,7 +125,7 @@ def save_chat_history(
         else:
             # If timestamp is not provided,
             # it will default to current UTC time in the model
-            created_at = None  # Let the model handle the default
+            created_at = datetime.now(tz)  # Let the model handle the default
 
         conversation_exist = session.exec(
             select(Chat_Session)
@@ -268,7 +269,9 @@ async def handle_incoming_message(session: Session, message: dict):
             session.commit()
 
         new_chat_session = Chat_Session(
-            user_id=user.id, client_id=client.id, platform=platform
+            user_id=user.id,
+            client_id=client.id,
+            platform=platform,
         )
         session.add(new_chat_session)
         session.commit()
@@ -285,6 +288,7 @@ async def handle_incoming_message(session: Session, message: dict):
         chat_session_id=chat_session_id,
         message=get_value_or_raise_error(message, "body"),
         sender_role=(Sender_Role_Enum[sender_role.upper()]),
+        created_at=datetime.now(tz),
     )
     session.add(new_chat)
     session.commit()
@@ -309,6 +313,7 @@ async def handle_incoming_message(session: Session, message: dict):
             chat_session_id=chat_session_id,
             message=initial_message,
             sender_role=Sender_Role_Enum.SYSTEM,
+            created_at=datetime.now(tz),
         )
         session.add(new_chat)
         session.commit()
@@ -342,6 +347,14 @@ def handle_read_message(session: Session, chat_session_id: int):
         for um in unread_messages:
             um.status = Chat_Status_Enum.READ
         session.commit()
+
+        # update chat_session last_read
+        chat_session = session.exec(
+            select(Chat_Session).where(Chat_Session.id == chat_session_id)
+        ).first()
+        if chat_session:
+            chat_session.last_read = datetime.now(tz)
+            session.commit()
         session.flush()
         return unread_messages
     except Exception as e:

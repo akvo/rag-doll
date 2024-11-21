@@ -6,9 +6,11 @@ from models.chat import Chat, Sender_Role_Enum, Chat_Session, Platform_Enum
 from sqlalchemy.exc import IntegrityError
 from core.database import engine
 from sqlmodel import Session, select
+from datetime import datetime, timezone
 
 
 faker = Faker()
+tz = timezone.utc
 
 
 def get_last_user(session: Session):
@@ -71,6 +73,7 @@ def seed_chat_data(session: Session, user_id: int, client_id: int):
             chat_session_id=chat_session.id,
             message=message,
             sender_role=sender_role,
+            created_at=datetime.now(tz),
         )
         session.add(chat)
 

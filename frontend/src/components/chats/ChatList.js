@@ -30,10 +30,10 @@ const ChatList = ({
   const [chatItems, setChatItems] = useState(initialChatItems);
   const [offset, setOffset] = useState(0);
   const limit = 10;
-  const [loading, setLoading] = useState(true);
-  const [hasMoreData, setHasMoreData] = useState(true); // Track if there's more data to fetch
+  const [loading, setLoading] = useState(false);
+  const [hasMoreData, setHasMoreData] = useState(true);
 
-  const chatListRef = useRef(null);
+  const observerRef = useRef(null);
 
   const handleOnClickChat = ({ client_id, name, phone_number }) => {
     chatDispatch({
@@ -143,22 +143,26 @@ const ChatList = ({
     }
   }, [reloadChatList, fetchData, setReloadChatList]);
 
+  // Intersection Observer setup
   useEffect(() => {
-    const chatListRefTemp = chatListRef.current;
-    const handleScroll = () => {
-      if (chatListRefTemp && hasMoreData) {
-        const { scrollTop, scrollHeight, clientHeight } = chatListRefTemp;
-        if (scrollTop + clientHeight >= scrollHeight - 5) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreData && !loading) {
           loadMoreChats();
         }
-      }
-    };
+      },
+      { threshold: 1.0 }
+    );
 
-    chatListRefTemp?.addEventListener("scroll", handleScroll);
+    const currentObserverRef = observerRef.current;
+    if (currentObserverRef) {
+      observer.observe(currentObserverRef);
+    }
+
     return () => {
-      chatListRefTemp?.removeEventListener("scroll", handleScroll);
+      if (currentObserverRef) observer.unobserve(currentObserverRef);
     };
-  }, [hasMoreData, loadMoreChats]);
+  }, [hasMoreData, loading, loadMoreChats]);
 
   // Update last message for incoming message
   useEffect(() => {
@@ -215,93 +219,89 @@ const ChatList = ({
   }, [newMessage]);
 
   return (
-    <div
-      className="w-full h-screen bg-white overflow-y-scroll flex-shrink-0"
-      ref={chatListRef}
-    >
+    <div className="w-full h-screen bg-white overflow-y-scroll flex-shrink-0">
       <ChatHeader />
-      {loading ? (
-        <Loading />
-      ) : (
-        <>
-          <div className="pt-20 pb-24 w-full">
-            {/* Chat List */}
-            <div className="bg-white overflow-hidden px-2">
-              {chatItems.chats
-                .filter((c) => c.last_message)
-                .map(
-                  ({
-                    chat_session,
-                    last_message,
-                    unread_assistant_message,
-                    unread_message_count,
-                  }) => (
-                    <div
-                      key={`chat-list-${chat_session.id}`}
-                      className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
-                      onClick={() => handleOnClickChat(chat_session)}
-                    >
+      <div className="pt-20 pb-24 w-full">
+        <div className="bg-white overflow-hidden px-2">
+          {chatItems.chats
+            .filter((c) => c.last_message)
+            .map(
+              ({
+                chat_session,
+                last_message,
+                unread_assistant_message,
+                unread_message_count,
+              }) => (
+                <div
+                  key={`chat-list-${chat_session.id}`}
+                  className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition"
+                  onClick={() => handleOnClickChat(chat_session)}
+                >
+                  <div className="flex items-center">
+                    <Image
+                      src="/images/bg-login-page.png"
+                      alt="User Avatar"
+                      className="rounded-full w-12 h-12 mr-4 bg-gray-300"
+                      height={12}
+                      width={12}
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <h3 className="text-md font-semibold text-gray-800">
+                          {chat_session.name || chat_session.phone_number}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {formatChatTime(last_message.created_at)}
+                        </p>
+                      </div>
                       <div className="flex items-center">
-                        <Image
-                          src="/images/bg-login-page.png"
-                          alt="User Avatar"
-                          className="rounded-full w-12 h-12 mr-4 bg-gray-300"
-                          height={12}
-                          width={12}
-                        />
                         <div className="flex-1">
-                          <div className="flex justify-between">
-                            <h3 className="text-md font-semibold text-gray-800">
-                              {chat_session.name || chat_session.phone_number}
-                            </h3>
-                            <p className="text-xs text-gray-500">
-                              {formatChatTime(last_message.created_at)}
+                          {last_message.message?.trim() ? (
+                            <p className="text-gray-600 text-sm">
+                              {trimMessage(last_message.message)}
                             </p>
-                          </div>
-                          <div className="flex items-center">
-                            <div className="flex-1">
-                              {last_message.message?.trim() ? (
-                                <p className="text-gray-600 text-sm">
-                                  {trimMessage(last_message.message)}
-                                </p>
-                              ) : (
-                                renderTextForMediaMessage({
-                                  type: last_message?.media?.type,
-                                })
-                              )}
-                            </div>
-                            {unread_assistant_message ||
-                            unread_message_count ? (
-                              <div className="flex space-x-1 items-center justify-center">
-                                {unread_assistant_message ? (
-                                  <div className="w-5 h-5 bg-blue-300 rounded-full p-2">
-                                    &nbsp;
-                                  </div>
-                                ) : (
-                                  ""
-                                )}
-                                {unread_message_count > 0 ? (
-                                  <div className="w-5 h-5 bg-green-600 rounded-full text-white flex items-center justify-center text-xs p-2">
-                                    {unread_message_count}
-                                  </div>
-                                ) : (
-                                  ""
-                                )}
+                          ) : (
+                            renderTextForMediaMessage({
+                              type: last_message?.media?.type,
+                            })
+                          )}
+                        </div>
+                        {unread_assistant_message || unread_message_count ? (
+                          <div className="flex space-x-1 items-center justify-center">
+                            {unread_assistant_message ? (
+                              <div className="w-5 h-5 bg-blue-300 rounded-full p-2">
+                                &nbsp;
+                              </div>
+                            ) : (
+                              ""
+                            )}
+                            {unread_message_count > 0 ? (
+                              <div className="w-5 h-5 bg-green-600 rounded-full text-white flex items-center justify-center text-xs p-2">
+                                {unread_message_count}
                               </div>
                             ) : (
                               ""
                             )}
                           </div>
-                        </div>
+                        ) : (
+                          ""
+                        )}
                       </div>
                     </div>
-                  )
-                )}
+                  </div>
+                </div>
+              )
+            )}
+          {/* Observer trigger element */}
+          <div ref={observerRef} style={{ height: "1px" }} />
+          {loading && (
+            <div className="w-full flex justify-center py-4">
+              <Loading />
             </div>
-          </div>
-          <FloatingPlusButton />
-        </>
-      )}
+          )}
+        </div>
+      </div>
+      <FloatingPlusButton />
     </div>
   );
 };

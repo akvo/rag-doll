@@ -18,11 +18,13 @@ from pydantic import BaseModel
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import List
 from clients.twilio_client import TwilioClient
+from datetime import datetime, timezone
 
 router = APIRouter()
 security = HTTPBearer()
 
 twilio_client = TwilioClient()
+tz = timezone.utc
 
 
 class BroadcastRequest(BaseModel):
@@ -199,6 +201,7 @@ async def send_broadcast(
             message=message,
             sender_role=Sender_Role_Enum.USER_BROADCAST,
             status=Chat_Status_Enum.UNREAD,
+            created_at=datetime.now(tz),
         )
         new_chats.append(new_chat)
 

@@ -42,7 +42,6 @@ class Chat_Session(SQLModel, table=True):
             server_default=func.now(),
             nullable=False,
         ),
-        default_factory=lambda: datetime.now(tz),
     )
     client: "Client" = Relationship()
     user: "User" = Relationship()
@@ -81,9 +80,9 @@ class Chat(SQLModel, table=True):
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(),
+            server_default=func.now(),
             nullable=False,
         ),
-        default_factory=lambda: datetime.now(tz),
     )
     chat_session: "Chat_Session" = Relationship()
     media: list["Chat_Media"] = Relationship(back_populates="chat")

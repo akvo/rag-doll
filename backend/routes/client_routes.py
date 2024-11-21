@@ -18,6 +18,7 @@ from core.database import get_session
 from clients.twilio_client import TwilioClient
 from middleware import verify_user
 from typing_extensions import Annotated
+from datetime import datetime, timezone
 
 
 router = APIRouter()
@@ -28,6 +29,7 @@ INITIAL_CHAT_TEMPLATE = environ.get(
     "Hi {farmer_name}, I'm {officer_name} the extension officer.",
 )
 twilio_client = TwilioClient()
+tz = timezone.utc
 
 
 @router.post("/client")
@@ -102,6 +104,7 @@ async def add_client(
         message=initial_message,
         sender_role=Sender_Role_Enum.SYSTEM,
         status=Chat_Status_Enum.READ,  # user/officer message mark as READ
+        created_at=datetime.now(tz),
     )
     session.add(new_chat)
     session.commit()

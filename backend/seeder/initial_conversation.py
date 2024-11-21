@@ -6,9 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from core.database import engine
 from sqlmodel import Session, select
 from typing import List
+from datetime import datetime, timezone
 
 
 faker = Faker()
+tz = timezone.utc
 
 
 def get_client_phone_numbers(session: Session):
@@ -49,6 +51,7 @@ def seed_chat_data(session: Session, user_id: int, client_id: int):
         chat_session_id=chat_session.id,
         message="Welcome to Agriconnect. This is initial conversation..",
         sender_role=Sender_Role_Enum.SYSTEM,
+        created_at=datetime.now(tz),
     )
     session.add(chat)
     session.commit()

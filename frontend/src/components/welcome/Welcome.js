@@ -5,19 +5,17 @@ import { useRouter } from "next/navigation";
 
 const slides = [
   {
-    title: "The Best AI Farm Assistant",
-    subtitle:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla porta massa felis, ut tempus eros faucibus.",
+    title: "Welcome to AgriConnect",
+    subtitle: "Support more farmers, right from your device.",
   },
   {
-    title: "Manage your Farmer Conversations",
+    title: "Answer farmer questions",
     subtitle:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla porta massa felis, ut tempus eros faucibus.",
+      "Connect directly with farmers and provide timely, actionable advice.",
   },
   {
-    title: "Power up your communities",
-    subtitle:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla porta massa felis, ut tempus eros faucibus.",
+    title: "Smart suggestions from AI",
+    subtitle: "Boost your responses and efficiency with AI-powered insights.",
   },
 ];
 
@@ -58,7 +56,7 @@ const Welcome = () => {
                 <h1 className="bg-akvo-green-100 w-auto text-akvo-green max-w-72">
                   {it.title}
                 </h1>
-                <p className="text-sm max-w-96">{it.subtitle}</p>
+                <p className="text-md max-w-96">{it.subtitle}</p>
               </div>
             ))}
           </div>

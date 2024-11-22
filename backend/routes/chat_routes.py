@@ -60,6 +60,7 @@ async def get_chats(
             Chat.chat_session_id,
             func.max(Chat.created_at).label("latest_created_at"),
         )
+        .where(Chat.sender_role != Sender_Role_Enum.ASSISTANT)
         .group_by(Chat.chat_session_id)
         .subquery()
     )

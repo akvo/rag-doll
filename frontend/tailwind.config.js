@@ -21,6 +21,13 @@ module.exports = {
       ringColor: {
         "akvo-green": "#006349",
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: "100%", // Remove prose default max-width
+          },
+        },
+      },
     },
   },
   plugins: [require("@tailwindcss/typography")],

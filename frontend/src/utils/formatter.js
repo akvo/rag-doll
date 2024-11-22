@@ -74,7 +74,7 @@ export const formatChatTime = (timeString) => {
   });
 };
 
-export const trimMessage = (text, maxLength = 90) => {
+export const trimMessage = (text, maxLength = 80) => {
   if (text.length > maxLength) {
     return text.slice(0, maxLength) + "...";
   }

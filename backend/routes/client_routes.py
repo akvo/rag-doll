@@ -59,6 +59,16 @@ async def add_client(
 
     # get message template ID
     content_sid = environ.get(f"INTRO_TEMPLATE_ID_{message_template_lang}")
+    # TODO :: fetch template content to save in database
+    template_content = twilio_client.twilio_client.content.v1.contents(
+        content_sid
+    ).fetch()
+    template_content = template_content.types
+    template_content = template_content.get("twilio/text", {})
+    template_content = template_content.get("body", None)
+    if template_content:
+        initial_message = template_content.replace("{{1}}", name)
+    print(initial_message, "=== MESAGE TEMPLATE")
 
     phone_number = (
         f"+{phone_number.country_code}{phone_number.national_number}"
@@ -127,13 +137,14 @@ async def add_client(
 
     # send initial chat to client
     if content_sid:
+        print("aa")
         # send message with template
-        background_tasks.add_task(
-            twilio_client.whatsapp_message_template_create,
-            to=phone_number,
-            content_variables={"1": name},
-            content_sid=content_sid,
-        )
+        # background_tasks.add_task(
+        #     twilio_client.whatsapp_message_template_create,
+        #     to=phone_number,
+        #     content_variables={"1": name},
+        #     content_sid=content_sid,
+        # )
     else:
         # send message without template
         background_tasks.add_task(

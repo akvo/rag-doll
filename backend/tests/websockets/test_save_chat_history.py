@@ -45,7 +45,12 @@ async def test_save_chat_history_when_send_a_message_into_platform(
     )
 
     assert result is not None
-    chat = session.exec(select(Chat).where(Chat.id == result)).first()
+    chat_id = result.get("chat_id")
+    chat = session.exec(select(Chat).where(Chat.id == chat_id)).first()
+    send_conversation_reconnect_template = result.get(
+        "send_conversation_reconnect_template"
+    )
+    assert send_conversation_reconnect_template is False
     assert chat.message == "Saved message"
     assert chat.sender_role == Sender_Role_Enum.USER
     assert chat.status == Chat_Status_Enum.READ
@@ -89,7 +94,12 @@ async def test_save_chat_history_with_image(session: Session):
     )
 
     assert result is not None
-    chat = session.exec(select(Chat).where(Chat.id == result)).first()
+    chat_id = result.get("chat_id")
+    chat = session.exec(select(Chat).where(Chat.id == chat_id)).first()
+    send_conversation_reconnect_template = result.get(
+        "send_conversation_reconnect_template"
+    )
+    assert send_conversation_reconnect_template is False
     assert chat.message == "Saved message with image"
     assert chat.sender_role == Sender_Role_Enum.USER
     assert chat.status == Chat_Status_Enum.READ
@@ -135,7 +145,14 @@ async def test_save_chat_history_for_a_conversation_without_chat_before(
     )
 
     assert result is not None
-    chat = session.exec(select(Chat).where(Chat.id == result)).first()
+    chat_id = result.get("chat_id")
+    chat = session.exec(select(Chat).where(Chat.id == chat_id)).first()
+    send_conversation_reconnect_template = result.get(
+        "send_conversation_reconnect_template"
+    )
+    chat_session_id = result.get("chat_session_id")
+    assert chat_session_id is not None
+    assert send_conversation_reconnect_template is True
     assert chat.message == "First message"
     assert chat.sender_role == Sender_Role_Enum.USER
     assert chat.status == Chat_Status_Enum.READ
@@ -145,8 +162,8 @@ async def test_save_chat_history_for_a_conversation_without_chat_before(
         select(Chat)
         .where(
             and_(
-                Chat.chat_session_id == chat.chat_session_id,
-                Chat.id <= result,
+                Chat.chat_session_id == chat_session_id,
+                Chat.id <= chat_id,
                 Chat.sender_role == Sender_Role_Enum.SYSTEM,
             )
         )

@@ -3,6 +3,7 @@ import socketio
 import logging
 import json
 import pytz
+import asyncio
 
 from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
 from http.cookies import SimpleCookie
@@ -221,7 +222,13 @@ async def save_chat_history(
 
         session.flush()
 
-        return new_chat.id
+        return {
+            "chat_id": new_chat.id,
+            "chat_session_id": new_chat.chat_session_id,
+            "send_conversation_reconnect_template": (
+                send_conversation_reconnect_template
+            ),
+        }
     except Exception as e:
         logger.error(f"Save chat history failed: {e}")
         raise e
@@ -530,15 +537,22 @@ async def user_to_client(body: str):
     platform = conversation_envelope.get("platform")
     text = queue_message.get("body")
     media = queue_message.get("media", [])
-    # save outgoing chat
+
+    send_conversation_reconnect_template = False
     if not os.getenv("TESTING"):
-        await save_chat_history(
+        # save outgoing chat
+        res = await save_chat_history(
             session=session,
             conversation_envelope=conversation_envelope,
             message_body=text,
             media=media,
         )
-    # eol save outgoing chat
+        # eol save outgoing chat
+        send_conversation_reconnect_template = res.get(
+            "send_conversation_reconnect_template"
+        )
+    if send_conversation_reconnect_template:
+        await asyncio.sleep(5)
     if platform == Platform_Enum.WHATSAPP.value:
         await twilio_client.send_whatsapp_message(body=body)
     if platform == Platform_Enum.SLACK.value:

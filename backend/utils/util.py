@@ -1,4 +1,3 @@
-import os
 import re
 import phonenumbers
 import json
@@ -44,7 +43,7 @@ def get_template_content_from_json(
     content_sid: str, testing_file_path: Optional[str] = None
 ):
     JSON_FILE_PATH = "./sources/twilio_message_template.json"
-    if os.getenv("TESTING") or testing_file_path:
+    if testing_file_path:
         JSON_FILE_PATH = testing_file_path
     file_path = Path(JSON_FILE_PATH)
     if file_path.exists():

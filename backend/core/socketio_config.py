@@ -30,7 +30,10 @@ from clients.slack_client import SlackBotClient
 from db import add_media, check_24h_window
 from typing import Optional, List
 from pywebpush import webpush, WebPushException
-from utils.util import generate_message_template_lang_by_phone_number
+from utils.util import (
+    generate_message_template_lang_by_phone_number,
+    get_template_content_from_json,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -181,7 +184,7 @@ async def save_chat_history(
             )
             # save conversation reconnect template chat to database
             # get message template from twilio
-            template_content = twilio_client.get_message_template(
+            template_content = get_template_content_from_json(
                 content_sid=content_sid
             )
             conversation_reconnect_message = f"Hi {client_name},\n"

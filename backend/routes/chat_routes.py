@@ -19,7 +19,10 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import List
 from clients.twilio_client import TwilioClient
 from datetime import datetime, timezone
-from utils.util import generate_message_template_lang_by_phone_number
+from utils.util import (
+    generate_message_template_lang_by_phone_number,
+    get_template_content_from_json,
+)
 
 router = APIRouter()
 security = HTTPBearer()
@@ -211,7 +214,7 @@ async def send_broadcast(
             f"BROADCAST_TEMPLATE_ID_{message_template_lang}"
         )
         # get message template from twilio
-        template_content = twilio_client.get_message_template(
+        template_content = get_template_content_from_json(
             content_sid=content_sid
         )
         if template_content and not TESTING:

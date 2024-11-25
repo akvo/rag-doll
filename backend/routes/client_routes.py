@@ -19,7 +19,10 @@ from clients.twilio_client import TwilioClient
 from middleware import verify_user
 from typing_extensions import Annotated
 from datetime import datetime, timezone
-from utils.util import generate_message_template_lang_by_phone_number
+from utils.util import (
+    generate_message_template_lang_by_phone_number,
+    get_template_content_from_json,
+)
 
 
 router = APIRouter()
@@ -61,9 +64,7 @@ async def add_client(
     )
     content_sid = environ.get(f"INTRO_TEMPLATE_ID_{message_template_lang}")
     # get message template from twilio
-    template_content = twilio_client.get_message_template(
-        content_sid=content_sid
-    )
+    template_content = get_template_content_from_json(content_sid=content_sid)
     if template_content and not TESTING:
         initial_message = template_content.replace("{{1}}", name)
         initial_message = initial_message.replace("{{2}}", user_name)

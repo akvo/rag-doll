@@ -27,9 +27,10 @@ from socketio.exceptions import ConnectionRefusedError
 from utils.util import get_value_or_raise_error
 from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
-from db import add_media
+from db import add_media, check_24h_window
 from typing import Optional, List
 from pywebpush import webpush, WebPushException
+from utils.util import generate_message_template_lang_by_phone_number
 
 
 logging.basicConfig(level=logging.INFO)
@@ -97,12 +98,13 @@ def delete_cache(user_id: str):
         del USER_CACHE_DICT[key]
 
 
-def save_chat_history(
+async def save_chat_history(
     session: Session,
     conversation_envelope: dict,
     message_body: str,
     media: Optional[List[dict]] = [],
 ):
+    TESTING = os.getenv("TESTING")
     try:
         user_phone_number = get_value_or_raise_error(
             conversation_envelope, "user_phone_number"
@@ -113,6 +115,7 @@ def save_chat_history(
         timestamp = get_value_or_raise_error(
             conversation_envelope, "timestamp"
         )
+        platform = get_value_or_raise_error(conversation_envelope, "platform")
 
         # If timestamp is provided, parse it
         if timestamp:
@@ -138,15 +141,73 @@ def save_chat_history(
         ).first()
 
         if not conversation_exist:
+            # TODO :: handle this correctly
             return None
 
+        # get message template ID
+        message_template_lang = generate_message_template_lang_by_phone_number(
+            phone_number=client_phone_number
+        )
+        send_conversation_reconnect_template = check_24h_window(
+            session=session, chat_session_id=conversation_exist.id
+        )
+        # Send conversation reconnect template if beyond 24hr
+        if (
+            platform == Platform_Enum.WHATSAPP.value
+            and send_conversation_reconnect_template
+        ):
+            content_sid = os.getenv(
+                f"CONVERSATION_RECONNECT_TEMPLATE_{message_template_lang}"
+            )
+            # send conversation reconnect template
+            client = session.exec(
+                select(Client).where(
+                    Client.phone_number == client_phone_number
+                )
+            ).first()
+            # farmer name
+            client_name = (
+                client.properties.name
+                if client and client.properties
+                else client_phone_number
+            )
+            # save conversation reconnect template chat to database
+            # get message template from twilio
+            template_content = twilio_client.get_message_template(
+                content_sid=content_sid
+            )
+            conversation_reconnect_message = f"Hi {client_name},\n"
+            conversation_reconnect_message += "Please reply this message"
+            conversation_reconnect_message += " to restart your conversation."
+            if template_content and not TESTING:
+                conversation_reconnect_message = template_content.replace(
+                    "{{1}}", client_name
+                )
+            system_chat = Chat(
+                chat_session_id=conversation_exist.id,
+                message=conversation_reconnect_message,
+                sender_role=Sender_Role_Enum.SYSTEM,
+                status=Chat_Status_Enum.READ,
+                created_at=created_at,
+            )
+            session.add(system_chat)
+            session.commit()
+            # send
+            if content_sid and not TESTING:
+                await twilio_client.whatsapp_message_template_create(
+                    to=client_phone_number,
+                    content_variables={"1": client_name},
+                    content_sid=content_sid,
+                )
+
+        # save user/client chat to database
         sender_role = get_value_or_raise_error(
             conversation_envelope, "sender_role"
         )
         new_chat = Chat(
             chat_session_id=conversation_exist.id,
             message=message_body,
-            sender_role=(Sender_Role_Enum[sender_role.upper()]),
+            sender_role=Sender_Role_Enum[sender_role.upper()],
             status=Chat_Status_Enum.READ,  # user/officer message mark as READ
             created_at=created_at,
         )
@@ -471,7 +532,7 @@ async def user_to_client(body: str):
     media = queue_message.get("media", [])
     # save outgoing chat
     if not os.getenv("TESTING"):
-        save_chat_history(
+        await save_chat_history(
             session=session,
             conversation_envelope=conversation_envelope,
             message_body=text,

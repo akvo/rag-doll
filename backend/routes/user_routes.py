@@ -12,7 +12,7 @@ from core.database import get_session
 from utils.jwt_handler import create_jwt_token
 from clients.twilio_client import TwilioClient
 from middleware import verify_user
-
+from utils.util import generate_message_template_lang_by_phone_number
 
 router = APIRouter()
 security = HTTPBearer()
@@ -30,28 +30,27 @@ async def send_login_link(
     session: Session = Depends(get_session),
 ):
     phone_number = phonenumbers.parse(phone_number)
-
-    # get the region code
-    phone_number_region = phonenumbers.region_code_for_number(phone_number)
-    phone_number_region = phone_number_region.lower()
-    message_template_lang = "en"
-    if phone_number_region == "ke":
-        message_template_lang = "sw"
-
     phone_number = (
         f"+{phone_number.country_code}{phone_number.national_number}"
     )
+
     user = session.exec(
         select(User).where(User.phone_number == phone_number)
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     login_code_uuid = uuid4()
     user.login_code = str(login_code_uuid)
     session.commit()
 
     user_name = user.properties.name if user.properties else phone_number
     link = f"{webdomain}/verify/{user.login_code}"
+
+    # get message template lang
+    message_template_lang = generate_message_template_lang_by_phone_number(
+        phone_number=phone_number
+    )
     if environ.get("TESTING"):
         return {
             "user_name": user_name,

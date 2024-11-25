@@ -1,7 +1,11 @@
+import os
 import re
 import phonenumbers
+import json
 
 from pydantic_extra_types.phone_numbers import PhoneNumber
+from pathlib import Path
+from typing import Optional
 
 
 def sanitize_phone_number(phone_number: PhoneNumber):
@@ -34,6 +38,21 @@ def generate_message_template_lang_by_phone_number(phone_number: PhoneNumber):
     if phone_number_region == "bf":
         message_template_lang = "fr"
     return message_template_lang
+
+
+def get_template_content_from_json(
+    content_sid: str, testing_file_path: Optional[str] = None
+):
+    JSON_FILE_PATH = "./sources/twilio_message_template.json"
+    if os.getenv("TESTING") or testing_file_path:
+        JSON_FILE_PATH = testing_file_path
+    file_path = Path(JSON_FILE_PATH)
+    if file_path.exists():
+        with file_path.open("r") as json_file:
+            content_data = json.load(json_file)
+            return content_data.get(content_sid)
+    else:
+        return False
 
 
 class TextConverter:

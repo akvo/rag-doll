@@ -1,5 +1,8 @@
 import pytest
-from utils.util import TextConverter
+from utils.util import (
+    TextConverter,
+    generate_message_template_lang_by_phone_number,
+)
 
 
 @pytest.fixture
@@ -86,3 +89,26 @@ def test_not_to_convert_hypen_inside_urls():
     converter = TextConverter(sample_text)
     output = converter._convert_bold_to_whatsapp(converter.text)
     assert output == sample_text
+
+
+def test_generate_message_template_lang_by_phone_number():
+    # expected sw
+    lang = generate_message_template_lang_by_phone_number(
+        phone_number="+254712345678"
+    )
+    assert lang == "sw"
+    # expected fr
+    lang = generate_message_template_lang_by_phone_number(
+        phone_number="+22678123456"
+    )
+    assert lang == "fr"
+    # expected en
+    lang = generate_message_template_lang_by_phone_number(
+        phone_number="+6281999123456"
+    )
+    assert lang == "en"
+    # expected en
+    lang = generate_message_template_lang_by_phone_number(
+        phone_number="+2348031234567"  # Nigeria
+    )
+    assert lang == "en"

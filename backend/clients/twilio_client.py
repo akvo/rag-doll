@@ -251,3 +251,18 @@ class TwilioClient:
         except Exception as e:
             logger.error(f"Exception error: {e}")
             return None
+
+    def get_message_template(self, content_sid: str):
+        try:
+            if not content_sid:
+                return False
+            template_content = self.twilio_client.content.v1.contents(
+                content_sid
+            ).fetch()
+            template_content = template_content.types
+            template_content = template_content.get("twilio/text", {})
+            template_content = template_content.get("body", None)
+            return template_content
+        except Exception as e:
+            logger.error(f"Get message template exception error: {e}")
+            return False

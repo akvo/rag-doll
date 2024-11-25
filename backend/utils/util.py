@@ -1,4 +1,6 @@
 import re
+import phonenumbers
+
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
 
@@ -19,6 +21,19 @@ def get_value_or_raise_error(data_dict, key, error_msg=None):
             error_msg = f"Key '{key}' not found in message"
         raise KeyError(error_msg)
     return value
+
+
+def generate_message_template_lang_by_phone_number(phone_number: PhoneNumber):
+    phone_number = phonenumbers.parse(phone_number)
+    # get the region code
+    phone_number_region = phonenumbers.region_code_for_number(phone_number)
+    phone_number_region = phone_number_region.lower()
+    message_template_lang = "en"
+    if phone_number_region == "ke":
+        message_template_lang = "sw"
+    if phone_number_region == "bf":
+        message_template_lang = "fr"
+    return message_template_lang
 
 
 class TextConverter:

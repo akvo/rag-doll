@@ -19,7 +19,6 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import List
 from clients.twilio_client import TwilioClient
 from datetime import datetime, timezone
-from db import check_24h_window
 from utils.util import generate_message_template_lang_by_phone_number
 
 router = APIRouter()
@@ -280,12 +279,3 @@ async def send_broadcast(
     session.commit()
     session.flush()
     return {"message": "Broadcast message sent to WhatsApp"}
-
-
-# TODO :: delete this route
-@router.get("/test-check-24h-window")
-async def test_check_24h_window(
-    session: Session = Depends(get_session),
-):
-    check_24h_window(session=session)
-    return {"message": "Check 24hours window"}

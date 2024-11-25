@@ -28,6 +28,7 @@ const ChatTabButton = ({ type }) => {
           active: pathname.includes("reference"),
           icon: <ReferenceIcon />,
           text: "Reference",
+          hide: true,
           onClick: () => {},
         };
       case "account":
@@ -45,6 +46,10 @@ const ChatTabButton = ({ type }) => {
   };
 
   const buttonEl = chatButtonType(type);
+
+  if (buttonEl?.hide) {
+    return "";
+  }
 
   return (
     <button

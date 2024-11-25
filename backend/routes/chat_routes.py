@@ -11,7 +11,7 @@ from models import (
     Client,
     Platform_Enum,
 )
-from sqlmodel import Session, select, func, and_
+from sqlmodel import Session, select, func, and_, case
 from middleware import verify_user
 from core.database import get_session
 from pydantic import BaseModel
@@ -19,7 +19,7 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import List
 from clients.twilio_client import TwilioClient
 from datetime import datetime, timezone
-from db import get_last_message, check_24h_window
+from db import check_24h_window
 from utils.util import generate_message_template_lang_by_phone_number
 
 router = APIRouter()
@@ -37,12 +37,13 @@ class BroadcastRequest(BaseModel):
 @router.get("/chat-list")
 async def get_chats(
     session: Session = Depends(get_session),
-    auth: credentials = Depends(security),
+    auth: dict = Depends(security),
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
     user = verify_user(session, auth)
 
+    # Total number of chats for pagination
     total_chats = session.exec(
         select(func.count(Chat_Session.id)).where(
             Chat_Session.user_id == user.id
@@ -54,52 +55,80 @@ async def get_chats(
             status_code=404, detail="Offset exceeds total number of chats"
         )
 
-    chats = session.exec(
-        select(Chat_Session)
+    # Subquery for latest message per session
+    latest_chat_subquery = (
+        select(
+            Chat.chat_session_id,
+            func.max(Chat.created_at).label("latest_created_at"),
+        )
+        .where(Chat.sender_role != Sender_Role_Enum.ASSISTANT)
+        .group_by(Chat.chat_session_id)
+        .subquery()
+    )
+
+    # Main query: Fetch chat sessions with latest chat and unread counts
+    query = (
+        select(
+            Chat_Session,
+            Chat,  # Latest message
+            func.count(
+                case(
+                    (
+                        and_(
+                            Chat.status == Chat_Status_Enum.UNREAD,
+                            Chat.sender_role == Sender_Role_Enum.CLIENT,
+                        ),
+                        1,
+                    )
+                )
+            ).label("unread_message_count"),
+            func.count(
+                case(
+                    (
+                        and_(
+                            Chat.status == Chat_Status_Enum.UNREAD,
+                            Chat.sender_role == Sender_Role_Enum.ASSISTANT,
+                        ),
+                        1,
+                    )
+                )
+            ).label("unread_assistant_message"),
+        )
+        .join(
+            latest_chat_subquery,
+            Chat_Session.id == latest_chat_subquery.c.chat_session_id,
+        )
+        .join(
+            Chat,
+            and_(
+                Chat.chat_session_id == latest_chat_subquery.c.chat_session_id,
+                Chat.created_at == latest_chat_subquery.c.latest_created_at,
+            ),
+        )
         .where(Chat_Session.user_id == user.id)
-        .order_by(Chat_Session.last_read.desc())
+        .group_by(Chat_Session.id, Chat.id)
+        .order_by(Chat.created_at.desc())
         .offset(offset)
         .limit(limit)
-    ).all()
+    )
+
+    results = session.exec(query).all()
 
     last_chats = []
-    for chat in chats:
-        # count of unread message
-        unread_messages = session.exec(
-            select(Chat.id).where(
-                and_(
-                    Chat.chat_session_id == chat.id,
-                    Chat.status == Chat_Status_Enum.UNREAD,
-                    Chat.sender_role == Sender_Role_Enum.CLIENT,
-                )
-            )
-        ).all()
-        unread_message_count = len(unread_messages)
-
-        # unread_assistant_message
-        unread_assistant_message = session.exec(
-            select(Chat.id)
-            .where(
-                and_(
-                    Chat.chat_session_id == chat.id,
-                    Chat.status == Chat_Status_Enum.UNREAD,
-                    Chat.sender_role == Sender_Role_Enum.ASSISTANT,
-                )
-            )
-            .order_by(Chat.created_at.desc(), Chat.id.desc())
-        ).first()
-
-        last_message = get_last_message(session=session, chat=chat)
+    for (
+        chat_session,
+        latest_chat,
+        unread_message_count,
+        unread_assistant_message,
+    ) in results:
         last_chats.append(
             {
-                "chat_session": chat.serialize(),
+                "chat_session": chat_session.serialize(),
                 "last_message": (
-                    last_message.to_last_message() if last_message else None
+                    latest_chat.to_last_message() if latest_chat else None
                 ),
                 "unread_message_count": unread_message_count,
-                "unread_assistant_message": (
-                    True if unread_assistant_message else False
-                ),
+                "unread_assistant_message": unread_assistant_message > 0,
             }
         )
 

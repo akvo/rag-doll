@@ -3,7 +3,6 @@ import socketio
 import logging
 import json
 import pytz
-import asyncio
 
 from Akvo_rabbitmq_client import rabbitmq_client, queue_message_util
 from http.cookies import SimpleCookie
@@ -145,7 +144,10 @@ async def save_chat_history(
             # TODO :: handle this correctly
             return None
 
-        # get message template ID
+        # user/officer message mark as READ
+        new_chat_status = Chat_Status_Enum.READ
+
+        # get message template lang
         message_template_lang = generate_message_template_lang_by_phone_number(
             phone_number=client_phone_number
         )
@@ -157,6 +159,11 @@ async def save_chat_history(
             platform == Platform_Enum.WHATSAPP.value
             and send_conversation_reconnect_template
         ):
+            # user/officer message mark as READ
+            # TODO ::
+            # new_chat_status = Chat_Status_Enum.AWAITING_USER_REPLY
+
+            # get message template ID
             content_sid = os.getenv(
                 f"CONVERSATION_RECONNECT_TEMPLATE_{message_template_lang}"
             )
@@ -209,7 +216,7 @@ async def save_chat_history(
             chat_session_id=conversation_exist.id,
             message=message_body,
             sender_role=Sender_Role_Enum[sender_role.upper()],
-            status=Chat_Status_Enum.READ,  # user/officer message mark as READ
+            status=new_chat_status,
             created_at=created_at,
         )
         session.add(new_chat)
@@ -548,12 +555,15 @@ async def user_to_client(body: str):
             media=media,
         )
         # eol save outgoing chat
-        send_conversation_reconnect_template = res.get(
+        send_conversation_reconnect_template = res.get(  # noqa
             "send_conversation_reconnect_template"
         )
-    if send_conversation_reconnect_template:
-        await asyncio.sleep(5)
-    if platform == Platform_Enum.WHATSAPP.value:
+    if (
+        platform
+        == Platform_Enum.WHATSAPP.value
+        # TODO ::
+        # and not send_conversation_reconnect_template
+    ):
         await twilio_client.send_whatsapp_message(body=body)
     if platform == Platform_Enum.SLACK.value:
         await slackbot_client.send_message(body=body)

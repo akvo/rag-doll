@@ -25,6 +25,9 @@ class Platform_Enum(enum.Enum):
 class Chat_Status_Enum(enum.Enum):
     UNREAD = "UNREAD"
     READ = "READ"
+    # TODO ::
+    # Waiting for user to send a new message to restart conversation
+    # AWAITING_USER_REPLY = "AWAITING_USER_REPLY"
 
 
 class Chat_Session(SQLModel, table=True):

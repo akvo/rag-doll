@@ -256,7 +256,6 @@ async def send_broadcast(
 
         if not TESTING:
             # Broadcast a message with/without template
-            clean_line_break_message = request.message.replace("\n", " ")
             if content_sid:
                 # Template
                 background_tasks.add_task(

@@ -202,4 +202,4 @@ def test_send_broadcast_success(client: TestClient, session: Session) -> None:
         content += "Hello, this is a broadcast message."
         assert messages[-1].message == content
         assert messages[-1].sender_role == Sender_Role_Enum.USER_BROADCAST
-        assert messages[-1].status == Chat_Status_Enum.UNREAD
+        assert messages[-1].status == Chat_Status_Enum.READ

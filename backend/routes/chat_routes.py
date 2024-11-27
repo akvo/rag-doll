@@ -249,7 +249,7 @@ async def send_broadcast(
             chat_session_id=chat_session.id,
             message=broadcast_message,
             sender_role=Sender_Role_Enum.USER_BROADCAST,
-            status=Chat_Status_Enum.UNREAD,
+            status=Chat_Status_Enum.READ,
             created_at=datetime.now(tz),
         )
         new_chats.append(new_chat)

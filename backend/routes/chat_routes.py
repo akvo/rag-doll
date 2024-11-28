@@ -19,7 +19,10 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import List
 from clients.twilio_client import TwilioClient
 from datetime import datetime, timezone
-
+from utils.util import (
+    generate_message_template_lang_by_phone_number,
+    get_template_content_from_json,
+)
 
 router = APIRouter()
 security = HTTPBearer()
@@ -179,8 +182,8 @@ async def send_broadcast(
     session: Session = Depends(get_session),
     auth: credentials = Depends(security),
 ):
+    TESTING = os.getenv("TESTING")
     user = verify_user(session, auth)
-    message = f"[Broadcast]\n\n{request.message}"
     contacts = []
     for phone_number in request.contacts:
         phone_number = phonenumbers.parse(phone_number)
@@ -196,6 +199,30 @@ async def send_broadcast(
 
     for client in clients:
         client = client.serialize()
+        client_name = client.get("name") or client.get("phone_number")
+
+        clean_line_break_message = request.message.replace("\n", " ")
+        broadcast_message = (
+            f"[Broadcast]\n\nHi {client_name},\n{clean_line_break_message}"
+        )
+
+        # get message template ID
+        message_template_lang = generate_message_template_lang_by_phone_number(
+            phone_number=client.get("phone_number")
+        )
+        content_sid = os.getenv(
+            f"BROADCAST_TEMPLATE_ID_{message_template_lang}"
+        )
+        # get message template from twilio
+        template_content = get_template_content_from_json(
+            content_sid=content_sid
+        )
+        if template_content and not TESTING:
+            broadcast_message = template_content.replace("{{1}}", client_name)
+            broadcast_message = broadcast_message.replace(
+                "{{2}}", clean_line_break_message
+            )
+
         # Check if chat session exists
         chat_session = session.exec(
             select(Chat_Session).where(
@@ -220,20 +247,33 @@ async def send_broadcast(
         # Add chat history
         new_chat = Chat(
             chat_session_id=chat_session.id,
-            message=message,
+            message=broadcast_message,
             sender_role=Sender_Role_Enum.USER_BROADCAST,
-            status=Chat_Status_Enum.UNREAD,
+            status=Chat_Status_Enum.READ,
             created_at=datetime.now(tz),
         )
         new_chats.append(new_chat)
 
-        if not os.getenv("TESTING"):
-            # Broadcast a message
-            background_tasks.add_task(
-                twilio_client.whatsapp_message_create,
-                to=client.get("phone_number"),
-                body=message,
-            )
+        if not TESTING:
+            # Broadcast a message with/without template
+            if content_sid:
+                # Template
+                background_tasks.add_task(
+                    twilio_client.whatsapp_message_template_create,
+                    to=client.get("phone_number"),
+                    content_variables={
+                        "1": client_name,
+                        "2": clean_line_break_message,
+                    },
+                    content_sid=content_sid,
+                )
+            else:
+                # Without template
+                background_tasks.add_task(
+                    twilio_client.whatsapp_message_create,
+                    to=client.get("phone_number"),
+                    body=broadcast_message,
+                )
 
     # Bulk insert new chat messages
     if new_chats:

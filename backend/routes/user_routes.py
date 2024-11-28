@@ -12,7 +12,7 @@ from core.database import get_session
 from utils.jwt_handler import create_jwt_token
 from clients.twilio_client import TwilioClient
 from middleware import verify_user
-
+from utils.util import generate_message_template_lang_by_phone_number
 
 router = APIRouter()
 security = HTTPBearer()
@@ -36,25 +36,49 @@ async def send_login_link(
     phone_number = (
         f"+{phone_number.country_code}{phone_number.national_number}"
     )
+
     user = session.exec(
         select(User).where(User.phone_number == phone_number)
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     login_code_uuid = uuid4()
     user.login_code = str(login_code_uuid)
     session.commit()
 
-    if environ.get("TESTING"):
-        return {"message": "Login link sent via WhatsApp"}
-
-    # format login link and message for the user
+    user_name = user.properties.name if user.properties else phone_number
     link = f"{webdomain}/verify/{user.login_code}"
-    background_tasks.add_task(
-        twilio_client.whatsapp_message_create,
-        to=phone_number,
-        body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
+
+    # get message template lang
+    message_template_lang = generate_message_template_lang_by_phone_number(
+        phone_number=phone_number
     )
+    if environ.get("TESTING"):
+        return {
+            "user_name": user_name,
+            "link": link,
+            "message_template_lang": message_template_lang,
+        }
+
+    # get message template ID
+    content_sid = environ.get(
+        f"VERIFICATION_TEMPLATE_ID_{message_template_lang}"
+    )
+    if content_sid:
+        background_tasks.add_task(
+            twilio_client.whatsapp_message_template_create,
+            to=phone_number,
+            content_variables={"1": user_name, "2": link},
+            content_sid=content_sid,
+        )
+    else:
+        # format login link and message for the user
+        background_tasks.add_task(
+            twilio_client.whatsapp_message_create,
+            to=phone_number,
+            body=MAGIC_LINK_CHAT_TEMPLATE.format(magic_link=link),
+        )
     return {"message": "Login link sent via WhatsApp"}
 
 

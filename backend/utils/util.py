@@ -1,5 +1,10 @@
 import re
+import phonenumbers
+import json
+
 from pydantic_extra_types.phone_numbers import PhoneNumber
+from pathlib import Path
+from typing import Optional
 
 
 def sanitize_phone_number(phone_number: PhoneNumber):
@@ -19,6 +24,34 @@ def get_value_or_raise_error(data_dict, key, error_msg=None):
             error_msg = f"Key '{key}' not found in message"
         raise KeyError(error_msg)
     return value
+
+
+def generate_message_template_lang_by_phone_number(phone_number: PhoneNumber):
+    phone_number = phonenumbers.parse(phone_number)
+    # get the region code
+    phone_number_region = phonenumbers.region_code_for_number(phone_number)
+    phone_number_region = phone_number_region.lower()
+    message_template_lang = "en"
+    if phone_number_region == "ke":
+        message_template_lang = "sw"
+    if phone_number_region == "bf":
+        message_template_lang = "fr"
+    return message_template_lang
+
+
+def get_template_content_from_json(
+    content_sid: str, testing_file_path: Optional[str] = None
+):
+    JSON_FILE_PATH = "./sources/twilio_message_template.json"
+    if testing_file_path:
+        JSON_FILE_PATH = testing_file_path
+    file_path = Path(JSON_FILE_PATH)
+    if file_path.exists():
+        with file_path.open("r") as json_file:
+            content_data = json.load(json_file)
+            return content_data.get(content_sid)
+    else:
+        return False
 
 
 class TextConverter:

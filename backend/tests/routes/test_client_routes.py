@@ -40,8 +40,13 @@ def test_add_new_client(client: TestClient, session: Session):
         data=new_client_data,
         headers={"Authorization": f"Bearer {token}"},
     )
-
     assert response.status_code == 200
+    res = response.json()
+    chat = "Hi Test Farmer, I'm 12345678900 the extension officer."
+    chat += " Welcome to Agriconnect, send us a message here to"
+    chat += " start chatting."
+    assert res["message"] == chat
+    assert res["sender_role"] == "system"
 
     # Verify the client is saved in the database
     check_client = session.exec(

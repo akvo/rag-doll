@@ -98,6 +98,11 @@ def init_db(session: Session) -> None:
     )
     session.add(chat_session)
     session.commit()
+    user = User(
+        phone_number="+254201234567",
+    )
+    session.add(user)
+    session.commit()
 
 
 @pytest.fixture

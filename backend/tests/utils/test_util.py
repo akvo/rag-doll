@@ -1,5 +1,12 @@
+import os
 import pytest
-from utils.util import TextConverter
+import json
+
+from utils.util import (
+    TextConverter,
+    generate_message_template_lang_by_phone_number,
+    get_template_content_from_json,
+)
 
 
 @pytest.fixture
@@ -86,3 +93,53 @@ def test_not_to_convert_hypen_inside_urls():
     converter = TextConverter(sample_text)
     output = converter._convert_bold_to_whatsapp(converter.text)
     assert output == sample_text
+
+
+def test_generate_message_template_lang_by_phone_number():
+    # expected sw
+    lang = generate_message_template_lang_by_phone_number(
+        phone_number="+254712345678"
+    )
+    assert lang == "sw"
+    # expected fr
+    lang = generate_message_template_lang_by_phone_number(
+        phone_number="+22678123456"
+    )
+    assert lang == "fr"
+    # expected en
+    lang = generate_message_template_lang_by_phone_number(
+        phone_number="+6281999123456"
+    )
+    assert lang == "en"
+    # expected en
+    lang = generate_message_template_lang_by_phone_number(
+        phone_number="+2348031234567"  # Nigeria
+    )
+    assert lang == "en"
+
+
+def test_get_template_content_from_json_file_not_exist():
+    file_path = "./twilio_message_template_notfound.json"
+    res = get_template_content_from_json(
+        content_sid="HX123456", testing_file_path=file_path
+    )
+    assert res is False
+
+
+def test_get_template_content_from_json_success():
+    file_path = "./tests/utils/twilio_message_template_testing.json"
+    # create file for testing
+    content_data = {
+        "HX123456": "Template 1",
+        "HX223456": "Template 2",
+        "HX323456": "Template 3",
+    }
+    with open(file_path, "w") as json_file:
+        json.dump(content_data, json_file, indent=2)
+    res = get_template_content_from_json(
+        content_sid="HX223456", testing_file_path=file_path
+    )
+    assert res == "Template 2"
+    # remove file after testing
+    if os.path.exists(file_path):
+        os.remove(file_path)

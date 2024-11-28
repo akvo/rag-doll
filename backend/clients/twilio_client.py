@@ -88,6 +88,27 @@ class TwilioClient:
         except TwilioRestException as e:
             logger.error(f"Error sending message to Twilio: {e}")
 
+    async def whatsapp_message_template_create(
+        self, to: str, content_variables: dict, content_sid: str
+    ):
+        try:
+            response = self.twilio_client.messages.create(
+                content_sid=content_sid,
+                to=f"whatsapp:{to}",
+                from_=self.TWILIO_WHATSAPP_FROM,
+                content_variables=json.dumps(content_variables),
+            )
+            if response.error_code is not None:
+                logger.error(
+                    f"Failed to send message to WhatsApp number "
+                    f"{to}: {response.error_message}"
+                )
+            logger.info(
+                f"Template message sent to WhatsApp: {content_variables}"
+            )
+        except TwilioRestException as e:
+            logger.error(f"Error sending template message to Twilio: {e}")
+
     async def send_whatsapp_message(self, body: str) -> None:
         try:
             queue_message = json.loads(body)
@@ -167,11 +188,13 @@ class TwilioClient:
                         public=True,
                     )
                     media.append({"url": bucket_url, "type": media_type})
-                    context.append({
-                        "url": bucket_url,
-                        "type": media_type,
-                        "caption": message_body
-                    })
+                    context.append(
+                        {
+                            "url": bucket_url,
+                            "type": media_type,
+                            "caption": message_body,
+                        }
+                    )
                     logger.info(f"Image upload: {bucket_url}")
 
             queue_message = queue_message_util.create_queue_message(
@@ -227,3 +250,18 @@ class TwilioClient:
         except Exception as e:
             logger.error(f"Exception error: {e}")
             return None
+
+    def get_message_template(self, content_sid: str):
+        try:
+            if not content_sid:
+                return False
+            template_content = self.twilio_client.content.v1.contents(
+                content_sid
+            ).fetch()
+            template_content = template_content.types
+            template_content = template_content.get("twilio/text", {})
+            template_content = template_content.get("body", None)
+            return template_content
+        except Exception as e:
+            logger.error(f"Get message template exception error: {e}")
+            return False

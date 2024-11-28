@@ -192,9 +192,33 @@ the system, notably the assistant. Incoming messages are forwarded to the
 
 | `.env` | default | description |
 |---|---|---|
-| `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The account SID for your Twilio account. |
-| `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorisation token. |
-| `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The twilio WhatsApp number from twilio account in international format. |
+| `TWILIO_ACCOUNT_SID` | _CHANGEME_ | The Account SID for your Twilio account. |
+| `TWILIO_AUTH_TOKEN` | _CHANGEME_ | Your Twilio authorization token. |
+| `TWILIO_WHATSAPP_NUMBER` | _CHANGEME_ | The Twilio WhatsApp number from your Twilio account in international format. |
+| `VERIFICATION_TEMPLATE_ID_en` | NULL | The Twilio message template ID for the verification message in English. This template should contain two content variables: `{"1": extension_officer_name, "2": verification_link}`. **Leave blank for local development.** |
+| `VERIFICATION_TEMPLATE_ID_sw` | NULL | The Twilio message template ID for the verification message in Swahili. This template should contain two content variables: `{"1": extension_officer_name, "2": verification_link}`. **Leave blank for local development.** |
+| `VERIFICATION_TEMPLATE_ID_fr` | NULL | The Twilio message template ID for the verification message in French. This template should contain two content variables: `{"1": extension_officer_name, "2": verification_link}`. **Leave blank for local development.** |
+| `BROADCAST_TEMPLATE_ID_en` | NULL | The Twilio message template ID for the broadcast message in English. This template should contain two content variables: `{"1": farmer_name, "2": broadcast_message_without_new_line}`. **Leave blank for local development.** |
+| `BROADCAST_TEMPLATE_ID_sw` | NULL | The Twilio message template ID for the broadcast message in Swahili. This template should contain two content variables: `{"1": farmer_name, "2": broadcast_message_without_new_line}`. **Leave blank for local development.** |
+| `BROADCAST_TEMPLATE_ID_fr` | NULL | The Twilio message template ID for the broadcast message in French. This template should contain two content variables: `{"1": farmer_name, "2": broadcast_message_without_new_line}`. **Leave blank for local development.** |
+| `INTRO_TEMPLATE_ID_en` | NULL | The Twilio message template ID for the introduction message in English. This template should contain two content variables: `{"1": farmer_name, "2": extension_officer_name}`. **Leave blank for local development.** |
+| `INTRO_TEMPLATE_ID_sw` | NULL | The Twilio message template ID for the introduction message in Swahili. This template should contain two content variables: `{"1": farmer_name, "2": extension_officer_name}`. **Leave blank for local development.** |
+| `INTRO_TEMPLATE_ID_fr` | NULL | The Twilio message template ID for the introduction message in French. This template should contain two content variables: `{"1": farmer_name, "2": extension_officer_name}`. **Leave blank for local development.** |
+| `CONVERSATION_RECONNECT_TEMPLATE_en` | NULL | The Twilio message template ID for the conversation reconnect message in English. This is used when an officer sends a message to a farmer beyond the 24-hour window. The template should contain one content variable: `{"1": farmer_name}`. **Leave blank for local development.** |
+| `CONVERSATION_RECONNECT_TEMPLATE_sw` | NULL | The Twilio message template ID for the conversation reconnect message in Swahili. This is used when an officer sends a message to a farmer beyond the 24-hour window. The template should contain one content variable: `{"1": farmer_name}`. **Leave blank for local development.** |
+| `CONVERSATION_RECONNECT_TEMPLATE_fr` | NULL | The Twilio message template ID for the conversation reconnect message in French. This is used when an officer sends a message to a farmer beyond the 24-hour window. The template should contain one content variable: `{"1": farmer_name}`. **Leave blank for local development.** |
+
+
+#### Twilio Message Template
+
+By default, when the app starts, a command is executed to fetch the Twilio message templates. This command generates a JSON file located in the `./sources` folder. The purpose of this file is to minimize Twilio API calls when saving message templates into our database as part of the chat history.
+
+One important consideration is that if you update the message template in the Twilio Console, you must also update the **Message Template ID** environment variable to match the new template ID in the Twilio Console > Content Template Builder. After updating the environment variable, run the following command inside the backend container to refresh the JSON file:
+
+```bash
+python -m command.get_twilio_message_template
+```
+
 
 ### Slack Channel
 

@@ -209,6 +209,17 @@ the system, notably the assistant. Incoming messages are forwarded to the
 | `CONVERSATION_RECONNECT_TEMPLATE_fr` | NULL | The Twilio message template ID for the conversation reconnect message in French. This is used when an officer sends a message to a farmer beyond the 24-hour window. The template should contain one content variable: `{"1": farmer_name}`. **Leave blank for local development.** |
 
 
+#### Twilio Message Template
+
+By default, when the app starts, a command is executed to fetch the Twilio message templates. This command generates a JSON file located in the `./sources` folder. The purpose of this file is to minimize Twilio API calls when saving message templates into our database as part of the chat history.
+
+One important consideration is that if you update the message template in the Twilio Console, you must also update the **Message Template ID** environment variable to match the new template ID in the Twilio Console > Content Template Builder. After updating the environment variable, run the following command inside the backend container to refresh the JSON file:
+
+```bash
+python -m command.get_twilio_message_template
+```
+
+
 ### Slack Channel
 
 Slack is one of the messaging platforms that can be used to chat with Rag Doll.

@@ -67,6 +67,7 @@ const Chats = () => {
   useEffect(() => {
     const handleConnect = async () => {
       console.info("FE Connected");
+      // resend undelivered message to backend
       const messages = await dbLib.messages.getAll();
       messages.forEach(async ({ id, message }) => {
         try {

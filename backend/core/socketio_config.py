@@ -163,9 +163,6 @@ async def save_chat_history(
             and send_conversation_reconnect_template
         ):
             # user/officer message mark as READ
-            # TODO ::
-            # new_chat_status = Chat_Status_Enum.AWAITING_USER_REPLY
-
             # get message template ID
             content_sid = os.getenv(
                 f"CONVERSATION_RECONNECT_TEMPLATE_{message_template_lang}"
@@ -561,12 +558,7 @@ async def user_to_client(body: str):
         send_conversation_reconnect_template = res.get(  # noqa
             "send_conversation_reconnect_template"
         )
-    if (
-        platform
-        == Platform_Enum.WHATSAPP.value
-        # TODO ::
-        # and not send_conversation_reconnect_template
-    ):
+    if platform == Platform_Enum.WHATSAPP.value:
         await twilio_client.send_whatsapp_message(body=body)
     if platform == Platform_Enum.SLACK.value:
         await slackbot_client.send_message(body=body)

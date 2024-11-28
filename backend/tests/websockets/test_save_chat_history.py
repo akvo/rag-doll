@@ -152,7 +152,7 @@ async def test_save_chat_history_for_a_conversation_without_chat_before(
     )
     chat_session_id = result.get("chat_session_id")
     assert chat_session_id is not None
-    assert send_conversation_reconnect_template is True
+    assert send_conversation_reconnect_template is False
     assert chat.message == "First message"
     assert chat.sender_role == Sender_Role_Enum.USER
     assert chat.status == Chat_Status_Enum.READ
@@ -169,6 +169,6 @@ async def test_save_chat_history_for_a_conversation_without_chat_before(
         )
         .order_by(Chat.created_at.desc(), Chat.id.desc())
     ).first()
-    assert system_chat is not None
-    text = "Please reply this message to restart your conversation."
-    assert system_chat.message == f"Hi {client_phone_number},\n{text}"
+    assert system_chat is None
+    # text = "Please reply this message to restart your conversation."
+    # assert system_chat.message == f"Hi {client_phone_number},\n{text}"

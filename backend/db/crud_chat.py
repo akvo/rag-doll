@@ -29,6 +29,6 @@ def check_24h_window(session: Session, chat_session_id: int):
         return True
     # add UTC format to created_at
     time_diff = current_time - last_message.created_at.replace(tzinfo=tz)
-    if time_diff >= timedelta(hours=24):
+    if time_diff > timedelta(hours=24):
         return True
     return False

@@ -200,6 +200,22 @@ const Chats = () => {
     };
   }, [clients, clientPhoneNumber]);
 
+  // Handle add or update lastMessage for check 24hr window
+  // if the opened window is ChatWindow
+  useEffect(() => {
+    if (clientPhoneNumber) {
+      newMessage
+        .filter((nm) => nm.conversation_envelope.sender_role === "client")
+        .forEach(async (nm) => {
+          await dbLib.lastMessage.addOrUpdate({
+            chat_session_id: nm.conversation_envelope.chat_session_id,
+            sender_role: nm.conversation_envelope.sender_role,
+            created_at: nm.conversation_envelope.timestamp,
+          });
+        });
+    }
+  }, [clientPhoneNumber, newMessage]);
+
   // Handle click notification
   const handleOnClickNotification = (sender) => {
     const selectedClient = clients.find((c) => c.phone_number === sender);

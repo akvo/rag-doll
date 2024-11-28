@@ -18,7 +18,10 @@ router = APIRouter()
 security = HTTPBearer()
 
 webdomain = environ.get("WEBDOMAIN")
-MAGIC_LINK_CHAT_TEMPLATE = environ.get("MAGIC_LINK_CHAT_TEMPLATE")
+MAGIC_LINK_CHAT_TEMPLATE = environ.get(
+    "MAGIC_LINK_CHAT_TEMPLATE",
+    "You can login into Agriconnect by clicking this link: {magic_link}",
+)
 
 twilio_client = TwilioClient()
 

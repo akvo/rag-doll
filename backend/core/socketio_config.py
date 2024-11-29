@@ -158,6 +158,9 @@ async def save_chat_history(
             session=session, chat_session_id=conversation_exist.id
         )
         # Send conversation reconnect template if beyond 24hr
+        send_conversation_reconnect_template = (
+            False  # TODO:: remove this later
+        )
         if (
             platform == Platform_Enum.WHATSAPP.value
             and send_conversation_reconnect_template

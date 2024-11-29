@@ -1,4 +1,4 @@
-openai==1.51.2
+openai==1.55.3
 pandas==2.2.2
 chromadb==0.5.5
 nltk==3.9.1

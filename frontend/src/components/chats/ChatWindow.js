@@ -312,7 +312,7 @@ const ChatWindow = ({
         setConversationTimeout({
           // If no message has yet been sent after 24 hours then on load the UI should communicate that you can only send one message
           sendConversationReconnectTemplate:
-            isClientMessageBeyond24hr && !client_message_timestamp,
+            isClientMessageBeyond24hr && !user_message_timestamp,
           // Disable the input if > 24 hours since last farmer(client) message AND there is one message sent (user) after 24 hours.
           disableMessageInput:
             isClientMessageBeyond24hr && user_message_timestamp,

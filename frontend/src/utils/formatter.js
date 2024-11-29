@@ -80,3 +80,16 @@ export const trimMessage = (text, maxLength = 80) => {
   }
   return text;
 };
+
+export const check24hrWindow = (timeString) => {
+  if (!timeString) {
+    return false;
+  }
+  const tz = timeString && timeString.includes("+00:00") ? "" : "+00:00";
+  const date = new Date(`${timeString}${tz}`);
+  const now = new Date();
+  console.log({ date, now }, "XXX");
+  const diffInMilliseconds = now - date;
+  const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
+  return diffInHours < 24;
+};

@@ -1,7 +1,7 @@
 import Dexie from "dexie";
 
 const DATABASE_NAME = "agriconnect";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const db = new Dexie(DATABASE_NAME);
 
 db.version(DATABASE_VERSION).stores({
@@ -11,7 +11,8 @@ db.version(DATABASE_VERSION).stores({
 
   // Table to store the last received message timestamp from farmers to officers
   // for a 24-hour window.
-  lastMessage: "++id, chat_session_id, sender_role, created_at",
+  lastMessageTimestamp:
+    "client_phone_number, chat_session_id, user_message_timestamp, client_message_timestamp",
 });
 
 const dbInstance = () => {
@@ -36,34 +37,53 @@ const dbInstance = () => {
         await db.messages.delete(id);
       },
     },
-    lastMessage: {
-      addOrUpdate: async ({ chat_session_id, sender_role, created_at }) => {
-        const lastMessage = await db.lastMessage
-          .where("chat_session_id")
-          .equals(chat_session_id)
-          .first();
+    lastMessageTimestamp: {
+      addOrUpdate: async ({
+        client_phone_number,
+        chat_session_id,
+        sender_role,
+        created_at,
+      }) => {
+        const lastMessage = await db.lastMessageTimestamp.get(
+          client_phone_number
+        );
+
+        let value = {
+          user_message_timestamp: lastMessage?.user_message_timestamp || null,
+          client_message_timestamp:
+            lastMessage?.client_message_timestamp || null,
+        };
+        if (sender_role === "user") {
+          value = {
+            ...value,
+            user_message_timestamp: created_at,
+          };
+        }
+        if (sender_role === "client") {
+          value = {
+            ...value,
+            client_message_timestamp: created_at,
+          };
+        }
         if (lastMessage) {
           // Update the existing last message
-          const res = await db.lastMessage.update(lastMessage.id, {
-            sender_role,
-            created_at,
-          });
+          const res = await db.lastMessageTimestamp.update(
+            lastMessage.client_phone_number,
+            { ...value }
+          );
           return res; // returns the number of records updated (1 if successful)
         } else {
           // Add a new last message
-          const res = await db.lastMessage.add({
+          const res = await db.lastMessageTimestamp.add({
+            client_phone_number,
             chat_session_id,
-            sender_role,
-            created_at,
+            ...value,
           });
           return res; // returns the id of the newly added record
         }
       },
-      getByChatSessionId: async (chat_session_id) => {
-        return await db.lastMessage
-          .where("chat_session_id")
-          .equals(chat_session_id)
-          .first();
+      getByClientPhoneNumber: async (client_phone_number) => {
+        return await db.lastMessageTimestamp.get(client_phone_number);
       },
     },
   };

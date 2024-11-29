@@ -14,6 +14,8 @@ import { PhotoIcon } from "@/utils/icons";
 
 const SHOW_IN_APP_NOTIFICATION = false;
 
+const LAST_MESSAGE_SENDER_ROLE = ["user", "client"];
+
 export const renderTextForMediaMessage = ({ type = "" }) => {
   const mediaType = type?.split("/")?.[0];
   switch (mediaType) {
@@ -205,10 +207,16 @@ const Chats = () => {
   useEffect(() => {
     if (clientPhoneNumber) {
       newMessage
-        .filter((nm) => nm.conversation_envelope.sender_role === "client")
+        .filter((nm) =>
+          LAST_MESSAGE_SENDER_ROLE.includes(
+            nm.conversation_envelope.sender_role
+          )
+        )
         .forEach(async (nm) => {
-          await dbLib.lastMessage.addOrUpdate({
+          // add or update lastMessage
+          await dbLib.lastMessageTimestamp.addOrUpdate({
             chat_session_id: nm.conversation_envelope.chat_session_id,
+            client_phone_number: nm.conversation_envelope.client_phone_number,
             sender_role: nm.conversation_envelope.sender_role,
             created_at: nm.conversation_envelope.timestamp,
           });
@@ -217,7 +225,7 @@ const Chats = () => {
   }, [clientPhoneNumber, newMessage]);
 
   // Handle click notification
-  const handleOnClickNotification = (sender) => {
+  const handleOnClickNotification = ({ sender }) => {
     const selectedClient = clients.find((c) => c.phone_number === sender);
     if (selectedClient) {
       chatDispatch({
@@ -322,6 +330,7 @@ const Chats = () => {
           setClients={setClients}
           reloadChatList={reloadChatList}
           setReloadChatList={setReloadChatList}
+          LAST_MESSAGE_SENDER_ROLE={LAST_MESSAGE_SENDER_ROLE}
         />
       )}
     </div>

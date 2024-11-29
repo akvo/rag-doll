@@ -12,7 +12,11 @@ import { useChatContext, useChatDispatch } from "@/context/ChatContextProvider";
 import { useAuthDispatch } from "@/context/AuthContextProvider";
 import { useUserDispatch } from "@/context/UserContextProvider";
 import { socket, api, dbLib } from "@/lib";
-import { formatChatTime, generateMessage } from "@/utils/formatter";
+import {
+  formatChatTime,
+  generateMessage,
+  check24hrWindow,
+} from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -149,6 +153,10 @@ const ChatWindow = ({
 
   const [showNotification, setShowNotification] = useState(false);
   const [notificationContent, setNotificationContent] = useState("");
+  const [conversationTimeout, setConversationTimeout] = useState({
+    sendConversationReconnectTemplate: false,
+    disableMessageInput: false,
+  });
 
   const handleShowNotification = () => {
     setShowNotification(true);
@@ -290,6 +298,32 @@ const ChatWindow = ({
     setClients,
   ]);
 
+  // handle check the conversation timeout
+  useEffect(() => {
+    const getLastMessage = async () => {
+      const res = await dbLib.lastMessageTimestamp.getByClientPhoneNumber(
+        clientPhoneNumber
+      );
+      if (res) {
+        const { user_message_timestamp, client_message_timestamp } = res;
+        const isClientMessageBeyond24hr = check24hrWindow(
+          client_message_timestamp
+        );
+        setConversationTimeout({
+          // If no message has yet been sent after 24 hours then on load the UI should communicate that you can only send one message
+          sendConversationReconnectTemplate:
+            isClientMessageBeyond24hr && !client_message_timestamp,
+          // Disable the input if > 24 hours since last farmer(client) message AND there is one message sent (user) after 24 hours.
+          disableMessageInput:
+            isClientMessageBeyond24hr && user_message_timestamp,
+        });
+      }
+    };
+    getLastMessage();
+  }, [chats, clientPhoneNumber]);
+  // TODO :: use this state to show notification and disable input
+  console.log(conversationTimeout);
+
   const lastChatHistory = useMemo(() => {
     if (chatHistory?.length) {
       return chatHistory.slice(-1)[0];
@@ -393,6 +427,14 @@ const ChatWindow = ({
           handleLostMessage(chatPayload);
           console.info(`Socket status: ${socket.connected}`);
         }
+        // add or update lastMessage
+        await dbLib.lastMessageTimestamp.addOrUpdate({
+          chat_session_id: chatPayload.conversation_envelope.chat_session_id,
+          client_phone_number:
+            chatPayload.conversation_envelope.client_phone_number,
+          sender_role: chatPayload.conversation_envelope.sender_role,
+          created_at: chatPayload.conversation_envelope.timestamp,
+        });
       } catch (err) {
         handleLostMessage(chatPayload);
         console.error(`Failed send message: ${JSON.stringify(err)}`);

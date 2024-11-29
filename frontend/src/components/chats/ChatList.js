@@ -22,6 +22,7 @@ const ChatList = ({
   setClients,
   reloadChatList,
   setReloadChatList,
+  LAST_MESSAGE_SENDER_ROLE,
 }) => {
   const router = useRouter();
   const userDispatch = useUserDispatch();
@@ -227,15 +228,17 @@ const ChatList = ({
     chatItems.chats
       .filter((c) => c.last_message) // only has last message
       .forEach(async (item) => {
-        if (item.last_message.sender_role === "client") {
-          await dbLib.lastMessage.addOrUpdate({
+        if (LAST_MESSAGE_SENDER_ROLE.includes(item.last_message.sender_role)) {
+          // add or update lastMessage
+          await dbLib.lastMessageTimestamp.addOrUpdate({
             chat_session_id: item.last_message.chat_session_id,
+            client_phone_number: item.chat_session.phone_number,
             sender_role: item.last_message.sender_role,
             created_at: item.last_message.created_at,
           });
         }
       });
-  }, [chatItems]);
+  }, [chatItems, LAST_MESSAGE_SENDER_ROLE]);
 
   return (
     <div className="w-full h-screen bg-white overflow-y-scroll flex-shrink-0">

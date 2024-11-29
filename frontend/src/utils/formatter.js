@@ -83,13 +83,19 @@ export const trimMessage = (text, maxLength = 80) => {
 
 export const check24hrWindow = (timeString) => {
   if (!timeString) {
-    return false;
+    return {
+      timeDiff: 0,
+      isBeyond24hr: false,
+    };
   }
   const tz = timeString && timeString.includes("+00:00") ? "" : "+00:00";
   const date = new Date(`${timeString}${tz}`);
   const now = new Date();
-  console.log({ date, now }, "XXX");
   const diffInMilliseconds = now - date;
   const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
-  return diffInHours < 24;
+  const diffInMinutes = diffInMilliseconds / (1000 * 60);
+  return {
+    timeDiff: diffInMinutes,
+    isBeyond24hr: diffInMinutes > 5,
+  };
 };

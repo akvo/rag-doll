@@ -299,28 +299,40 @@ const ChatWindow = ({
   ]);
 
   // handle check the conversation timeout
-  useEffect(() => {
-    const getLastMessage = async () => {
-      const res = await dbLib.lastMessageTimestamp.getByClientPhoneNumber(
-        clientPhoneNumber
+  const getLastMessage = useCallback(async () => {
+    const res = await dbLib.lastMessageTimestamp.getByClientPhoneNumber(
+      clientPhoneNumber
+    );
+    if (res) {
+      const { user_message_timestamp, client_message_timestamp } = res;
+      const {
+        isBeyond24hr: isClientMessageBeyond24hr,
+        timeDiff: clientTimeDiff,
+      } = check24hrWindow(client_message_timestamp);
+      const { timeDiff: userTimeDiff } = check24hrWindow(
+        user_message_timestamp
       );
-      if (res) {
-        const { user_message_timestamp, client_message_timestamp } = res;
-        const isClientMessageBeyond24hr = check24hrWindow(
-          client_message_timestamp
-        );
-        setConversationTimeout({
-          // If no message has yet been sent after 24 hours then on load the UI should communicate that you can only send one message
-          sendConversationReconnectTemplate:
-            isClientMessageBeyond24hr && !user_message_timestamp,
-          // Disable the input if > 24 hours since last farmer(client) message AND there is one message sent (user) after 24 hours.
-          disableMessageInput:
-            isClientMessageBeyond24hr && user_message_timestamp,
-        });
-      }
-    };
+      console.log(clientTimeDiff, userTimeDiff);
+      setConversationTimeout({
+        // If no message has yet been sent after 24 hours then on load the UI should communicate that you can only send one message
+        sendConversationReconnectTemplate:
+          isClientMessageBeyond24hr && clientTimeDiff < userTimeDiff,
+        // Disable the input if > 24 hours since last farmer(client) message AND there is one message sent (user) after 24 hours.
+        disableMessageInput:
+          isClientMessageBeyond24hr && userTimeDiff < clientTimeDiff,
+      });
+    }
+  }, [clientPhoneNumber]);
+
+  useEffect(() => {
     getLastMessage();
-  }, [chats, clientPhoneNumber]);
+    // Set up the interval
+    const intervalId = setInterval(getLastMessage, 10000); // Pass the function reference, don't call it
+    // Cleanup function to clear the interval
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [getLastMessage]);
   // TODO :: use this state to show notification and disable input
   console.log(conversationTimeout);
 

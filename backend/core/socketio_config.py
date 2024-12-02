@@ -313,11 +313,37 @@ def check_conversation_exist_and_generate_queue_message(
     return conversation_exist
 
 
+async def handle_send_initial_message(
+    session: Session, chat_session_id: int, user: User, client: Client
+):
+    """Helper function to send the initial message"""
+    client_name = (
+        client.properties.name if client.properties else client.phone_number
+    )
+    user_name = user.properties.name if user.properties else user.phone_number
+    initial_message = INITIAL_CHAT_TEMPLATE.format(
+        farmer_name=client_name, officer_name=user_name
+    )
+
+    new_chat = Chat(
+        chat_session_id=chat_session_id,
+        message=initial_message,
+        sender_role=Sender_Role_Enum.SYSTEM,
+        created_at=datetime.now(tz),
+    )
+    session.add(new_chat)
+    session.commit()
+
+    if not os.getenv("TESTING"):
+        await twilio_client.whatsapp_message_create(
+            to=client.phone_number, body=initial_message
+        )
+
+
 async def handle_incoming_message(session: Session, message: dict):
     conversation_envelope = get_value_or_raise_error(
         message, "conversation_envelope"
     )
-
     client_phone_number = get_value_or_raise_error(
         conversation_envelope, "client_phone_number"
     )
@@ -325,7 +351,6 @@ async def handle_incoming_message(session: Session, message: dict):
         conversation_envelope, "sender_role"
     )
     platform = get_value_or_raise_error(conversation_envelope, "platform")
-
     media = get_value_or_raise_error(message, "media")
 
     prev_conversation_exist = session.exec(
@@ -334,18 +359,16 @@ async def handle_incoming_message(session: Session, message: dict):
         .where(Client.phone_number == client_phone_number)
     ).first()
 
-    send_initial_message = False
+    send_initial_template = False
     if not prev_conversation_exist:
-        send_initial_message = True
-        user = session.exec(select(User).order_by(User.id)).first()
+        send_initial_template = True
 
-        curr_client = session.exec(
+        user = session.exec(select(User).order_by(User.id)).first()
+        client = session.exec(
             select(Client).where(Client.phone_number == client_phone_number)
         ).first()
 
-        if curr_client:
-            client = curr_client
-        else:
+        if not client:
             client = Client(
                 phone_number=int(
                     "".join(filter(str.isdigit, client_phone_number))
@@ -363,9 +386,8 @@ async def handle_incoming_message(session: Session, message: dict):
         session.commit()
 
         chat_session_id = new_chat_session.id
-        session.flush()
+
     else:
-        send_initial_message = False
         user = prev_conversation_exist.user
         client = prev_conversation_exist.client
         chat_session_id = prev_conversation_exist.id
@@ -373,43 +395,28 @@ async def handle_incoming_message(session: Session, message: dict):
     new_chat = Chat(
         chat_session_id=chat_session_id,
         message=get_value_or_raise_error(message, "body"),
-        sender_role=(Sender_Role_Enum[sender_role.upper()]),
+        sender_role=Sender_Role_Enum[sender_role.upper()],
         created_at=datetime.now(tz),
     )
     session.add(new_chat)
     session.commit()
 
-    # handle media
+    # Handle media
     if media:
         add_media(session=session, chat=new_chat, media=media)
-    # eol handle media
 
-    # send & save initial message into chat table
-    client_name = (
-        client.properties.name if client.properties else client.phone_number
-    )
-    if send_initial_message:
-        user_name = (
-            user.properties.name if user.properties else user.phone_number
+    # Handle initial message
+    if platform == Platform_Enum.WHATSAPP.value and send_initial_template:
+        await handle_send_initial_message(
+            session, chat_session_id, user, client
         )
-        initial_message = INITIAL_CHAT_TEMPLATE.format(
-            farmer_name=client_name, officer_name=user_name
-        )
-        new_chat = Chat(
-            chat_session_id=chat_session_id,
-            message=initial_message,
-            sender_role=Sender_Role_Enum.SYSTEM,
-            created_at=datetime.now(tz),
-        )
-        session.add(new_chat)
-        session.commit()
-        if not os.getenv("TESTING"):
-            await twilio_client.whatsapp_message_create(
-                to=client.phone_number, body=initial_message
-            )
+
     session.flush()
 
     user = user.serialize()
+    client_name = (
+        client.properties.name if client.properties else client.phone_number
+    )
     return (
         user["id"],
         user["phone_number"],

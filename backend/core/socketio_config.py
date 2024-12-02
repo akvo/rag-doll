@@ -149,6 +149,7 @@ async def save_chat_history(
 
         # user/officer message mark as READ
         new_chat_status = Chat_Status_Enum.READ
+        final_message_body = message_body
 
         # get message template lang
         message_template_lang = generate_message_template_lang_by_phone_number(
@@ -158,9 +159,6 @@ async def save_chat_history(
             session=session, chat_session_id=conversation_exist.id
         )
         # Send conversation reconnect template if beyond 24hr
-        send_conversation_reconnect_template = (
-            False  # TODO:: remove this later
-        )
         if (
             platform == Platform_Enum.WHATSAPP.value
             and send_conversation_reconnect_template
@@ -187,22 +185,23 @@ async def save_chat_history(
             template_content = get_template_content_from_json(
                 content_sid=content_sid
             )
+            clean_message_body = message_body.replace("\n", " ")
             conversation_reconnect_message = f"Hi {client_name},\n"
-            conversation_reconnect_message += "Please reply this message"
+            conversation_reconnect_message += "Here's a message for you: "
+            conversation_reconnect_message += clean_message_body
+            conversation_reconnect_message += "\nPlease reply this message"
             conversation_reconnect_message += " to restart your conversation."
             if template_content and not TESTING:
                 conversation_reconnect_message = template_content.replace(
                     "{{1}}", client_name
                 )
-            system_chat = Chat(
-                chat_session_id=conversation_exist.id,
-                message=conversation_reconnect_message,
-                sender_role=Sender_Role_Enum.SYSTEM,
-                status=Chat_Status_Enum.READ,
-                created_at=created_at,
-            )
-            session.add(system_chat)
-            session.commit()
+                conversation_reconnect_message = (
+                    conversation_reconnect_message.replace(
+                        "{{2}}", clean_message_body
+                    )
+                )
+            final_message_body = conversation_reconnect_message
+
             # send
             if content_sid and not TESTING:
                 await twilio_client.whatsapp_message_template_create(
@@ -217,7 +216,7 @@ async def save_chat_history(
         )
         new_chat = Chat(
             chat_session_id=conversation_exist.id,
-            message=message_body,
+            message=final_message_body,
             sender_role=Sender_Role_Enum[sender_role.upper()],
             status=new_chat_status,
             created_at=created_at,
@@ -561,7 +560,10 @@ async def user_to_client(body: str):
         send_conversation_reconnect_template = res.get(  # noqa
             "send_conversation_reconnect_template"
         )
-    if platform == Platform_Enum.WHATSAPP.value:
+    if (
+        platform == Platform_Enum.WHATSAPP.value
+        and not send_conversation_reconnect_template
+    ):
         await twilio_client.send_whatsapp_message(body=body)
     if platform == Platform_Enum.SLACK.value:
         await slackbot_client.send_message(body=body)

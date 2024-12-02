@@ -107,8 +107,8 @@ async def save_chat_history(
     message_body: str,
     media: Optional[List[dict]] = [],
 ):
-    TESTING = os.getenv("TESTING")
     try:
+        # Extract necessary values from the conversation envelope
         user_phone_number = get_value_or_raise_error(
             conversation_envelope, "user_phone_number"
         )
@@ -120,19 +120,10 @@ async def save_chat_history(
         )
         platform = get_value_or_raise_error(conversation_envelope, "platform")
 
-        # If timestamp is provided, parse it
-        if timestamp:
-            created_at = datetime.fromisoformat(timestamp)
-            # Ensure the datetime is in UTC
-            if created_at.tzinfo is not None:
-                created_at = created_at.astimezone(pytz.utc)
-            else:
-                created_at = created_at.replace(tzinfo=pytz.utc)
-        else:
-            # If timestamp is not provided,
-            # it will default to current UTC time in the model
-            created_at = datetime.now(tz)  # Let the model handle the default
+        # Parse the timestamp or default to current UTC time
+        created_at = parse_timestamp_or_default(timestamp)
 
+        # Check if the conversation already exists
         conversation_exist = session.exec(
             select(Chat_Session)
             .join(User)
@@ -144,73 +135,34 @@ async def save_chat_history(
         ).first()
 
         if not conversation_exist:
-            # TODO :: handle this correctly
+            # TODO :: Handle missing conversation appropriately
             return None
 
-        # user/officer message mark as READ
+        # Default settings for new chat
         new_chat_status = Chat_Status_Enum.READ
         final_message_body = message_body
 
-        # get message template lang
+        # Determine the message template language
         message_template_lang = generate_message_template_lang_by_phone_number(
-            phone_number=client_phone_number
+            client_phone_number
         )
         send_conversation_reconnect_template = check_24h_window(
-            session=session, chat_session_id=conversation_exist.id
+            session, conversation_exist.id
         )
-        # Send conversation reconnect template if beyond 24hr
+
+        # Handle conversation reconnect logic if beyond 24 hours
         if (
             platform == Platform_Enum.WHATSAPP.value
             and send_conversation_reconnect_template
         ):
-            # user/officer message mark as READ
-            # get message template ID
-            content_sid = os.getenv(
-                f"CONVERSATION_RECONNECT_TEMPLATE_{message_template_lang}"
+            final_message_body = await handle_conversation_reconnect(
+                session,
+                client_phone_number,
+                message_body,
+                message_template_lang,
             )
-            # send conversation reconnect template
-            client = session.exec(
-                select(Client).where(
-                    Client.phone_number == client_phone_number
-                )
-            ).first()
-            # farmer name
-            client_name = (
-                client.properties.name
-                if client and client.properties
-                else client_phone_number
-            )
-            # save conversation reconnect template chat to database
-            # get message template from twilio
-            template_content = get_template_content_from_json(
-                content_sid=content_sid
-            )
-            clean_message_body = message_body.replace("\n", " ")
-            conversation_reconnect_message = f"Hi {client_name},\n"
-            conversation_reconnect_message += "Here's a message for you: "
-            conversation_reconnect_message += clean_message_body
-            conversation_reconnect_message += "\nPlease reply this message"
-            conversation_reconnect_message += " to restart your conversation."
-            if template_content and not TESTING:
-                conversation_reconnect_message = template_content.replace(
-                    "{{1}}", client_name
-                )
-                conversation_reconnect_message = (
-                    conversation_reconnect_message.replace(
-                        "{{2}}", clean_message_body
-                    )
-                )
-            final_message_body = conversation_reconnect_message
 
-            # send
-            if content_sid and not TESTING:
-                await twilio_client.whatsapp_message_template_create(
-                    to=client_phone_number,
-                    content_variables={"1": client_name},
-                    content_sid=content_sid,
-                )
-
-        # save user/client chat to database
+        # Save the new chat message to the database
         sender_role = get_value_or_raise_error(
             conversation_envelope, "sender_role"
         )
@@ -224,10 +176,9 @@ async def save_chat_history(
         session.add(new_chat)
         session.commit()
 
-        # handle media
+        # Handle any associated media
         if media:
             add_media(session=session, chat=new_chat, media=media)
-        # eol handle media
 
         session.flush()
 
@@ -243,6 +194,64 @@ async def save_chat_history(
         raise e
     finally:
         session.close()
+
+
+def parse_timestamp_or_default(timestamp: Optional[str]) -> datetime:
+    """Parse the timestamp or return the current UTC time."""
+    if timestamp:
+        created_at = datetime.fromisoformat(timestamp)
+        if created_at.tzinfo is not None:
+            created_at = created_at.astimezone(pytz.utc)
+        else:
+            created_at = created_at.replace(tzinfo=pytz.utc)
+    else:
+        created_at = datetime.now(pytz.utc)
+    return created_at
+
+
+async def handle_conversation_reconnect(
+    session: Session,
+    client_phone_number: str,
+    message_body: str,
+    message_template_lang: str,
+) -> str:
+    """Handle the logic for sending a conversation reconnect template."""
+    TESTING = os.getenv("TESTING")
+    content_sid = os.getenv(
+        f"CONVERSATION_RECONNECT_TEMPLATE_{message_template_lang}"
+    )
+    client = session.exec(
+        select(Client).where(Client.phone_number == client_phone_number)
+    ).first()
+    client_name = (
+        client.properties.name
+        if client and client.properties
+        else client_phone_number
+    )
+
+    clean_message_body = message_body.replace("\n", " ")
+    conversation_reconnect_message = f"Hi {client_name},\n"
+    conversation_reconnect_message += "Here's a message for you: "
+    conversation_reconnect_message += clean_message_body
+    conversation_reconnect_message += (
+        "\nPlease reply to this message to restart your conversation."
+    )
+
+    if content_sid and not TESTING:
+        template_content = get_template_content_from_json(
+            content_sid=content_sid
+        )
+        if template_content:
+            conversation_reconnect_message = template_content.replace(
+                "{{1}}", client_name
+            ).replace("{{2}}", clean_message_body)
+            await twilio_client.whatsapp_message_template_create(
+                to=client_phone_number,
+                content_variables={"1": client_name},
+                content_sid=content_sid,
+            )
+
+    return conversation_reconnect_message
 
 
 def check_conversation_exist_and_generate_queue_message(

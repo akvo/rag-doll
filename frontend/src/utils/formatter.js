@@ -93,9 +93,9 @@ export const check24hrWindow = (timeString) => {
   const now = new Date();
   const diffInMilliseconds = now - date;
   const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
-  const diffInMinutes = diffInMilliseconds / (1000 * 60);
+  // const diffInMinutes = diffInMilliseconds / (1000 * 60);
   return {
-    timeDiff: diffInMinutes,
-    isBeyond24hr: diffInMinutes > 5,
+    timeDiff: diffInHours,
+    isBeyond24hr: diffInHours >= 24,
   };
 };

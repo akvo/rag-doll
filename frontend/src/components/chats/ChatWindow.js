@@ -43,6 +43,11 @@ export const ChatStatusEnum = {
 };
 
 const ChatIDPrefix = "CHAT-";
+const CHECK_24_HR_INTERVAL = 10000; // in miliseconds
+const conversationReconnectInformation =
+  "Because the last message was more than 24 hours ago please include everything you want to say in your next message. You will not be able to send any further message until the farmer replies.";
+const disableMessageInputInformation =
+  "Your message has been sent to the farmer but in order to continue the conversation they must reply first.";
 
 const UserChat = forwardRef(({ message, timestamp, refTemp }, ref) => {
   return (
@@ -120,6 +125,13 @@ const BroadcastChat = forwardRef(({ message, timestamp, refTemp }, ref) => (
   </div>
 ));
 BroadcastChat.displayName = "BroadcastChat";
+
+const UserInformation = forwardRef(({ content, refTemp }, ref) => (
+  <div className="flex mb-4 justify-center" ref={refTemp}>
+    <div className="relative p-4 w-full text-sm text-center">{content}</div>
+  </div>
+));
+UserInformation.displayName = "UserInformation";
 
 const ChatWindow = ({
   chats,
@@ -312,29 +324,34 @@ const ChatWindow = ({
       const { timeDiff: userTimeDiff } = check24hrWindow(
         user_message_timestamp
       );
-      console.log(clientTimeDiff, userTimeDiff);
       setConversationTimeout({
         // If no message has yet been sent after 24 hours then on load the UI should communicate that you can only send one message
-        sendConversationReconnectTemplate:
-          isClientMessageBeyond24hr && clientTimeDiff < userTimeDiff,
+        sendConversationReconnectTemplate: Boolean(userTimeDiff)
+          ? isClientMessageBeyond24hr && clientTimeDiff < userTimeDiff
+          : isClientMessageBeyond24hr,
         // Disable the input if > 24 hours since last farmer(client) message AND there is one message sent (user) after 24 hours.
-        disableMessageInput:
-          isClientMessageBeyond24hr && userTimeDiff < clientTimeDiff,
+        disableMessageInput: Boolean(userTimeDiff)
+          ? isClientMessageBeyond24hr && userTimeDiff < clientTimeDiff
+          : false,
       });
+      scrollToLastMessage();
     }
   }, [clientPhoneNumber]);
 
   useEffect(() => {
-    getLastMessage();
     // Set up the interval
-    const intervalId = setInterval(getLastMessage, 10000); // Pass the function reference, don't call it
+    const intervalId = setInterval(getLastMessage, CHECK_24_HR_INTERVAL); // Pass the function reference, don't call it
     // Cleanup function to clear the interval
     return () => {
       clearInterval(intervalId);
     };
   }, [getLastMessage]);
-  // TODO :: use this state to show notification and disable input
-  console.log(conversationTimeout);
+
+  useEffect(() => {
+    setTimeout(() => {
+      getLastMessage();
+    }, 1000);
+  }, [chats]);
 
   const lastChatHistory = useMemo(() => {
     if (chatHistory?.length) {
@@ -447,6 +464,8 @@ const ChatWindow = ({
           sender_role: chatPayload.conversation_envelope.sender_role,
           created_at: chatPayload.conversation_envelope.timestamp,
         });
+        // update conversationTimeout state by run getLastMessage fn
+        getLastMessage();
       } catch (err) {
         handleLostMessage(chatPayload);
         console.error(`Failed send message: ${JSON.stringify(err)}`);
@@ -653,6 +672,22 @@ const ChatWindow = ({
                 >
                   {renderChatHistory}
                   {renderChats}
+                  {conversationTimeout.sendConversationReconnectTemplate ? (
+                    <UserInformation
+                      content={conversationReconnectInformation}
+                      refTemp={lastMessageRef}
+                    />
+                  ) : (
+                    ""
+                  )}
+                  {conversationTimeout.disableMessageInput ? (
+                    <UserInformation
+                      content={disableMessageInputInformation}
+                      refTemp={lastMessageRef}
+                    />
+                  ) : (
+                    ""
+                  )}
                 </div>
                 {/* AI Messages */}
                 <Whisper
@@ -682,10 +717,16 @@ const ChatWindow = ({
               placeholder="Type a message..."
               className="w-full px-4 py-2 border rounded-lg resize-none overflow-auto tex-md"
               rows={1}
+              disabled={conversationTimeout.disableMessageInput}
             />
             <button
               onClick={handleSend}
-              className="ml-4 bg-akvo-green hover:bg-green-700 text-white p-3 rounded-full focus:outline-none"
+              className={`ml-4 ${
+                conversationTimeout.disableMessageInput
+                  ? "bg-gray-500"
+                  : "bg-akvo-green hover:bg-green-700"
+              } text-white p-3 rounded-full focus:outline-none`}
+              disabled={conversationTimeout.disableMessageInput}
             >
               <SendIcon />
             </button>

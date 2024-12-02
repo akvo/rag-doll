@@ -21,7 +21,9 @@ def check_24h_window(session: Session, chat_session_id: int):
         select(Chat)
         .where(Chat.chat_session_id == chat_session_id)
         .where(
-            Chat.sender_role != Sender_Role_Enum.ASSISTANT,
+            # only chat from client/farmer will be calculated
+            Chat.sender_role
+            == Sender_Role_Enum.CLIENT,
         )
         .order_by(Chat.created_at.desc(), Chat.id.desc())
     ).first()

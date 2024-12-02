@@ -14,6 +14,8 @@ import { PhotoIcon } from "@/utils/icons";
 
 const SHOW_IN_APP_NOTIFICATION = false;
 
+const LAST_MESSAGE_SENDER_ROLE = ["user", "client"];
+
 export const renderTextForMediaMessage = ({ type = "" }) => {
   const mediaType = type?.split("/")?.[0];
   switch (mediaType) {
@@ -67,6 +69,7 @@ const Chats = () => {
   useEffect(() => {
     const handleConnect = async () => {
       console.info("FE Connected");
+      // resend undelivered message to backend
       const messages = await dbLib.messages.getAll();
       messages.forEach(async ({ id, message }) => {
         try {
@@ -199,8 +202,30 @@ const Chats = () => {
     };
   }, [clients, clientPhoneNumber]);
 
+  // Handle add or update lastMessage for check 24hr window
+  // if the opened window is ChatWindow
+  useEffect(() => {
+    if (clientPhoneNumber) {
+      newMessage
+        .filter((nm) =>
+          LAST_MESSAGE_SENDER_ROLE.includes(
+            nm.conversation_envelope.sender_role
+          )
+        )
+        .forEach(async (nm) => {
+          // add or update lastMessage
+          await dbLib.lastMessageTimestamp.addOrUpdate({
+            chat_session_id: nm.conversation_envelope.chat_session_id,
+            client_phone_number: nm.conversation_envelope.client_phone_number,
+            sender_role: nm.conversation_envelope.sender_role,
+            created_at: nm.conversation_envelope.timestamp,
+          });
+        });
+    }
+  }, [clientPhoneNumber, newMessage]);
+
   // Handle click notification
-  const handleOnClickNotification = (sender) => {
+  const handleOnClickNotification = ({ sender }) => {
     const selectedClient = clients.find((c) => c.phone_number === sender);
     if (selectedClient) {
       chatDispatch({
@@ -305,6 +330,7 @@ const Chats = () => {
           setClients={setClients}
           reloadChatList={reloadChatList}
           setReloadChatList={setReloadChatList}
+          LAST_MESSAGE_SENDER_ROLE={LAST_MESSAGE_SENDER_ROLE}
         />
       )}
     </div>

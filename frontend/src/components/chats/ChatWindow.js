@@ -336,7 +336,7 @@ const ChatWindow = ({
       });
       scrollToLastMessage();
     }
-  }, [clientPhoneNumber]);
+  }, [clientPhoneNumber, scrollToLastMessage]);
 
   useEffect(() => {
     // Set up the interval
@@ -351,7 +351,7 @@ const ChatWindow = ({
     setTimeout(() => {
       getLastMessage();
     }, 1000);
-  }, [chats]);
+  }, [chats, getLastMessage]);
 
   const lastChatHistory = useMemo(() => {
     if (chatHistory?.length) {

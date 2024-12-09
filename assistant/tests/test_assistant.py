@@ -98,6 +98,17 @@ def test_language_support():
     assert rag_prompt == sw_prompt["rag_prompt"]
     assert ragless_prompt == sw_prompt["ragless_prompt"]
 
+    detected_language = get_language("I have question about coffee")
+    assert detected_language == "en"
+    knowledge_base = assistant_data[detected_language]["knowledge_base"]
+    system_prompt = assistant_data[detected_language]["system_prompt"]
+    rag_prompt = assistant_data[detected_language]["rag_prompt"]
+    ragless_prompt = assistant_data[detected_language]["ragless_prompt"]
+    assert knowledge_base.name == "EPPO-datasheets-en"
+    assert system_prompt == en_prompt["system_prompt"]
+    assert rag_prompt == en_prompt["rag_prompt"]
+    assert ragless_prompt == en_prompt["ragless_prompt"]
+
 
 def test_query_llm():
     with patch("assistant.OpenAI") as mock_openai:

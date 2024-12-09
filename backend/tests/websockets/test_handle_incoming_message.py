@@ -20,10 +20,10 @@ MESSAGE = {
         "platform": "WHATSAPP",
         "timestamp": "2024-07-16T04:29:47.799230+00:00",
     },
-    "body": "Test message!",
+    "body": "First message!",
     "media": [],
     "context": [],
-    "transformation_log": ["Test message!"],
+    "transformation_log": ["First message!"],
 }
 
 
@@ -46,7 +46,7 @@ async def test_handle_incoming_message_new_conversation_n_send_initial_message(
     new_chat = session.exec(
         select(Chat).where(Chat.chat_session_id == new_chat_session.id)
     ).all()
-    assert new_chat[0].message == "Test message!"
+    assert new_chat[0].message == "First message!"
     assert new_chat[0].sender_role == Sender_Role_Enum.CLIENT
     assert new_chat[1].message.startswith(
         "Hi 6281222304050, I'm 12345678900 the extension officer."
@@ -71,7 +71,7 @@ async def test_handle_incoming_message_existing_conversation(session: Session):
     chats = session.exec(
         select(Chat).where(Chat.chat_session_id == updated_chat_session[0].id)
     ).all()
-    assert chats[0].message == "Test message!"
+    assert chats[0].message == "First message!"
     assert chats[1].message.startswith(
         "Hi 6281222304050, I'm 12345678900 the extension officer."
     )
@@ -105,7 +105,7 @@ async def test_handle_incoming_message_existing_conversation_with_image(
     chats = session.exec(
         select(Chat).where(Chat.chat_session_id == updated_chat_session.id)
     ).all()
-    assert chats[0].message == "Test message!"
+    assert chats[0].message == "First message!"
     assert chats[1].message == "Second message"
     assert chats[2].message == "Image caption"
 

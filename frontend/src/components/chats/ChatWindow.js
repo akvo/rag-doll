@@ -15,7 +15,7 @@ import { socket, api, dbLib } from "@/lib";
 import {
   formatChatTime,
   generateMessage,
-  check24hrWindow,
+  checkIfAfter24HWindow,
 } from "@/utils/formatter";
 import { v4 as uuidv4 } from "uuid";
 import Whisper from "./Whisper";
@@ -320,8 +320,8 @@ const ChatWindow = ({
       const {
         isBeyond24hr: isClientMessageBeyond24hr,
         timeDiff: clientTimeDiff,
-      } = check24hrWindow(client_message_timestamp);
-      const { timeDiff: userTimeDiff } = check24hrWindow(
+      } = checkIfAfter24HWindow(client_message_timestamp);
+      const { timeDiff: userTimeDiff } = checkIfAfter24HWindow(
         user_message_timestamp
       );
       setConversationTimeout({

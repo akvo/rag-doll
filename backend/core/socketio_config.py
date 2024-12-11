@@ -247,7 +247,7 @@ async def handle_conversation_reconnect(
             ).replace("{{2}}", clean_message_body)
             await twilio_client.whatsapp_message_template_create(
                 to=client_phone_number,
-                content_variables={"1": client_name},
+                content_variables={"1": client_name, "2": clean_message_body},
                 content_sid=content_sid,
             )
 
@@ -317,6 +317,7 @@ async def handle_send_initial_message(
     session: Session, chat_session_id: int, user: User, client: Client
 ):
     """Helper function to send the initial message"""
+    TESTING = os.getenv("TESTING")
     client_name = (
         client.properties.name if client.properties else client.phone_number
     )
@@ -324,6 +325,22 @@ async def handle_send_initial_message(
     initial_message = INITIAL_CHAT_TEMPLATE.format(
         farmer_name=client_name, officer_name=user_name
     )
+
+    # get message template ID
+    client_phone_number = (
+        f"+{client.phone_number}"
+        if "+" not in str(client.phone_number)
+        else str(client.phone_number)
+    )
+    message_template_lang = generate_message_template_lang_by_phone_number(
+        phone_number=client_phone_number
+    )
+    content_sid = os.getenv(f"INTRO_TEMPLATE_ID_{message_template_lang}")
+    # get message template from twilio
+    template_content = get_template_content_from_json(content_sid=content_sid)
+    if template_content and not TESTING:
+        initial_message = template_content.replace("{{1}}", client_name)
+        initial_message = initial_message.replace("{{2}}", user_name)
 
     new_chat = Chat(
         chat_session_id=chat_session_id,
@@ -335,9 +352,17 @@ async def handle_send_initial_message(
     session.commit()
 
     if not os.getenv("TESTING"):
-        await twilio_client.whatsapp_message_create(
-            to=client.phone_number, body=initial_message
-        )
+        # send initial chat to client
+        if content_sid:
+            await twilio_client.whatsapp_message_template_create(
+                to=client_phone_number,
+                content_variables={"1": client_name, "2": user_name},
+                content_sid=content_sid,
+            )
+        else:
+            await twilio_client.whatsapp_message_create(
+                to=client_phone_number, body=initial_message
+            )
 
 
 async def handle_incoming_message(session: Session, message: dict):

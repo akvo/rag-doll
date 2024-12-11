@@ -81,7 +81,7 @@ export const trimMessage = (text, maxLength = 80) => {
   return text;
 };
 
-export const check24hrWindow = (timeString) => {
+export const checkIfAfter24HWindow = (timeString) => {
   if (!timeString) {
     return {
       timeDiff: 0,

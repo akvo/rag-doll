@@ -273,8 +273,8 @@ def get_language(user_prompt) -> str:
     except LangDetectException:
         return "en"
 
-    # Double check to make sure not en
-    if detected_language != "en":
+    # Double check with nltk library
+    if detected_language == "fr":
         # Tokenize the text to get individual words
         tokens = nltk.word_tokenize(user_prompt.lower())
 

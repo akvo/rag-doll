@@ -5,7 +5,7 @@ import { useChatDispatch } from "@/context/ChatContextProvider";
 import { useAuthDispatch } from "@/context/AuthContextProvider";
 import { useUserDispatch } from "@/context/UserContextProvider";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib";
+import { api, dbLib } from "@/lib";
 import { deleteCookie } from "@/lib/cookies";
 import { formatChatTime, trimMessage } from "@/utils/formatter";
 import ChatHeader from "./ChatHeader";
@@ -22,6 +22,7 @@ const ChatList = ({
   setClients,
   reloadChatList,
   setReloadChatList,
+  LAST_MESSAGE_SENDER_ROLE,
 }) => {
   const router = useRouter();
   const userDispatch = useUserDispatch();
@@ -138,8 +139,15 @@ const ChatList = ({
 
   useEffect(() => {
     if (reloadChatList) {
-      fetchData();
-      setReloadChatList(false);
+      setHasMoreData(true);
+      setOffset(0);
+      setTimeout(() => {
+        fetchData();
+      }, 100);
+      setTimeout(() => {
+        setReloadChatList(false);
+        setHasMoreData(false);
+      }, 200);
     }
   }, [reloadChatList, fetchData, setReloadChatList]);
 
@@ -164,7 +172,7 @@ const ChatList = ({
     };
   }, [hasMoreData, loading, loadMoreChats]);
 
-  // Update last message for incoming message
+  // Update last message for incoming newMessage
   useEffect(() => {
     if (newMessage.length) {
       setChatItems((prev) => {
@@ -188,11 +196,14 @@ const ChatList = ({
               SenderRoleEnum.ASSISTANT;
             const prevCount = chat?.unread_message_count || 0;
 
+            // update chat list value by incoming new message from socket
             return {
               ...chat,
               last_message: {
                 ...chat.last_message,
+                id: findNewMessage.conversation_envelope.message_id,
                 created_at: findNewMessage.conversation_envelope.timestamp,
+                sender_role: findNewMessage.conversation_envelope.sender_role,
                 message: findNewMessage.body,
               },
               unread_assistant_message: isAssistant && isUnread,
@@ -218,13 +229,31 @@ const ChatList = ({
     }
   }, [newMessage]);
 
+  useEffect(() => {
+    // put the chat items in lastMessage table to use later on check24window
+    // only for sender role equal to client
+    chatItems.chats
+      .filter((c) => c.last_message) // only has last message
+      .forEach(async (item) => {
+        if (LAST_MESSAGE_SENDER_ROLE.includes(item.last_message.sender_role)) {
+          // add or update lastMessage
+          await dbLib.lastMessageTimestamp.addOrUpdate({
+            chat_session_id: item.last_message.chat_session_id,
+            client_phone_number: item.chat_session.phone_number,
+            sender_role: item.last_message.sender_role,
+            created_at: item.last_message.created_at,
+          });
+        }
+      });
+  }, [chatItems, LAST_MESSAGE_SENDER_ROLE]);
+
   return (
     <div className="w-full h-screen bg-white overflow-y-scroll flex-shrink-0">
       <ChatHeader />
       <div className="pt-20 pb-24 w-full">
         <div className="bg-white overflow-hidden px-2">
           {chatItems.chats
-            .filter((c) => c.last_message)
+            .filter((c) => c.last_message) // only has last message
             .map(
               ({
                 chat_session,

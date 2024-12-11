@@ -57,7 +57,7 @@ async def get_chats(
             status_code=404, detail="Offset exceeds total number of chats"
         )
 
-    # Subquery for latest message per session
+    # Subquery to get the latest chat for each chat session
     latest_chat_subquery = (
         select(
             Chat.chat_session_id,
@@ -68,7 +68,7 @@ async def get_chats(
         .subquery()
     )
 
-    # Main query: Fetch chat sessions with latest chat and unread counts
+    # Main query to fetch chat sessions with latest chat and unread counts
     query = (
         select(
             Chat_Session,

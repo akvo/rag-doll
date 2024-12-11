@@ -350,6 +350,7 @@ async def handle_send_initial_message(
     )
     session.add(new_chat)
     session.commit()
+    session.flush()
 
     if not os.getenv("TESTING"):
         # send initial chat to client

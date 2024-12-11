@@ -139,8 +139,15 @@ const ChatList = ({
 
   useEffect(() => {
     if (reloadChatList) {
-      fetchData();
-      setReloadChatList(false);
+      setHasMoreData(true);
+      setOffset(0);
+      setTimeout(() => {
+        fetchData();
+      }, 100);
+      setTimeout(() => {
+        setReloadChatList(false);
+        setHasMoreData(false);
+      }, 200);
     }
   }, [reloadChatList, fetchData, setReloadChatList]);
 

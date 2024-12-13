@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from db import check_24h_window, add_media
+from db import check_if_after_24h_window, add_media
 from models import (
     Chat,
     Chat_Session,
@@ -16,15 +16,15 @@ from sqlmodel import Session, select
 tz = timezone.utc
 
 
-def test_check_24h_window_return_false(session: Session):
+def test_check_if_after_24h_window_return_false(session: Session):
     chat = session.exec(select(Chat)).first()
-    res = check_24h_window(
+    res = check_if_after_24h_window(
         session=session, chat_session_id=chat.chat_session_id
     )
     assert res is False
 
 
-def test_check_24h_window_return_true(session: Session):
+def test_check_if_after_24h_window_return_true(session: Session):
     # create new conversation > 24hr for this condition
     user = session.exec(select(User)).first()
     new_client = Client(phone_number="+62819991035101")
@@ -61,7 +61,7 @@ def test_check_24h_window_return_true(session: Session):
     session.commit()
     session.flush()
 
-    res = check_24h_window(
+    res = check_if_after_24h_window(
         session=session, chat_session_id=new_chat_session.id
     )
     assert res is True

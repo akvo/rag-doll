@@ -15,7 +15,7 @@ def add_media(session: Session, chat: Chat, media: list[dict]):
     session.commit()
 
 
-def check_24h_window(session: Session, chat_session_id: int):
+def check_if_after_24h_window(session: Session, chat_session_id: int):
     current_time = datetime.now(tz)
     last_message = session.exec(
         select(Chat)

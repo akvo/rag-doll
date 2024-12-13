@@ -27,7 +27,7 @@ from socketio.exceptions import ConnectionRefusedError
 from utils.util import get_value_or_raise_error
 from clients.twilio_client import TwilioClient
 from clients.slack_client import SlackBotClient
-from db import add_media, check_24h_window
+from db import add_media, check_if_after_24h_window
 from typing import Optional, List
 from pywebpush import webpush, WebPushException
 from utils.util import (
@@ -146,7 +146,7 @@ async def save_chat_history(
         message_template_lang = generate_message_template_lang_by_phone_number(
             client_phone_number
         )
-        send_conversation_reconnect_template = check_24h_window(
+        send_conversation_reconnect_template = check_if_after_24h_window(
             session, conversation_exist.id
         )
 

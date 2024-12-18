@@ -493,7 +493,10 @@ async def resend_messages(session: Session, user_id=int, user_sid=str):
     last_chats = session.exec(
         select(Chat)
         .where(
-            Chat.chat_session_id.in_([cs.id for cs in chat_session]),
+            and_(
+                Chat.chat_session_id.in_([cs.id for cs in chat_session]),
+                Chat.status == Chat_Status_Enum.UNREAD,
+            )
         )
         .order_by(Chat.created_at.desc())
         .limit(LAST_MESSAGES_LIMIT)

@@ -45,7 +45,7 @@ export const ChatStatusEnum = {
 const ChatIDPrefix = "CHAT-";
 const CHECK_24_HR_INTERVAL = 10000; // in miliseconds
 const conversationReconnectInformation =
-  "Because the last message was more than 24 hours ago please include everything you want to say in your next message. You will not be able to send any further message until the farmer replies.";
+  "Since the last message was sent over 24 hours ago, please include everything you want to communicate in your next message. You will not be able to send any additional messages until the farmer responds.";
 const disableMessageInputInformation =
   "Your message has been sent to the farmer but in order to continue the conversation they must reply first.";
 

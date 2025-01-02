@@ -1,11 +1,13 @@
 import os
 import asyncio
 import logging
+import requests
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from core.database import get_session
-from sqlmodel import Session, text
+from sqlmodel import Session, text, select
+from models import Chat
 
 from routes import (
     user_routes,
@@ -78,11 +80,50 @@ app.include_router(subscription_routes.router, tags=["push notification"])
 app.include_router(static_routes.router, tags=["static file"])
 
 
-@app.get("/health-check", tags=["dev"])
-def read_root(session: Session = Depends(get_session)):
-    # Test database connectivity
+async def check_rabbitmq():
+    try:
+        await rabbitmq_client.connect(max_retries=1)
+        await rabbitmq_client.disconnect()
+        return True
+    except Exception as e:
+        logger.error(f"RabbitMQ health check failed: {e}")
+        return False
+
+
+def check_chromadb():
+    try:
+        host = f"{os.getenv('CHROMADB_HOST')}:{os.getenv('CHROMADB_PORT')}"
+        response = requests.get(f"http://{host}/api/v1/heartbeat")
+        print(response.status_code)
+        return response.status_code == 200
+    except Exception as e:
+        logger.error(f"ChromaDB health check failed: {e}")
+        return False
+
+
+def check_database(session: Session):
     session.exec(text("SELECT 1"))
-    return {"status": "ok"}
+    chat = session.exec(select(Chat.id)).first()
+    if chat:
+        return True
+    return False
+
+
+@app.get("/health-check", tags=["dev"])
+async def health_check(session: Session = Depends(get_session)):
+    services = {
+        "rabbitmq": await check_rabbitmq(),
+        "chromadb": check_chromadb(),
+        "database": check_database(session=session),
+        "backend": True,
+    }
+    if all(services.values()):
+        return {"status": "healthy", "services": services}
+    else:
+        raise HTTPException(
+            status_code=503,
+            detail={"status": "unhealthy", "services": services},
+        )
 
 
 app.mount("/", app=sio_app)

@@ -122,7 +122,7 @@ def check_service(service_name: str, port: int):
 
 
 @app.get("/health-check", tags=["dev"])
-async def health_check(session: Session = Depends(get_session)):
+def health_check(session: Session = Depends(get_session)):
     services = {
         "rabbitmq": check_rabbitmq(),
         "chromadb": check_chromadb(),

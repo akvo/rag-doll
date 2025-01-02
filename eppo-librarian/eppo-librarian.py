@@ -7,6 +7,7 @@ import requests
 import chromadb
 import pandas as pd
 import hashlib
+import threading
 
 from lxml import html
 from time import sleep
@@ -14,6 +15,7 @@ from openai import OpenAI
 from lxml.html import HtmlElement
 from nltk.tokenize import sent_tokenize
 from deep_translator import GoogleTranslator
+from health_check_handler import run
 
 logger = logging.getLogger(__name__)
 
@@ -471,6 +473,10 @@ def add_chunks_to_chromadb(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+
+    # Start the HTTP server in a separate thread
+    server_thread = threading.Thread(target=run, kwargs={"port": 9002})
+    server_thread.start()
 
     # download the NLTK sentence splitter
     nltk.download("punkt_tab")

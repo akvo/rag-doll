@@ -4,6 +4,7 @@ import asyncio
 import logging
 import chromadb
 import nltk
+import threading
 
 from time import sleep
 from openai import OpenAI
@@ -15,6 +16,7 @@ from Akvo_rabbitmq_client import rabbitmq_client
 from typing import Optional
 from db import connect_to_sqlite, get_stable_prompt
 from nltk.corpus import words, stopwords
+from health_check_handler import run
 
 
 logger = logging.getLogger(__name__)
@@ -418,4 +420,9 @@ async def consumer():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     main()
+
+    # Start the HTTP server in a separate thread
+    server_thread = threading.Thread(target=run, kwargs={"port": 9001})
+    server_thread.start()
+
     asyncio.run(consumer())

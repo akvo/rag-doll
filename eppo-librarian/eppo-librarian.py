@@ -475,7 +475,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # Start the HTTP server in a separate thread
-    server_thread = threading.Thread(target=run, kwargs={"port": 9002})
+    server_thread = threading.Thread(target=run, kwargs={"port": 5002})
     server_thread.start()
 
     # download the NLTK sentence splitter

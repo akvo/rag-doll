@@ -422,7 +422,7 @@ if __name__ == "__main__":
     main()
 
     # Start the HTTP server in a separate thread
-    server_thread = threading.Thread(target=run, kwargs={"port": 9001})
+    server_thread = threading.Thread(target=run, kwargs={"port": 5001})
     server_thread.start()
 
     asyncio.run(consumer())

@@ -109,12 +109,23 @@ def check_database(session: Session):
     return False
 
 
+def check_service(service_name: str, port: int):
+    try:
+        response = requests.get(f"http://{service_name}:{port}/health")
+        return response.status_code == 200
+    except requests.exceptions.RequestException as e:
+        print(f"{service_name} check failed: {e}")
+        return False
+
+
 @app.get("/health-check", tags=["dev"])
 async def health_check(session: Session = Depends(get_session)):
     services = {
         "rabbitmq": await check_rabbitmq(),
         "chromadb": check_chromadb(),
         "database": check_database(session=session),
+        "assistant": check_service("assistant", 9001),
+        "eppo-librarian": check_service("eppo-librarian", 9002),
         "backend": True,
     }
     if all(services.values()):

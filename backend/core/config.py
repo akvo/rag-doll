@@ -80,13 +80,14 @@ app.include_router(subscription_routes.router, tags=["push notification"])
 app.include_router(static_routes.router, tags=["static file"])
 
 
-async def check_rabbitmq():
+def check_rabbitmq():
     try:
-        await rabbitmq_client.connect(max_retries=1)
-        await rabbitmq_client.disconnect()
-        return True
-    except Exception as e:
-        logger.error(f"RabbitMQ health check failed: {e}")
+        response = requests.get(
+            f'http://{os.getenv("RABBITMQ_HOST")}:15692/metrics'
+        )
+        return response.status_code == 200
+    except requests.exceptions.RequestException as e:
+        print(f"RabbitMQ check failed: {e}")
         return False
 
 
@@ -102,11 +103,13 @@ def check_chromadb():
 
 
 def check_database(session: Session):
-    session.exec(text("SELECT 1"))
-    chat = session.exec(select(Chat.id)).first()
-    if chat:
+    try:
+        session.exec(text("SELECT 1"))
+        session.exec(select(Chat.id)).first()
         return True
-    return False
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return False
 
 
 def check_service(service_name: str, port: int):
@@ -121,7 +124,7 @@ def check_service(service_name: str, port: int):
 @app.get("/health-check", tags=["dev"])
 async def health_check(session: Session = Depends(get_session)):
     services = {
-        "rabbitmq": await check_rabbitmq(),
+        "rabbitmq": check_rabbitmq(),
         "chromadb": check_chromadb(),
         "database": check_database(session=session),
         "assistant": check_service("assistant", 9001),

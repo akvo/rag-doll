@@ -126,8 +126,10 @@ async def health_check(session: Session = Depends(get_session)):
         "rabbitmq": await check_rabbitmq(),
         "chromadb": check_chromadb(),
         "database": check_database(session=session),
-        "assistant": check_service("assistant", 5001),
-        "eppo-librarian": check_service("eppo-librarian", 5002),
+        "assistant": check_service("assistant", os.getenv("ASSISTANT_PORT")),
+        "eppo-librarian": check_service(
+            "eppo-librarian", os.getenv("EPPO_PORT")
+        ),
         "backend": True,
     }
     if all(services.values()):

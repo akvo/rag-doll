@@ -39,6 +39,7 @@ CHROMADB_HOST: str = os.getenv("CHROMADB_HOST")
 CHROMADB_PORT: int = os.getenv("CHROMADB_PORT")
 CHROMADB_DISTANCE_CUTOFF: float = float(os.getenv("CHROMADB_DISTANCE_CUTOFF"))
 
+ASSISTANT_PORT = os.getenv("ASSISTANT_PORT")
 ASSISTANT_LANGUAGES: list[str] = (
     os.getenv("ASSISTANT_LANGUAGES").replace(" ", "").split(",")
 )
@@ -422,7 +423,9 @@ if __name__ == "__main__":
     main()
 
     # Start the HTTP server in a separate thread
-    server_thread = threading.Thread(target=run, kwargs={"port": 5001})
+    server_thread = threading.Thread(
+        target=run, kwargs={"port": int(ASSISTANT_PORT)}
+    )
     server_thread.start()
 
     asyncio.run(consumer())

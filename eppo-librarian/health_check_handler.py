@@ -17,7 +17,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 
-def run(server_class=HTTPServer, handler_class=HealthCheckHandler, port=9001):
+def run(server_class=HTTPServer, handler_class=HealthCheckHandler, port=9002):
     server_address = ("", port)
     httpd = server_class(server_address, handler_class)
     logger.info(f"Starting httpd server on port {port}")

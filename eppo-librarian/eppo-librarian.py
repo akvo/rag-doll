@@ -20,6 +20,7 @@ from health_check_handler import run
 logger = logging.getLogger(__name__)
 
 
+EPPO_PORT = os.getenv("EPPO_PORT")
 EPPO_COUNTRY_ORGANISM_URL: str = os.getenv("EPPO_COUNTRY_ORGANISM_URL")
 assert EPPO_COUNTRY_ORGANISM_URL is not None
 assert isinstance(EPPO_COUNTRY_ORGANISM_URL, str)
@@ -445,9 +446,11 @@ def add_chunks_to_chromadb(
 
     Parameters:
         df (pd.DataFrame): DataFrame containing the chunks and EPPO codes.
-        metadata_df (pd.DataFrame): DataFrame containing metadata for each EPPO code.
+        metadata_df (pd.DataFrame): DataFrame containing metadata for each EPPO
+        code.
         chunk_column (str): The column name in `df` that contains the chunks.
-        collection (chromadb.Collection): The ChromaDB collection to which the chunks will be added.
+        collection (chromadb.Collection): The ChromaDB collection to which the
+        chunks will be added.
     """
 
     for _, row in metadata_df.iterrows():
@@ -475,7 +478,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # Start the HTTP server in a separate thread
-    server_thread = threading.Thread(target=run, kwargs={"port": 5002})
+    server_thread = threading.Thread(
+        target=run, kwargs={"port": int(EPPO_PORT)}
+    )
     server_thread.start()
 
     # download the NLTK sentence splitter

@@ -21,6 +21,7 @@ services:
       CHROMADB_PORT: ${CHROMADB_PORT}
       CHROMADB_COLLECTION_TEMPLATE: ${CHROMADB_COLLECTION_TEMPLATE}
       CHROMADB_DISTANCE_CUTOFF: ${CHROMADB_DISTANCE_CUTOFF}
+      ASSISTANT_PORT: ${ASSISTANT_PORT}
     depends_on:
       - rabbitmq
       - chromadb
@@ -48,6 +49,7 @@ services:
       CHROMADB_COLLECTION_TEMPLATE: ${CHROMADB_COLLECTION_TEMPLATE}
       CHUNK_SIZE: ${CHUNK_SIZE}
       OVERLAP_SIZE: ${OVERLAP_SIZE}
+      EPPO_PORT: ${EPPO_PORT}
     depends_on:
       - chromadb
     command: ["./run.sh"]
@@ -138,6 +140,8 @@ services:
       NEXT_PUBLIC_VAPID_PRIVATE_KEY: ${NEXT_PUBLIC_VAPID_PRIVATE_KEY}
       CHROMADB_HOST: ${CHROMADB_HOST}
       CHROMADB_PORT: ${CHROMADB_PORT}
+      ASSISTANT_PORT: ${ASSISTANT_PORT}
+      EPPO_PORT: ${EPPO_PORT}
     command: ["./dev.sh"]
     volumes:
       - ./backend:/app:delegated

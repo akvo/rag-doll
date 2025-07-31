@@ -20,22 +20,24 @@
 #+end_src
 
 #+RESULTS[136795287af44579a6b45d54289bcac05a5f20fa]: List of Table
-| List of relations |                          |          |       |
-|-------------------+--------------------------+----------+-------|
-| Schema            | Name                     | Type     | Owner |
-| public            | alembic_version          | table    | akvo  |
-| public            | chat                     | table    | akvo  |
-| public            | chat_id_seq              | sequence | akvo  |
-| public            | chat_session             | table    | akvo  |
-| public            | chat_session_id_seq      | sequence | akvo  |
-| public            | client                   | table    | akvo  |
-| public            | client_id_seq            | sequence | akvo  |
-| public            | client_properties        | table    | akvo  |
-| public            | client_properties_id_seq | sequence | akvo  |
-| public            | user                     | table    | akvo  |
-| public            | user_id_seq              | sequence | akvo  |
-| public            | user_properties          | table    | akvo  |
-| public            | user_properties_id_seq   | sequence | akvo  |
+| List of relations |                     |          |       |
+|-------------------+---------------------+----------+-------|
+| Schema            | Name                | Type     | Owner |
+| public            | alembic_version     | table    | akvo  |
+| public            | chat                | table    | akvo  |
+| public            | chat_id_seq         | sequence | akvo  |
+| public            | chat_media          | table    | akvo  |
+| public            | chat_media_id_seq   | sequence | akvo  |
+| public            | chat_session        | table    | akvo  |
+| public            | chat_session_id_seq | sequence | akvo  |
+| public            | client              | table    | akvo  |
+| public            | client_id_seq       | sequence | akvo  |
+| public            | client_properties   | table    | akvo  |
+| public            | subscription        | table    | akvo  |
+| public            | subscription_id_seq | sequence | akvo  |
+| public            | user                | table    | akvo  |
+| public            | user_id_seq         | sequence | akvo  |
+| public            | user_properties     | table    | akvo  |
 
 #+name: Primary Keys
 #+begin_src sql
@@ -46,6 +48,19 @@ JOIN information_schema.key_column_usage kcu
   WHERE tc.constraint_type = 'PRIMARY KEY'
 ORDER BY kcu.ordinal_position;
 #+end_src
+
+#+RESULTS: Primary Keys
+| table_name        | column_name |
+|-------------------+-------------|
+| alembic_version   | version_num |
+| client            | id          |
+| user              | id          |
+| chat_session      | id          |
+| client_properties | client_id   |
+| user_properties   | user_id     |
+| chat              | id          |
+| chat_media        | id          |
+| subscription      | id          |
 
 #+name: User
 #+begin_src sql
@@ -59,7 +74,7 @@ ORDER  BY ordinal_position;
 | column_name  | data_type         | is_nullable |
 |--------------+-------------------+-------------|
 | id           | integer           | NO          |
-| phone_number | bigint            | NO          |
+| phone_number | bigint            | YES         |
 | login_code   | character varying | YES         |
 
 #+name: User Properties
@@ -88,7 +103,7 @@ ORDER  BY ordinal_position;
 | column_name  | data_type | is_nullable |
 |--------------+-----------+-------------|
 | id           | integer   | NO          |
-| phone_number | integer   | NO          |
+| phone_number | bigint    | YES         |
 
 #+name: Client Properties
 #+begin_src sql
@@ -117,8 +132,9 @@ ORDER  BY ordinal_position;
 |-------------+-----------------------------+-------------|
 | id          | integer                     | NO          |
 | user_id     | integer                     | NO          |
-| client_id   | integer                     | YES         |
+| client_id   | integer                     | NO          |
 | last_read   | timestamp without time zone | NO          |
+| platform    | USER-DEFINED                | NO          |
 
 ** TZ UTC
 
@@ -137,5 +153,6 @@ ORDER  BY ordinal_position;
 | id              | integer                     | NO          |
 | chat_session_id | integer                     | NO          |
 | message         | character varying           | NO          |
-| sender          | USER-DEFINED                | NO          |
+| sender_role     | USER-DEFINED                | NO          |
 | created_at      | timestamp without time zone | NO          |
+| status          | USER-DEFINED                | NO          |
